@@ -689,7 +689,8 @@ function isGoogleSheetUrl(url) {
 }
 
 async function fetchCsvUrl(url) {
-  const resp = await fetch(url);
+  const bust = (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+  const resp = await fetch(url + bust, { cache: 'no-store' });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.text();
 }

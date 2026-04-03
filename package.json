@@ -1,0 +1,7 @@
+{
+  "name": "cmc-regtool",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . --listen 3000 --single"
+  }
+}
