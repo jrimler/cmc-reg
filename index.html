@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFCMC Reg Tool</title>
+<meta name="description" content="San Francisco Community Music Center — Registrar Tool">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARED CSS VARIABLES & RESET
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ink:         #0f2035;
+  --paper:       #f4f8fc;
+  --paper-dark:  #e6eff8;
+  --rule:        #c8d8e8;
+  --accent:      #d4a017;
+  --accent-soft: #fdf3d0;
+  --teal:        #2a6496;
+  --teal-soft:   #ddeaf6;
+  --gold:        #b8860b;
+  --gold-soft:   #fdf3d0;
+  --muted:       #5a7a96;
+  --red:         #c0392b;
+  --header-h:    57px;
+  --tabbar-h:    38px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SHARED HEADER
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#app-header {
+  height: var(--header-h);
+  flex-shrink: 0;
+  background: #2060a0;
+  border-bottom: 2px solid #1a4a7a;
+  padding: 0 20px 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 100;
+}
+.header-brand { display: flex; align-items: baseline; gap: 14px; flex-shrink: 0; }
+#app-header h1 { font-family: 'DM Serif Display', serif; font-size: 21px; letter-spacing: -0.3px; color: #fff; white-space: nowrap; }
+#app-header h1 span { font-style: italic; color: #f5c518; }
+#status-line { font-family: 'DM Mono', monospace; font-size: 11px; color: #a0c0e0; white-space: nowrap; }
+
+/* Search box — LF only */
+#header-search-wrap { flex: 1; max-width: 420px; position: relative; }
+#header-search-wrap.hidden { display: none; }
+#header-search {
+  width: 100%; padding: 7px 12px 7px 34px;
+  border: 1.5px solid rgba(255,255,255,0.4); border-radius: 4px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  background: #fff; color: var(--ink); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#header-search::placeholder { color: #8aabcc; }
+#header-search:focus { border-color: #f5c518; box-shadow: 0 0 0 2px rgba(245,197,24,0.25); }
+#header-search:disabled { opacity: 0.5; cursor: default; }
+.header-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #8aabcc; pointer-events: none; }
+
+/* Autocomplete dropdown */
+#search-dropdown {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 1.5px solid var(--rule); border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 200;
+  max-height: 320px; overflow-y: auto;
+}
+#search-dropdown.open { display: block; }
+.sd-group-label { padding: 6px 12px 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: var(--paper-dark); border-bottom: 1px solid var(--rule); }
+.sd-item { padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+.sd-item:last-child { border-bottom: none; }
+.sd-item:hover, .sd-item.highlighted { background: var(--accent-soft); }
+.sd-item-name { flex: 1; }
+.sd-item-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-left: 10px; }
+.sd-item.already-active { opacity: 0.45; pointer-events: none; }
+.sd-empty { padding: 12px 14px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* View switcher */
+.view-switcher { display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 3px; flex-shrink: 0; }
+.view-btn { padding: 5px 14px; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer; background: transparent; color: rgba(255,255,255,0.6); transition: background 0.15s, color 0.15s; white-space: nowrap; }
+.view-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.view-btn.active { background: #fff; color: #2060a0; }
+
+/* Refresh button */
+#refresh-btn { display: flex; align-items: center; gap: 6px; padding: 6px 13px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer; transition: background 0.15s, opacity 0.15s; flex-shrink: 0; }
+#refresh-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+#refresh-btn:disabled { opacity: 0.4; cursor: default; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT AREA
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#main-content { flex: 1; position: relative; overflow: hidden; display: flex; min-height: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   VIEWS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.view { display: none; flex: 1; flex-direction: column; min-height: 0; min-width: 0; }
+.view.active { display: flex; }
+
+/* LF tab bar */
+#lf-tab-bar { height: var(--tabbar-h); flex-shrink: 0; border-bottom: 1.5px solid var(--rule); display: none; align-items: center; padding: 0 24px; gap: 4px; background: #fff; }
+#lf-tab-bar.visible { display: flex; }
+.tab-btn { height: calc(var(--tabbar-h) - 2px); padding: 0 14px; border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; }
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+/* Panels */
+.lf-panel { flex: 1; min-height: 0; }
+.rs-panel { flex: 1; min-height: 0; overflow: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SETUP SCREEN
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#setup-screen { position: absolute; inset: 0; background: var(--paper); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; overflow-y: auto; }
+#setup-screen.hidden { display: none; }
+.setup-card { background: #fff; border: 1.5px solid var(--rule); border-radius: 8px; padding: 36px 40px; max-width: 600px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.setup-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 6px; }
+.setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.55; }
+.setup-steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+.setup-step { display: flex; gap: 14px; align-items: flex-start; }
+.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--teal); color: #fff; font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-text { font-size: 13px; line-height: 1.55; color: var(--ink); }
+.step-text strong { font-weight: 500; }
+.step-text code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--paper-dark); padding: 1px 5px; border-radius: 3px; color: var(--teal); }
+.setup-divider { border: none; border-top: 1.5px solid var(--rule); margin: 24px 0; }
+.setup-url-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 7px; }
+.setup-url-label .opt { font-size: 10px; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.setup-url-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; margin-bottom: 12px; }
+.setup-url-input:focus { border-color: var(--teal); }
+.setup-url-input.error { border-color: var(--red); }
+#url-error { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
+#url-error.visible { display: block; }
+#connect-btn { width: 100%; padding: 10px; background: var(--teal); color: #fff; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+#connect-btn:hover { opacity: 0.85; }
+#connect-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOADING OVERLAY
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#loading-overlay { display: none; position: absolute; inset: 0; background: rgba(244,248,252,0.88); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+#loading-overlay.visible { display: flex; }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--rule); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LESSON FINDER STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Panel layout */
+#lf-panel-availability { display: flex; flex-direction: row; overflow: hidden; }
+#lf-panel-teachers { overflow-y: auto; padding: 28px 32px; }
+
+/* Sidebar */
+#lf-sidebar { width: 224px; flex-shrink: 0; border-right: 1.5px solid var(--rule); overflow-y: auto; display: flex; flex-direction: column; background: #fff; }
+#lf-sidebar::-webkit-scrollbar { width: 3px; }
+#lf-sidebar::-webkit-scrollbar-thumb { background: var(--rule); }
+
+/* Reset button */
+.reset-wrap { padding: 12px 12px 10px; border-bottom: 1px solid var(--rule); }
+.lf-reset-btn { width: 100%; padding: 7px; background: var(--accent); color: #fff; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.lf-reset-btn:hover { opacity: 0.72; }
+.lf-reset-btn:disabled { opacity: 0.22; cursor: default; }
+
+/* Chip filter sections */
+.chip-section { border-bottom: 1px solid var(--rule); }
+.chip-section-head { padding: 10px 14px 9px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.chip-section-head:hover { background: rgba(0,0,0,0.02); }
+.chip-section-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); transition: color 0.1s; }
+.chip-section.has-selection .chip-section-title { color: var(--ink); }
+.chip-section-right { display: flex; align-items: center; gap: 6px; }
+.chip-sel-badge { font-family: 'DM Mono', monospace; font-size: 9px; background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 6px; display: none; }
+.chip-sel-badge.visible { display: inline-block; }
+.cs-arrow { width: 10px; height: 10px; opacity: 0.4; transition: transform 0.18s; flex-shrink: 0; }
+.chip-section.collapsed .cs-arrow { transform: rotate(-90deg); }
+.chip-section-body { padding: 0 10px 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+.chip-section.collapsed .chip-section-body { display: none; }
+.filter-chip { padding: 4px 9px; border: 1.5px solid var(--rule); border-radius: 3px; font-size: 12px; cursor: pointer; background: #fff; transition: all 0.1s; white-space: nowrap; user-select: none; line-height: 1.4; }
+.filter-chip:hover { border-color: var(--ink); }
+.filter-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.chip-section[data-key="instrument"] .filter-chip.active { background: var(--teal); border-color: var(--teal); }
+.chip-section[data-key="day"]        .filter-chip.active { background: var(--gold); border-color: var(--gold); }
+.chip-section[data-key="duration"]   .filter-chip.active { background: var(--accent); border-color: var(--accent); }
+.filter-chip.dimmed { opacity: 0.35; }
+.chip-show-more { padding: 3px 9px; border: 1.5px dashed var(--rule); border-radius: 3px; font-size: 11px; color: var(--muted); cursor: pointer; background: transparent; font-family: 'DM Mono', monospace; transition: all 0.1s; white-space: nowrap; }
+.chip-show-more:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Branch / Age static filters */
+.static-filter-section { border-bottom: 1px solid var(--rule); padding: 10px 12px; }
+.static-filter-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); display: block; margin-bottom: 7px; }
+.branch-filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.branch-filter-chip { padding: 4px 8px; text-align: center; border-radius: 3px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink); border: 1.5px solid var(--rule); background: transparent; transition: all 0.1s; user-select: none; }
+.branch-filter-chip:hover { border-color: var(--ink); }
+.branch-filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.age-filter-wrap { display: flex; align-items: center; gap: 8px; }
+.age-filter-label-text { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.age-filter-input { width: 52px; padding: 4px 6px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 13px; background: var(--paper); color: var(--ink); outline: none; text-align: center; transition: border-color 0.15s; }
+.age-filter-input:focus { border-color: var(--ink); }
+.age-clear-btn { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; display: none; text-decoration: underline; }
+.age-clear-btn.visible { display: block; }
+
+/* Availability main area */
+.avail-main { flex: 1; overflow-y: auto; padding: 20px 28px; }
+.results-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule); }
+#lf-result-count { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+.sort-group { display: flex; gap: 4px; align-items: center; }
+.sort-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+.sort-btn { padding: 3px 8px; border-radius: 3px; border: 1.5px solid var(--rule); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; color: var(--muted); transition: all 0.1s; text-transform: uppercase; letter-spacing: 0.08em; }
+.sort-btn:hover { border-color: var(--ink); color: var(--ink); }
+.sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Active filter summary chips */
+#lf-active-filters { display: none; flex-wrap: wrap; gap: 5px; padding: 0 0 12px; }
+#lf-active-filters.visible { display: flex; }
+.active-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
+.active-chip:hover { opacity: 0.75; }
+.active-chip-x { font-size: 12px; line-height: 1; opacity: 0.7; }
+.active-chip[data-key="instrument"] { background: var(--teal);   color: #fff; }
+.active-chip[data-key="day"]        { background: var(--gold);   color: #fff; }
+.active-chip[data-key="instructor"] { background: var(--accent); color: #fff; }
+.active-chip[data-key="duration"]   { background: var(--ink);    color: #fff; }
+.active-chip[data-key="branch"]     { background: var(--muted);  color: #fff; }
+.active-chip[data-key="studentAge"] { background: var(--muted);  color: #fff; }
+
+/* Results table */
+#lf-results-table { width: 100%; border-collapse: collapse; }
+#lf-results-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+#lf-results-table tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+#lf-results-table tbody tr:hover { background: var(--paper-dark); }
+#lf-results-table tbody td { padding: 9px 10px; vertical-align: middle; }
+.td-instrument { font-family: 'DM Serif Display', serif; font-size: 15px; }
+.td-instructor { font-weight: 500; }
+.td-dept { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.td-day { font-weight: 500; white-space: nowrap; }
+.td-time { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; }
+.slot-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.slot-badge { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 2px; white-space: nowrap; }
+.badge-30 { background: var(--gold-soft);   color: var(--gold);   }
+.badge-45 { background: var(--teal-soft);   color: var(--teal);   }
+.badge-60 { background: var(--accent-soft); color: var(--accent); }
+.branch-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+.branch-pill { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 5px; border-radius: 2px; background: var(--paper-dark); color: var(--muted); border: 1px solid var(--rule); }
+.age-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+.group-header td { padding: 14px 10px 4px; font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); border-bottom: none !important; }
+.group-header td span { font-style: italic; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-left: 8px; font-weight: 300; }
+#lf-empty-state { display: none; text-align: center; padding: 80px 20px; }
+#lf-empty-state.visible { display: block; }
+#lf-empty-state p { color: var(--muted); font-size: 15px; margin-bottom: 6px; }
+#lf-empty-state small { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--rule); }
+
+/* Teachers panel */
+.lf-teachers-header { margin-bottom: 20px; }
+.lf-teachers-header h2 { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 4px; }
+.lf-teachers-header p { font-size: 12px; color: var(--muted); font-style: italic; }
+#lf-teacher-table { width: 100%; border-collapse: collapse; max-width: 1000px; }
+#lf-teacher-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+#lf-teacher-table tbody tr { border-bottom: 1px solid var(--rule); }
+#lf-teacher-table tbody tr:hover { background: var(--paper-dark); }
+#lf-teacher-table tbody td { padding: 8px 10px; vertical-align: top; }
+.td-tname { font-weight: 500; font-size: 13px; white-space: nowrap; }
+.instr-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+.instr-tag { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 2px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ROOM SCHEDULE STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Site tabs */
+#rs-site-tabs { height: 40px; flex-shrink: 0; display: flex; align-items: center; overflow-x: auto; background: #fff; border-bottom: 1.5px solid var(--rule); padding: 0 16px; gap: 2px; }
+#rs-site-tabs::-webkit-scrollbar { height: 0; }
+.rs-site-tab { height: calc(40px - 2px); padding: 0 16px; border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s, border-color 0.15s; }
+.rs-site-tab:hover { color: var(--ink); }
+.rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+/* Day tabs */
+#rs-day-tabs { height: 34px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 14px; gap: 4px; }
+.rs-day-tab { height: 26px; padding: 0 10px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; transition: color 0.1s, background 0.1s; }
+.rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
+.rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
+
+/* Tab count badge (shared) */
+.rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
+.rs-site-tab.active .rs-tab-count, .rs-day-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
+
+/* Action bar */
+#rs-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 7px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 16px; min-height: 40px; }
+
+/* Legend */
+#rs-legend { display: flex; flex-wrap: wrap; gap: 5px 12px; align-items: center; flex: 1; overflow: hidden; }
+.rs-legend-item { display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.rs-legend-dot { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+
+/* Print button */
+#rs-print-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
+#rs-print-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+/* Grid wrapper */
+#rs-grid-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
+#rs-grid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+#rs-grid-wrap::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+/* Grid inner container */
+#rs-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
+
+/* Room header row (sticky top) */
+.rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
+.rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
+.rs-room-col-head { flex-shrink: 0; padding: 5px 6px; font-family: 'DM Mono', monospace; font-size: 9px; text-align: center; border-right: 1px solid var(--rule); color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center; }
+
+/* Grid body */
+.rs-grid-body { display: flex; }
+
+/* Time column (sticky left) */
+.rs-time-col { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 10; background: #fff; border-right: 2px solid var(--rule); }
+.rs-time-tick { height: 28px; display: flex; align-items: flex-start; justify-content: flex-end; padding: 2px 5px 0 0; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); border-top: 1px solid rgba(200,216,232,0.25); box-sizing: border-box; }
+.rs-time-tick:first-child { border-top: none; }
+.rs-time-tick.on-hour { color: var(--ink); font-size: 10px; }
+
+/* Room columns */
+.rs-rooms-area { display: flex; }
+.rs-room-col { flex-shrink: 0; border-right: 1px solid var(--rule); position: relative; }
+.rs-slot-row { width: 100%; height: 28px; box-sizing: border-box; border-top: 1px solid rgba(200,216,232,0.2); }
+.rs-slot-row:first-child { border-top: none; }
+.rs-slot-row.half-hour { border-top-color: var(--rule); }
+.rs-slot-row.on-hour { border-top-color: #b0c4d8; border-top-width: 1.5px; }
+
+/* Event blocks */
+.rs-event { position: absolute; left: 2px; right: 2px; border-radius: 3px; overflow: hidden; padding: 2px 4px; cursor: default; border-left: 3px solid transparent; box-sizing: border-box; }
+.rs-event:hover { filter: brightness(0.92); z-index: 5; }
+.rs-event.is-class { border-left-width: 5px; }
+.rs-event-item { font-family: 'DM Serif Display', serif; font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.rs-event-info { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(0,0,0,0.52); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
+
+/* Tooltip */
+#rs-tooltip { display: none; position: fixed; z-index: 400; background: var(--ink); color: #fff; border-radius: 4px; padding: 9px 12px; font-size: 12px; pointer-events: none; max-width: 240px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+#rs-tt-title { font-weight: 500; margin-bottom: 5px; font-size: 13px; }
+#rs-tt-body { font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; opacity: 0.82; }
+
+/* Empty state */
+#rs-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+#rs-empty.visible { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PRINT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media print {
+  @page { size: landscape; margin: 0.4in 0.5in; }
+  #app-header, #main-content { display: none !important; }
+  #rs-print-section { display: block !important; }
+  .rs-print-page { page-break-after: always; }
+  .rs-print-page:last-child { page-break-after: avoid; }
+  .rs-print-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #333; }
+  .rs-print-site { font-family: 'DM Serif Display', serif; font-size: 20px; }
+  .rs-print-day { font-family: 'DM Mono', monospace; font-size: 13px; color: #555; }
+  .rs-room-header { position: static !important; }
+  .rs-corner, .rs-time-col { position: static !important; }
+}
+#rs-print-section { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ══ SHARED HEADER ══════════════════════════════════════════════════════════ -->
+<div id="app-header">
+  <div class="header-brand">
+    <h1>SFCMC <span>Reg Tool</span></h1>
+    <span id="status-line">Loading…</span>
+  </div>
+
+  <div id="header-search-wrap" class="hidden">
+    <svg class="header-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="header-search" type="text" placeholder="Instrument, day, or teacher name…" autocomplete="off" disabled>
+    <div id="search-dropdown"></div>
+  </div>
+
+  <div class="view-switcher">
+    <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
+    <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
+  </div>
+
+  <button id="refresh-btn" disabled title="Refresh data from Google Sheets">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Refresh
+  </button>
+</div>
+
+<!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════════ -->
+<div id="main-content">
+
+  <!-- Shared loading overlay -->
+  <div id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <span class="loading-text" id="loading-text">Loading from Google Sheets…</span>
+  </div>
+
+  <!-- Shared setup screen -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <h2>Connect to Google Sheets</h2>
+      <p class="setup-sub">Each tool pulls from its own published CSV tab. Paste the URLs below — they're saved in your browser and auto-loaded on return.</p>
+
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>Lesson Finder sheet</strong> — your OpenSlotsReport export published as CSV.
+            Columns: <code>Department</code> <code>Subject</code> <code>Instructor</code> <code>Day</code> <code>Time</code> <code>Duration</code> <code>Date</code> <code>TimePeriod</code>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Room Schedule sheet</strong> — your RadGridExport published as CSV.
+            Columns: <code>Date</code> <code>Item</code> <code>From</code> <code>To</code> <code>Day</code> <code>Duration</code> <code>Facility</code> <code>Site</code> <code>Instructor</code> <code>PL Student</code> <code>Type</code>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Teacher profiles sheet</strong> — optional supplemental data.
+            Columns: <code>Name</code> <code>Branches</code> <code>AgeMin</code> <code>Notes</code>.
+            Branches here override those derived from Room Schedule data.
+          </div>
+        </div>
+      </div>
+
+      <hr class="setup-divider">
+
+      <label class="setup-url-label" for="lesson-url-input">Lesson Finder — Published CSV URL</label>
+      <input id="lesson-url-input" class="setup-url-input" type="url"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             autocomplete="off" spellcheck="false">
+
+      <label class="setup-url-label" for="room-url-input">
+        Room Schedule — Published CSV URL <span class="opt">(optional)</span>
+      </label>
+      <input id="room-url-input" class="setup-url-input" type="url"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             autocomplete="off" spellcheck="false">
+
+      <label class="setup-url-label" for="teachers-url-input">
+        Teacher Profiles — Published CSV URL <span class="opt">(optional)</span>
+      </label>
+      <input id="teachers-url-input" class="setup-url-input" type="url"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             autocomplete="off" spellcheck="false">
+
+      <div id="url-error"></div>
+      <button id="connect-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Connect &amp; Load
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ LESSON FINDER VIEW ════════════════════════════════════════════════ -->
+  <div id="lf-view" class="view">
+
+    <div id="lf-tab-bar">
+      <button class="tab-btn active" data-tab="availability">Availability</button>
+      <button class="tab-btn" data-tab="teachers">Teachers</button>
+    </div>
+
+    <!-- Availability panel -->
+    <div id="lf-panel-availability" class="lf-panel">
+      <aside id="lf-sidebar">
+        <div class="reset-wrap">
+          <button class="lf-reset-btn" id="lf-reset-btn" disabled>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset all filters
+          </button>
+        </div>
+        <div id="lf-chip-filters"></div>
+        <div class="static-filter-section">
+          <span class="static-filter-label">Branch</span>
+          <div class="branch-filter-chips">
+            <button class="branch-filter-chip" data-branch="Richmond">Richmond</button>
+            <button class="branch-filter-chip" data-branch="Mission">Mission</button>
+            <button class="branch-filter-chip" data-branch="Online">Online</button>
+            <button class="branch-filter-chip" data-branch="Home Studio">Home</button>
+          </div>
+        </div>
+        <div class="static-filter-section">
+          <span class="static-filter-label">Student Age</span>
+          <div class="age-filter-wrap">
+            <span class="age-filter-label-text">Age</span>
+            <input class="age-filter-input" id="lf-age-input" type="number" min="1" max="99" placeholder="—">
+            <button class="age-clear-btn" id="lf-age-clear">Clear</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="avail-main">
+        <div class="results-bar">
+          <span id="lf-result-count"></span>
+          <div class="sort-group">
+            <span class="sort-label">Group by</span>
+            <button class="sort-btn active" data-sort="instrument">Instrument</button>
+            <button class="sort-btn" data-sort="day">Day</button>
+            <button class="sort-btn" data-sort="instructor">Instructor</button>
+          </div>
+        </div>
+        <div id="lf-active-filters"></div>
+        <table id="lf-results-table">
+          <thead><tr>
+            <th>Instrument</th><th>Instructor</th><th>Dept</th>
+            <th>Day</th><th>Time</th><th>Available Slots</th><th>Branch</th><th>Age Min</th>
+          </tr></thead>
+          <tbody id="lf-table-body"></tbody>
+        </table>
+        <div id="lf-empty-state">
+          <p>No slots match these filters.</p>
+          <small>Try resetting filters or loading a new export.</small>
+        </div>
+      </div>
+    </div><!-- #lf-panel-availability -->
+
+    <!-- Teachers panel -->
+    <div id="lf-panel-teachers" class="lf-panel" style="display:none">
+      <div class="lf-teachers-header">
+        <h2>Teacher Profiles</h2>
+        <p>Branches pulled from the Teachers sheet (or derived from Room Schedule data). Instruments derived from lesson records.</p>
+      </div>
+      <table id="lf-teacher-table">
+        <thead><tr>
+          <th style="width:170px">Instructor</th>
+          <th>Instruments</th>
+          <th>Branch(es)</th>
+          <th>Age Min</th>
+          <th>Notes</th>
+        </tr></thead>
+        <tbody id="lf-teacher-body"></tbody>
+      </table>
+    </div>
+
+  </div><!-- #lf-view -->
+
+  <!-- ══ ROOM SCHEDULE VIEW ════════════════════════════════════════════════ -->
+  <div id="rs-view" class="view">
+    <div id="rs-site-tabs"></div>
+    <div id="rs-day-tabs"></div>
+    <div id="rs-action-bar">
+      <div id="rs-legend"></div>
+      <button id="rs-print-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print All Days
+      </button>
+    </div>
+    <div id="rs-grid-wrap">
+      <div id="rs-grid"></div>
+      <div id="rs-empty">No events for this site and day.</div>
+    </div>
+  </div>
+
+</div><!-- #main-content -->
+
+<div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
+<div id="rs-print-section"></div>
+
+<!-- ══ SCRIPTS ════════════════════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+'use strict';
+
+// ── CONSTANTS ──────────────────────────────────────────────────────────────────
+
+// Hardcoded fallback URLs — replace when sheets are re-published
+// File → Share → Publish to web → select tab → CSV → Publish
+const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?output=csv';
+const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=850131709&single=true&output=csv';
+const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?gid=2113258322&single=true&output=csv';
+
+const LS_LESSON_URL   = 'sfcmcLessonUrl';
+const LS_ROOM_URL     = 'sfcmcRoomUrl';
+const LS_TEACHERS_URL = 'sfcmcTeachersUrl';
+const LS_LAST_VIEW    = 'sfcmcLastView';
+
+const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
+
+// Subjects skipped in Lesson Finder (still appear in Room Schedule)
+const LF_SKIP_SUBJECTS = new Set([
+  'Group Class','Group Classes','Room Reservation','Hold','No Subject',
+  'This instrument is already added.','Accompanist','Collegium Musicum',
+  'Feldenkrais','Embodiment and Expression','Music Therapy for Special Needs',
+  'Ear Training','Eartraining','Sight Singing',
+]);
+
+// Full names for LF sort; short codes + lookup for RS tab labels
+const LF_DAY_ORDER  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const RS_DAYS_ORDER = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const RS_DAYS_FULL  = { Su:'Sun', Mo:'Mon', Tu:'Tue', We:'Wed', Th:'Thu', Fr:'Fri', Sa:'Sat' };
+
+// Chip sidebar show-limits per section key
+const LF_CHIP_LIMITS = { instrument: 10, instructor: 8, day: 7, duration: 4 };
+
+// ── GLOBAL STATE ───────────────────────────────────────────────────────────────
+const state = {
+  appMode:   'lessonFinder',
+  sheetUrls: { lessonUrl: '', roomUrl: '', teachersUrl: '' },
+
+  lf: {
+    records:         [],
+    teacherProfiles: {},
+    filters: { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() },
+    filterBranches:   new Set(),
+    filterStudentAge: '',
+    sortBy:    'instrument',
+    activeTab: 'availability',
+    chipShowAll: { instrument: false, instructor: false, day: false, duration: false },
+  },
+
+  rs: {
+    events:     [],
+    sites:      [],
+    activeSite: '',
+    activeDay:  '',
+  },
+};
+
+// ── SHARED UTILITIES ───────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// "30 mins" / "1 hr" / "45 min" → minutes integer
+function parseMins(d) {
+  if (!d) return 0;
+  const s   = String(d);
+  const hrs  = s.match(/(\d+)\s*hr/);
+  const mins = s.match(/(\d+)\s*min/);
+  return (hrs ? parseInt(hrs[1]) * 60 : 0) + (mins ? parseInt(mins[1]) : 0);
+}
+
+// Which lesson-length buckets does this duration qualify for?
+function getSlots(mins) {
+  const out = [];
+  if (mins >= 30) out.push(30);
+  if (mins >= 45) out.push(45);
+  if (mins >= 60) out.push(60);
+  return out;
+}
+
+// "9:00 AM" → sortable "09:00" string
+function timeToSort(t) {
+  if (!t) return '99:99';
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return '99:99';
+  let h = parseInt(m[1]);
+  const ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + m[2];
+}
+
+// "Garcia Plaza, Rosi" → "Rosi Garcia Plaza"   "Smith, John" → "John Smith"
+function normalizeInstructorName(s) {
+  if (!s) return s;
+  const comma = s.indexOf(',');
+  if (comma < 0) return s.trim();
+  const last  = s.slice(0, comma).trim();
+  const first = s.slice(comma + 1).trim();
+  return first ? `${first} ${last}` : last;
+}
+
+// ── GOOGLE SHEETS HELPERS ──────────────────────────────────────────────────────
+function isGoogleSheetUrl(url) {
+  return Boolean(url && url.includes('docs.google.com/spreadsheets'));
+}
+
+async function fetchCsvUrl(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.text();
+}
+
+function parseCsv(csvText) {
+  const wb = XLSX.read(csvText, { type: 'string' });
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+}
+
+// ── PROCESS LESSON ROWS (OpenSlotsReport format) ───────────────────────────────
+// Columns: Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod
+// Day: full names ("Tuesday"). Duration: "30 mins", "45 mins", "1 hr".
+// Instructor: "First Last" — no normalization needed.
+function processLessonRows(rows) {
+  const records = [];
+  if (rows.length < 2) return records;
+
+  const header = rows[0].map(h => String(h || '').trim());
+  const col = {
+    dept:       header.findIndex(h => /department/i.test(h)),
+    subject:    header.findIndex(h => /subject/i.test(h)),
+    instructor: header.findIndex(h => /instructor/i.test(h)),
+    day:        header.findIndex(h => /^day$/i.test(h)),
+    time:       header.findIndex(h => /^time$/i.test(h)),
+    duration:   header.findIndex(h => /duration/i.test(h)),
+    date:       header.findIndex(h => /^date$/i.test(h)),
+  };
+  const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
+
+  for (let i = 1; i < rows.length; i++) {
+    const row        = rows[i];
+    const instructor = get(row, 'instructor');
+    if (!instructor || instructor === 'Reserved Room' || instructor === 'SCHEDULE UNAVAILABLE') continue;
+    const subjectRaw = get(row, 'subject');
+    if (!subjectRaw || subjectRaw.includes('Room Reservation')) continue;
+    const mins = parseMins(get(row, 'duration'));
+    if (mins < 30) continue;
+
+    const subjects = subjectRaw.split(';')
+      .map(s => s.trim())
+      .filter(s => s && !LF_SKIP_SUBJECTS.has(s));
+
+    for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
+      if (LF_SKIP_SUBJECTS.has(instrument)) continue;
+      records.push({
+        department: get(row, 'dept'),
+        instrument, instructor,
+        day:  get(row, 'day'),
+        time: get(row, 'time'),
+        minutes: mins,
+        date:    get(row, 'date'),
+        slots:   getSlots(mins),
+      });
+    }
+  }
+  return records;
+}
+
+// ── PROCESS ROOM ROWS (RadGridExport format) ───────────────────────────────────
+// Columns: Date, Item, From, To, Day, Duration, Facility, Site,
+//          Instructor, PL Student, Type, Start Date, End Date
+// Day: short codes ("Mo", "Tu"). Duration: numeric string ("30", "60").
+// Instructor: "Last, First" → normalized to "First Last".
+// Returns { events[], derivedBranches{instructorName → Set<site>} }
+function processRoomRows(rows) {
+  const events = [];
+  const derivedBranches = {};
+
+  if (rows.length < 2) return { events, derivedBranches };
+
+  const header = rows[0].map(h => String(h || '').trim());
+  const col = {
+    date:       header.findIndex(h => /^date$/i.test(h)),
+    item:       header.findIndex(h => /^item$/i.test(h)),
+    from:       header.findIndex(h => /^from$/i.test(h)),
+    to:         header.findIndex(h => /^to$/i.test(h)),
+    day:        header.findIndex(h => /^day$/i.test(h)),
+    duration:   header.findIndex(h => /^duration$/i.test(h)),
+    facility:   header.findIndex(h => /^facility$/i.test(h)),
+    site:       header.findIndex(h => /^site$/i.test(h)),
+    instructor: header.findIndex(h => /^instructor$/i.test(h)),
+    student:    header.findIndex(h => /student/i.test(h)),
+    type:       header.findIndex(h => /^type$/i.test(h)),
+  };
+  const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
+
+  for (let i = 1; i < rows.length; i++) {
+    const row          = rows[i];
+    const instructorRaw = get(row, 'instructor');
+    if (!instructorRaw) continue;
+    const instructor = normalizeInstructorName(instructorRaw);
+    const item = get(row, 'item');
+    const site = get(row, 'site');
+    if (!item || !site) continue;
+
+    // Accumulate derived branch data from the room export
+    if (!derivedBranches[instructor]) derivedBranches[instructor] = new Set();
+    derivedBranches[instructor].add(site);
+
+    events.push({
+      date:     get(row, 'date'),
+      item,
+      from:     get(row, 'from'),
+      to:       get(row, 'to'),
+      day:      get(row, 'day'),
+      duration: get(row, 'duration'),
+      facility: get(row, 'facility'),
+      site,
+      instructor,
+      student:  get(row, 'student'),
+      type:     get(row, 'type') || 'LESSON',
+    });
+  }
+  return { events, derivedBranches };
+}
+
+// ── PROCESS TEACHER ROWS → raw map ────────────────────────────────────────────
+// Returns { name → { branches[], ageMin, notes } }
+// Does not merge with derived branches — that happens in buildTeacherProfiles().
+function processTeacherRows(rows) {
+  const data = {};
+  if (rows.length < 2) return data;
+
+  const header    = rows[0].map(h => String(h || '').trim());
+  const iName     = header.findIndex(h => /^name$/i.test(h));
+  const iBranches = header.findIndex(h => /branch/i.test(h));
+  const iAge      = header.findIndex(h => /age/i.test(h));
+  const iNotes    = header.findIndex(h => /notes?/i.test(h));
+
+  for (let i = 1; i < rows.length; i++) {
+    const row  = rows[i];
+    const name = iName >= 0 ? String(row[iName] || '').trim() : '';
+    if (!name) continue;
+    const branchRaw = iBranches >= 0 ? String(row[iBranches] || '').trim() : '';
+    data[name] = {
+      branches: branchRaw ? branchRaw.split(/[,;]+/).map(b => b.trim()).filter(Boolean) : [],
+      ageMin:   iAge   >= 0 ? String(row[iAge]   || '').trim() : '',
+      notes:    iNotes >= 0 ? String(row[iNotes] || '').trim() : '',
+    };
+  }
+  return data;
+}
+
+// ── BUILD TEACHER PROFILES ────────────────────────────────────────────────────
+// Merges Teachers sheet data with branches derived from Room Schedule.
+// Rule: use sheet Branches if non-empty, otherwise fall back to derivedBranches.
+function buildTeacherProfiles(teacherData, derivedBranches) {
+  const profiles = {};
+
+  // Union of all instructor names across all three sources
+  const allNames = new Set([
+    ...Object.keys(teacherData),
+    ...Object.keys(derivedBranches),
+    ...state.lf.records.map(r => r.instructor),
+  ]);
+
+  allNames.forEach(name => {
+    if (!name) return;
+    const fromSheet = teacherData[name];
+    const derived   = derivedBranches[name] ? [...derivedBranches[name]].sort() : [];
+    profiles[name]  = {
+      branches: fromSheet && fromSheet.branches.length > 0 ? fromSheet.branches : derived,
+      ageMin:   fromSheet ? fromSheet.ageMin : '',
+      notes:    fromSheet ? fromSheet.notes  : '',
+    };
+  });
+
+  return profiles;
+}
+
+// ── LOADING UI ─────────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg || 'Loading from Google Sheets…';
+  document.getElementById('loading-overlay').classList.add('visible');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('visible');
+}
+
+// ── MAIN DATA LOAD ─────────────────────────────────────────────────────────────
+// Fetches all three sheets (lesson, room, teachers) and populates both
+// state.lf.* and state.rs.* in one call. Room and teachers URLs are optional.
+async function loadAllData(urls) {
+  showLoading('Fetching data…');
+  try {
+    // Fetch all three in parallel; non-critical sources resolve to [] on failure
+    const [lessonRows, roomRows, teacherRows] = await Promise.all([
+      fetchCsvUrl(urls.lessonUrl).then(parseCsv),
+      urls.roomUrl
+        ? fetchCsvUrl(urls.roomUrl).then(parseCsv).catch(e => { console.warn('Room data failed:', e.message); return []; })
+        : Promise.resolve([]),
+      urls.teachersUrl
+        ? fetchCsvUrl(urls.teachersUrl).then(parseCsv).catch(e => { console.warn('Teachers data failed:', e.message); return []; })
+        : Promise.resolve([]),
+    ]);
+
+    // Populate LF records first (buildTeacherProfiles needs them for name union)
+    state.lf.records = processLessonRows(lessonRows);
+
+    // Process room data → events + derivedBranches
+    const { events, derivedBranches } = processRoomRows(roomRows);
+    state.rs.events = events;
+    state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
+    if (state.rs.sites.length > 0) {
+      if (!state.rs.sites.includes(state.rs.activeSite)) state.rs.activeSite = state.rs.sites[0];
+      const daysForSite = RS_DAYS_ORDER.filter(d => events.some(e => e.site === state.rs.activeSite && e.day === d));
+      if (!daysForSite.includes(state.rs.activeDay)) state.rs.activeDay = daysForSite[0] || '';
+    }
+
+    // Merge teacher data
+    state.lf.teacherProfiles = buildTeacherProfiles(processTeacherRows(teacherRows), derivedBranches);
+
+    // Reset LF filter state on every fresh load
+    state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+    state.lf.filterBranches   = new Set();
+    state.lf.filterStudentAge = '';
+    Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
+
+    state.sheetUrls = { ...urls };
+    hideLoading();
+    return true;
+  } catch (err) {
+    hideLoading();
+    return err;
+  }
+}
+
+// ── LF HELPERS ─────────────────────────────────────────────────────────────────
+function getLFProfile(name) {
+  return state.lf.teacherProfiles[name] || { branches: [], ageMin: '', notes: '' };
+}
+
+function lfHasActiveFilters() {
+  const { filters, filterBranches, filterStudentAge } = state.lf;
+  return Object.values(filters).some(s => s.size > 0) || filterBranches.size > 0 || filterStudentAge !== '';
+}
+
+// ── LF FILTERING & SORTING ─────────────────────────────────────────────────────
+function lfGetFiltered() {
+  const { records, filters, filterBranches, filterStudentAge, sortBy } = state.lf;
+  let r = records;
+  if (filters.instructor.size) r = r.filter(x => filters.instructor.has(x.instructor));
+  if (filters.instrument.size) r = r.filter(x => filters.instrument.has(x.instrument));
+  if (filters.day.size)        r = r.filter(x => filters.day.has(x.day));
+  if (filters.duration.size)   r = r.filter(x => x.slots.some(s => filters.duration.has(s)));
+  if (filterBranches.size > 0) {
+    r = r.filter(x => {
+      const p = getLFProfile(x.instructor);
+      return p.branches.some(b => filterBranches.has(b));
+    });
+  }
+  if (filterStudentAge !== '') {
+    const age = parseInt(filterStudentAge);
+    if (!isNaN(age)) {
+      r = r.filter(x => {
+        const p = getLFProfile(x.instructor);
+        return !p.ageMin || parseInt(p.ageMin) <= age;
+      });
+    }
+  }
+  return [...r].sort((a, b) => {
+    if (sortBy === 'instrument')
+      return a.instrument.localeCompare(b.instrument)
+        || LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
+        || timeToSort(a.time).localeCompare(timeToSort(b.time));
+    if (sortBy === 'day')
+      return LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
+        || timeToSort(a.time).localeCompare(timeToSort(b.time))
+        || a.instructor.localeCompare(b.instructor);
+    return a.instructor.localeCompare(b.instructor)
+      || LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
+      || timeToSort(a.time).localeCompare(timeToSort(b.time));
+  });
+}
+
+function lfGetAvailableValues(field) {
+  const { records, filters } = state.lf;
+  const base = records.filter(x => {
+    if (field !== 'instructor' && filters.instructor.size && !filters.instructor.has(x.instructor)) return false;
+    if (field !== 'instrument' && filters.instrument.size && !filters.instrument.has(x.instrument)) return false;
+    if (field !== 'day'        && filters.day.size        && !filters.day.has(x.day)) return false;
+    if (field !== 'duration'   && filters.duration.size   && !x.slots.some(s => filters.duration.has(s))) return false;
+    return true;
+  });
+  if (field === 'duration') {
+    const s = new Set();
+    base.forEach(x => x.slots.forEach(d => s.add(d)));
+    return s;
+  }
+  const s = new Set();
+  base.forEach(x => {
+    const v = field === 'instructor' ? x.instructor : field === 'instrument' ? x.instrument : x.day;
+    if (v) s.add(v);
+  });
+  return s;
+}
+
+// ── LF CHIP SIDEBAR ────────────────────────────────────────────────────────────
+function buildChipSidebar() {
+  const container = document.getElementById('lf-chip-filters');
+  container.innerHTML = '';
+
+  const sections = [
+    { key: 'instrument', label: 'Subject' },
+    { key: 'day',        label: 'Day' },
+    { key: 'duration',   label: 'Lesson Length' },
+    { key: 'instructor', label: 'Instructor' },
+  ];
+
+  sections.forEach(({ key, label }) => {
+    const section = document.createElement('div');
+    section.className = 'chip-section';
+    section.dataset.key = key;
+    if (key === 'instructor') section.classList.add('collapsed');
+    const selCount = state.lf.filters[key].size;
+    if (selCount) section.classList.add('has-selection');
+
+    section.innerHTML = `
+      <div class="chip-section-head">
+        <span class="chip-section-title">${label}</span>
+        <span class="chip-section-right">
+          <span class="chip-sel-badge ${selCount ? 'visible' : ''}">${selCount || ''}</span>
+          <svg class="cs-arrow" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3L5 7L9 3"/></svg>
+        </span>
+      </div>
+      <div class="chip-section-body" id="lf-chips-${key}"></div>
+    `;
+    section.querySelector('.chip-section-head').addEventListener('click', () => {
+      section.classList.toggle('collapsed');
+    });
+    container.appendChild(section);
+  });
+
+  updateChipSidebar();
+}
+
+function updateChipSidebar() {
+  const { records, filters, chipShowAll } = state.lf;
+  const sections = [
+    { key: 'instrument', sorter: (a, b) => a.localeCompare(b) },
+    { key: 'day',        sorter: (a, b) => LF_DAY_ORDER.indexOf(a) - LF_DAY_ORDER.indexOf(b) },
+    { key: 'duration',   sorter: (a, b) => a - b },
+    { key: 'instructor', sorter: (a, b) => a.localeCompare(b) },
+  ];
+
+  sections.forEach(({ key, sorter }) => {
+    const container = document.getElementById('lf-chips-' + key);
+    if (!container) return;
+
+    const allVals = key === 'duration'
+      ? [30, 45, 60].filter(d => records.some(x => x.slots.includes(d)))
+      : [...new Set(records.map(x => key === 'instructor' ? x.instructor : key === 'instrument' ? x.instrument : x.day))].sort(sorter);
+
+    const available  = lfGetAvailableValues(key);
+    const limit      = chipShowAll[key] ? Infinity : LF_CHIP_LIMITS[key];
+    const showValues = allVals.slice(0, limit);
+    const remaining  = allVals.length - showValues.length;
+
+    let html = '';
+    showValues.forEach(val => {
+      const sv        = String(val);
+      const isActive  = filters[key].has(val);
+      const isDimmed  = !isActive && !available.has(val) && lfHasActiveFilters();
+      const labelText = key === 'duration' ? val + ' min' : escHtml(sv);
+      html += `<span class="filter-chip ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}" data-key="${key}" data-value="${escHtml(sv)}">${labelText}</span>`;
+    });
+    if (remaining > 0) {
+      html += `<span class="chip-show-more" data-key="${key}">+${remaining} more</span>`;
+    }
+    container.innerHTML = html;
+
+    const section  = container.closest('.chip-section');
+    const selCount = filters[key].size;
+    const badge    = section.querySelector('.chip-sel-badge');
+    badge.textContent = selCount || '';
+    badge.classList.toggle('visible', selCount > 0);
+    section.classList.toggle('has-selection', selCount > 0);
+  });
+
+  document.getElementById('lf-reset-btn').disabled = !lfHasActiveFilters();
+}
+
+// ── LF SEARCH AUTOCOMPLETE ─────────────────────────────────────────────────────
+let lfDdHighlight = -1;
+
+function buildSearchDropdown(query) {
+  const dd = document.getElementById('search-dropdown');
+  const q  = query.trim().toLowerCase();
+  if (!q || state.lf.records.length === 0) { dd.classList.remove('open'); return; }
+
+  const { records, filters } = state.lf;
+  const instruments  = [...new Set(records.map(r => r.instrument))].sort();
+  const days         = [...new Set(records.map(r => r.day))].sort((a, b) => LF_DAY_ORDER.indexOf(a) - LF_DAY_ORDER.indexOf(b));
+  const instructors  = [...new Set(records.map(r => r.instructor))].sort();
+
+  const mInstr = instruments.filter(v => v.toLowerCase().includes(q));
+  const mDays  = days.filter(v => v.toLowerCase().includes(q));
+  const mInst  = instructors.filter(v => v.toLowerCase().includes(q));
+
+  if (!mInstr.length && !mDays.length && !mInst.length) {
+    dd.innerHTML = '<div class="sd-empty">No matches found</div>';
+    dd.classList.add('open');
+    return;
+  }
+
+  let html = '';
+  if (mInstr.length) {
+    html += `<div class="sd-group-label">Subject</div>`;
+    mInstr.slice(0, 5).forEach(v => {
+      const active = filters.instrument.has(v);
+      const count  = records.filter(r => r.instrument === v).length;
+      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="instrument" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
+    });
+  }
+  if (mDays.length) {
+    html += `<div class="sd-group-label">Day</div>`;
+    mDays.forEach(v => {
+      const active = filters.day.has(v);
+      const count  = records.filter(r => r.day === v).length;
+      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="day" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
+    });
+  }
+  if (mInst.length) {
+    html += `<div class="sd-group-label">Instructor</div>`;
+    mInst.slice(0, 6).forEach(v => {
+      const active = filters.instructor.has(v);
+      const count  = records.filter(r => r.instructor === v).length;
+      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="instructor" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
+    });
+  }
+
+  dd.innerHTML = html;
+  dd.classList.add('open');
+  lfDdHighlight = -1;
+}
+
+function selectSearchItem(key, value) {
+  const val = key === 'duration' ? parseInt(value) : value;
+  state.lf.filters[key].add(val);
+  document.getElementById('header-search').value = '';
+  document.getElementById('search-dropdown').classList.remove('open');
+  lfDdHighlight = -1;
+  renderTable();
+  updateChipSidebar();
+}
+
+// ── LF RENDER TABLE ────────────────────────────────────────────────────────────
+function renderTable() {
+  const rows  = lfGetFiltered();
+  const tbody = document.getElementById('lf-table-body');
+  const empty = document.getElementById('lf-empty-state');
+  const af    = document.getElementById('lf-active-filters');
+  const { filters, filterBranches, filterStudentAge, sortBy } = state.lf;
+
+  // Active filter summary chips above the table
+  let afHtml = '';
+  ['instrument', 'day', 'instructor', 'duration'].forEach(key => {
+    filters[key].forEach(val => {
+      const label = key === 'duration' ? val + ' min' : escHtml(String(val));
+      afHtml += `<span class="active-chip" data-key="${key}" data-value="${escHtml(String(val))}">${label} <span class="active-chip-x">×</span></span>`;
+    });
+  });
+  filterBranches.forEach(b => {
+    afHtml += `<span class="active-chip" data-key="branch" data-value="${escHtml(b)}">${escHtml(b)} <span class="active-chip-x">×</span></span>`;
+  });
+  if (filterStudentAge) {
+    afHtml += `<span class="active-chip" data-key="studentAge" data-value="${escHtml(filterStudentAge)}">Age: ${escHtml(filterStudentAge)} <span class="active-chip-x">×</span></span>`;
+  }
+  af.innerHTML = afHtml;
+  af.classList.toggle('visible', afHtml !== '');
+
+  document.getElementById('lf-result-count').textContent = `${rows.length} slot${rows.length !== 1 ? 's' : ''}`;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+
+  let html = '';
+  let lastGroup = null;
+  rows.forEach(r => {
+    const groupVal = sortBy === 'instrument' ? r.instrument : sortBy === 'day' ? r.day : r.instructor;
+    if (groupVal !== lastGroup) {
+      const cnt = rows.filter(x => (sortBy === 'instrument' ? x.instrument : sortBy === 'day' ? x.day : x.instructor) === groupVal).length;
+      html += `<tr class="group-header"><td colspan="8">${escHtml(groupVal)} <span>${cnt} slot${cnt !== 1 ? 's' : ''}</span></td></tr>`;
+      lastGroup = groupVal;
+    }
+    const prof        = getLFProfile(r.instructor);
+    const branchPills = prof.branches.length
+      ? prof.branches.map(b => `<span class="branch-pill">${escHtml(b)}</span>`).join('')
+      : '<span style="color:var(--rule);font-size:11px">—</span>';
+    const ageBadge   = prof.ageMin ? `<span class="age-badge">${escHtml(prof.ageMin)}+</span>` : '';
+    const slotBadges = r.slots.map(s => `<span class="slot-badge badge-${s}">${s} min</span>`).join('');
+    html += `<tr>
+      <td class="td-instrument">${escHtml(r.instrument)}</td>
+      <td class="td-instructor">${escHtml(r.instructor)}</td>
+      <td class="td-dept">${escHtml(r.department)}</td>
+      <td class="td-day">${escHtml(r.day)}</td>
+      <td class="td-time">${escHtml(r.time)}</td>
+      <td><div class="slot-badges">${slotBadges}</div></td>
+      <td><div class="branch-pills">${branchPills}</div></td>
+      <td>${ageBadge}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// ── LF RENDER TEACHERS ─────────────────────────────────────────────────────────
+function renderTeachers() {
+  const { records, teacherProfiles } = state.lf;
+
+  // Derive instruments per instructor from LF records
+  const instrMap = {};
+  records.forEach(r => {
+    if (!instrMap[r.instructor]) instrMap[r.instructor] = new Set();
+    instrMap[r.instructor].add(r.instrument);
+  });
+
+  const names = [...new Set(records.map(r => r.instructor))].sort();
+  if (!names.length) {
+    document.getElementById('lf-teacher-body').innerHTML =
+      '<tr><td colspan="5" style="padding:20px;color:var(--muted);font-style:italic">No data loaded yet.</td></tr>';
+    return;
+  }
+
+  const rows = names.map(name => {
+    const p           = getLFProfile(name);
+    const instruments = instrMap[name] ? [...instrMap[name]].sort() : [];
+    const instrTags   = instruments.length
+      ? instruments.map(i => `<span class="instr-tag">${escHtml(i)}</span>`).join('')
+      : '<span style="color:var(--rule)">—</span>';
+    const branchList = p.branches.length
+      ? escHtml(p.branches.join(', '))
+      : '<span style="color:var(--rule)">—</span>';
+    const ageCell  = p.ageMin ? `<span class="age-badge">${escHtml(p.ageMin)}+</span>` : '<span style="color:var(--rule)">—</span>';
+    const noteCell = p.notes  ? escHtml(p.notes) : '<span style="color:var(--rule);font-style:italic">—</span>';
+    return `<tr>
+      <td class="td-tname">${escHtml(name)}</td>
+      <td><div class="instr-tags">${instrTags}</div></td>
+      <td>${branchList}</td>
+      <td>${ageCell}</td>
+      <td style="font-size:12px">${noteCell}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('lf-teacher-body').innerHTML = rows;
+}
+
+// ── ROOM SCHEDULE DATA & RENDERING ────────────────────────────────────────────
+const RS_FAM_MAP = {
+  'Piano':           ['Piano','Harpsichord','Organ','Accordion','Keyboard','Clavichord'],
+  'Strings':         ['Violin','Viola','Cello','Bass','Double Bass','Fiddle','Harp','Mandolin','Ukulele'],
+  'Guitar':          ['Guitar','Bass - Electric','Classical Guitar','Electric Guitar','Acoustic Guitar','Bass Guitar'],
+  'Voice & Choir':   ['Voice','Beginning Voice','Choir','CMC A Capella','Vocal','Vocals'],
+  'Winds & Brass':   ['Flute','Clarinet','Saxophone','Oboe','Bassoon','Trumpet','Trombone','Horn','Tuba','Recorder','Piccolo','Bagpipe','French Horn'],
+  'Percussion':      ['Drum Set','Marimba','Cajon','Drums','Xylophone','Vibraphone','Timpani','Percussion','Snare','Bongos','Congas'],
+  'Ensemble & Jazz': ['Advanced Jazz Ensemble','Ensemble','Jazz','Orchestra','Chamber','Band','Chorus','Quartet','Trio','Duo'],
+};
+
+const RS_FAM_COLORS = {
+  'Piano':           { bg: '#b8d4f0', border: '#4a90d9' },
+  'Strings':         { bg: '#f0c8b8', border: '#d96a38' },
+  'Guitar':          { bg: '#b8f0d4', border: '#38a870' },
+  'Voice & Choir':   { bg: '#f0e0b8', border: '#d9a030' },
+  'Winds & Brass':   { bg: '#d4b8f0', border: '#8850d0' },
+  'Percussion':      { bg: '#f0b8d4', border: '#d84080' },
+  'Ensemble & Jazz': { bg: '#f0d8a0', border: '#c08020' },
+  'Other':           { bg: '#ddd9d0', border: '#888078' },
+};
+
+// Build fast item→family lookup once at load time
+const _RS_ITEM_FAM = {};
+Object.entries(RS_FAM_MAP).forEach(([fam, items]) =>
+  items.forEach(item => { _RS_ITEM_FAM[item.toLowerCase()] = fam; })
+);
+
+function rsGetFam(item) {
+  if (!item) return 'Other';
+  const key = item.toLowerCase();
+  if (_RS_ITEM_FAM[key]) return _RS_ITEM_FAM[key];
+  for (const [fam, items] of Object.entries(RS_FAM_MAP)) {
+    if (items.some(i => key.includes(i.toLowerCase()) || i.toLowerCase().includes(key))) return fam;
+  }
+  return 'Other';
+}
+
+// "9:00 AM" → minutes from midnight
+function rsParseTime(str) {
+  if (!str) return 0;
+  const m = String(str).match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]);
+  const ap = m[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + parseInt(m[2]);
+}
+
+// minutes from midnight → "9:00 AM"
+function rsFmtTime(mins) {
+  const h24 = Math.floor(mins / 60);
+  const mm  = mins % 60;
+  const ap  = h24 < 12 ? 'AM' : 'PM';
+  const h   = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+  return `${h}:${String(mm).padStart(2,'0')} ${ap}`;
+}
+
+function rsForSiteDay(site, day) {
+  return state.rs.events.filter(e => e.site === site && e.day === day);
+}
+
+function rsGetRooms(evts) {
+  return [...new Set(evts.map(e => e.facility))].sort();
+}
+
+// Build the time-grid HTML. forPrint: omit data-* attrs, use narrower columns.
+function rsBuildGrid(evts, rooms, forPrint) {
+  if (!evts.length) return '';
+  const ROOM_W = forPrint ? 115 : 140;
+  const PX     = 28; // pixels per 15-min slot
+
+  // Compute time range (rounded to 30-min boundaries)
+  let lo = Infinity, hi = -Infinity;
+  evts.forEach(e => {
+    const s = rsParseTime(e.from), n = rsParseTime(e.to);
+    if (s < lo) lo = s;
+    if (n > hi) hi = n;
+  });
+  lo = Math.floor(lo / 30) * 30;
+  hi = Math.ceil(hi  / 30) * 30;
+  const totalSlots = (hi - lo) / 15;
+
+  let html = '';
+
+  // Room header row
+  html += '<div class="rs-room-header">';
+  html += '<div class="rs-corner"></div>';
+  rooms.forEach(r => {
+    html += `<div class="rs-room-col-head" style="width:${ROOM_W}px">${escHtml(r.replace(/^\(\d+\)\s*/, ''))}</div>`;
+  });
+  html += '</div>';
+
+  // Grid body
+  html += '<div class="rs-grid-body">';
+
+  // Time column
+  html += '<div class="rs-time-col">';
+  for (let i = 0; i < totalSlots; i++) {
+    const mins   = lo + i * 15;
+    const onHour = mins % 60 === 0;
+    html += `<div class="rs-time-tick${onHour ? ' on-hour' : ''}">${onHour ? escHtml(rsFmtTime(mins)) : ''}</div>`;
+  }
+  html += '</div>';
+
+  // Room columns
+  html += '<div class="rs-rooms-area">';
+  rooms.forEach(room => {
+    const colH = totalSlots * PX;
+    html += `<div class="rs-room-col" style="width:${ROOM_W}px;height:${colH}px">`;
+
+    // Background slot rows
+    for (let i = 0; i < totalSlots; i++) {
+      const mins = lo + i * 15;
+      const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
+      html += `<div class="rs-slot-row${cls}"></div>`;
+    }
+
+    // Events in this room
+    evts.filter(e => e.facility === room).forEach(ev => {
+      const startM  = rsParseTime(ev.from);
+      const endM    = rsParseTime(ev.to);
+      const top     = (startM - lo) / 15 * PX;
+      const height  = Math.max((endM - startM) / 15 * PX - 2, 16);
+      const fam     = rsGetFam(ev.item);
+      const col     = RS_FAM_COLORS[fam] || RS_FAM_COLORS['Other'];
+      const isClass = ev.type === 'CLASS';
+
+      let inner = `<span class="rs-event-item">${escHtml(ev.item)}</span>`;
+      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor)}</span>`;
+      if (height >= 52) inner += `<span class="rs-event-info">${escHtml(ev.from)}–${escHtml(ev.to)}</span>`;
+
+      const dataAttrs = forPrint ? '' : [
+        `data-item="${escHtml(ev.item)}"`,
+        `data-instructor="${escHtml(ev.instructor)}"`,
+        `data-student="${escHtml(ev.student)}"`,
+        `data-from="${escHtml(ev.from)}"`,
+        `data-to="${escHtml(ev.to)}"`,
+        `data-facility="${escHtml(ev.facility)}"`,
+        `data-type="${escHtml(ev.type)}"`,
+      ].join(' ');
+
+      html += `<div class="rs-event${isClass ? ' is-class' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;background:${col.bg};border-left-color:${col.border}">${inner}</div>`;
+    });
+
+    html += '</div>'; // .rs-room-col
+  });
+  html += '</div>'; // .rs-rooms-area
+  html += '</div>'; // .rs-grid-body
+  return html;
+}
+
+function renderSiteTabs() {
+  const bar = document.getElementById('rs-site-tabs');
+  if (!bar) return;
+  const { sites, activeSite } = state.rs;
+  bar.innerHTML = sites.map(site => {
+    const count = state.rs.events.filter(e => e.site === site).length;
+    return `<button class="rs-site-tab${site === activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
+  }).join('');
+}
+
+function renderDayTabs() {
+  const bar = document.getElementById('rs-day-tabs');
+  if (!bar) return;
+  const { events, activeSite, activeDay } = state.rs;
+  const days = RS_DAYS_ORDER.filter(d => events.some(e => e.site === activeSite && e.day === d));
+  bar.innerHTML = days.map(d => {
+    const count = events.filter(e => e.site === activeSite && e.day === d).length;
+    return `<button class="rs-day-tab${d === activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d]} <span class="rs-tab-count">${count}</span></button>`;
+  }).join('');
+}
+
+function renderLegend() {
+  const el = document.getElementById('rs-legend');
+  if (!el) return;
+  el.innerHTML = Object.entries(RS_FAM_COLORS).map(([fam, c]) =>
+    `<span class="rs-legend-item"><span class="rs-legend-dot" style="background:${c.bg};border:1.5px solid ${c.border}"></span>${escHtml(fam)}</span>`
+  ).join('');
+}
+
+function renderGrid() {
+  const grid  = document.getElementById('rs-grid');
+  const empty = document.getElementById('rs-empty');
+  if (!grid) return;
+  const evts = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
+  if (!evts.length) {
+    grid.innerHTML = '';
+    if (empty) empty.classList.add('visible');
+    return;
+  }
+  if (empty) empty.classList.remove('visible');
+  grid.innerHTML = rsBuildGrid(evts, rsGetRooms(evts), false);
+}
+
+function rsPrintAllDays() {
+  const section = document.getElementById('rs-print-section');
+  if (!section) return;
+  const pages = [];
+  state.rs.sites.forEach(site => {
+    RS_DAYS_ORDER.forEach(day => {
+      const evts = rsForSiteDay(site, day);
+      if (!evts.length) return;
+      pages.push(`<div class="rs-print-page">
+        <div class="rs-print-header">
+          <span class="rs-print-site">${escHtml(site)}</span>
+          <span class="rs-print-day">${RS_DAYS_FULL[day]}</span>
+        </div>
+        <div>${rsBuildGrid(evts, rsGetRooms(evts), true)}</div>
+      </div>`);
+    });
+  });
+  section.innerHTML = pages.join('');
+  window.print();
+  setTimeout(() => { section.innerHTML = ''; }, 2000);
+}
+
+// ── VIEW SWITCHING ─────────────────────────────────────────────────────────────
+function setAppMode(mode) {
+  state.appMode = mode;
+  localStorage.setItem(LS_LAST_VIEW, mode);
+  document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === mode));
+  document.getElementById('header-search-wrap').classList.toggle('hidden', mode !== 'lessonFinder');
+  document.getElementById('lf-view').classList.toggle('active', mode === 'lessonFinder');
+  document.getElementById('rs-view').classList.toggle('active', mode === 'roomSchedule');
+  if (mode === 'lessonFinder') onLFViewActivated();
+  if (mode === 'roomSchedule') onRSViewActivated();
+}
+
+function onLFViewActivated() {
+  buildChipSidebar();
+  renderTable();
+  if (state.lf.activeTab === 'teachers') renderTeachers();
+}
+
+function onRSViewActivated() {
+  renderSiteTabs();
+  renderDayTabs();
+  renderLegend();
+  renderGrid();
+}
+
+function switchLFTab(tab) {
+  state.lf.activeTab = tab;
+  document.querySelectorAll('#lf-tab-bar .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.lf-panel').forEach(p => {
+    p.style.display = p.id === `lf-panel-${tab}` ? '' : 'none';
+  });
+  if (tab === 'teachers') renderTeachers();
+}
+
+// ── SHOW / HIDE APP SCREENS ────────────────────────────────────────────────────
+function showApp(statusMsg) {
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('lf-tab-bar').classList.add('visible');
+  document.getElementById('header-search').disabled = false;
+  document.getElementById('refresh-btn').disabled = false;
+  document.getElementById('status-line').textContent = statusMsg || 'Loaded';
+  setAppMode(state.appMode);
+}
+
+function showSetup(errorMsg) {
+  document.getElementById('setup-screen').classList.remove('hidden');
+  document.getElementById('refresh-btn').disabled = true;
+  if (errorMsg) {
+    const errEl = document.getElementById('url-error');
+    errEl.textContent = errorMsg;
+    errEl.classList.add('visible');
+  }
+}
+
+// ── EVENT LISTENERS ────────────────────────────────────────────────────────────
+
+// View switcher
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => setAppMode(btn.dataset.view));
+});
+
+// LF tab bar
+document.querySelectorAll('#lf-tab-bar .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchLFTab(btn.dataset.tab));
+});
+
+// LF chip filter sidebar (event delegation)
+document.getElementById('lf-chip-filters').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip');
+  if (chip) {
+    const key = chip.dataset.key;
+    const val = key === 'duration' ? parseInt(chip.dataset.value) : chip.dataset.value;
+    if (state.lf.filters[key].has(val)) state.lf.filters[key].delete(val);
+    else state.lf.filters[key].add(val);
+    renderTable();
+    updateChipSidebar();
+    return;
+  }
+  const more = e.target.closest('.chip-show-more');
+  if (more) {
+    state.lf.chipShowAll[more.dataset.key] = true;
+    updateChipSidebar();
+  }
+});
+
+// LF branch chips
+document.querySelector('.branch-filter-chips').addEventListener('click', e => {
+  const btn = e.target.closest('.branch-filter-chip');
+  if (!btn) return;
+  const branch = btn.dataset.branch;
+  if (state.lf.filterBranches.has(branch)) { state.lf.filterBranches.delete(branch); btn.classList.remove('active'); }
+  else { state.lf.filterBranches.add(branch); btn.classList.add('active'); }
+  renderTable();
+  updateChipSidebar();
+});
+
+// LF student age
+document.getElementById('lf-age-input').addEventListener('input', e => {
+  state.lf.filterStudentAge = e.target.value;
+  document.getElementById('lf-age-clear').classList.toggle('visible', state.lf.filterStudentAge !== '');
+  renderTable();
+  updateChipSidebar();
+});
+document.getElementById('lf-age-clear').addEventListener('click', () => {
+  state.lf.filterStudentAge = '';
+  document.getElementById('lf-age-input').value = '';
+  document.getElementById('lf-age-clear').classList.remove('visible');
+  renderTable();
+  updateChipSidebar();
+});
+
+// LF reset
+document.getElementById('lf-reset-btn').addEventListener('click', () => {
+  state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+  state.lf.filterBranches   = new Set();
+  state.lf.filterStudentAge = '';
+  Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
+  document.getElementById('lf-age-input').value = '';
+  document.getElementById('lf-age-clear').classList.remove('visible');
+  document.querySelectorAll('.branch-filter-chip').forEach(b => b.classList.remove('active'));
+  renderTable();
+  updateChipSidebar();
+});
+
+// LF sort group buttons
+document.querySelector('.sort-group').addEventListener('click', e => {
+  const btn = e.target.closest('.sort-btn');
+  if (!btn) return;
+  state.lf.sortBy = btn.dataset.sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderTable();
+});
+
+// LF active filter chip removal
+document.getElementById('lf-active-filters').addEventListener('click', e => {
+  const chip = e.target.closest('.active-chip');
+  if (!chip) return;
+  const { key, value } = chip.dataset;
+  if (key === 'branch') {
+    state.lf.filterBranches.delete(value);
+    document.querySelector(`.branch-filter-chip[data-branch="${CSS.escape(value)}"]`)?.classList.remove('active');
+  } else if (key === 'studentAge') {
+    state.lf.filterStudentAge = '';
+    document.getElementById('lf-age-input').value = '';
+    document.getElementById('lf-age-clear').classList.remove('visible');
+  } else {
+    const v = key === 'duration' ? parseInt(value) : value;
+    state.lf.filters[key].delete(v);
+  }
+  renderTable();
+  updateChipSidebar();
+});
+
+// LF header search
+document.getElementById('header-search').addEventListener('input', e => buildSearchDropdown(e.target.value));
+document.getElementById('header-search').addEventListener('keydown', e => {
+  const dd    = document.getElementById('search-dropdown');
+  const items = [...dd.querySelectorAll('.sd-item:not(.already-active)')];
+  if (!dd.classList.contains('open') || !items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    lfDdHighlight = Math.min(lfDdHighlight + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === lfDdHighlight));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    lfDdHighlight = Math.max(lfDdHighlight - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('highlighted', i === lfDdHighlight));
+  } else if (e.key === 'Enter' && lfDdHighlight >= 0) {
+    const el = items[lfDdHighlight];
+    selectSearchItem(el.dataset.key, el.dataset.value);
+  } else if (e.key === 'Escape') {
+    dd.classList.remove('open');
+  }
+});
+document.getElementById('search-dropdown').addEventListener('click', e => {
+  const item = e.target.closest('.sd-item');
+  if (item && !item.classList.contains('already-active')) selectSearchItem(item.dataset.key, item.dataset.value);
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('header-search-wrap').contains(e.target))
+    document.getElementById('search-dropdown').classList.remove('open');
+});
+
+// Connect button (setup screen)
+document.getElementById('connect-btn').addEventListener('click', async () => {
+  const lessonUrl   = document.getElementById('lesson-url-input').value.trim();
+  const roomUrl     = document.getElementById('room-url-input').value.trim();
+  const teachersUrl = document.getElementById('teachers-url-input').value.trim();
+  const errEl   = document.getElementById('url-error');
+  const inputEl = document.getElementById('lesson-url-input');
+
+  errEl.classList.remove('visible');
+  inputEl.classList.remove('error');
+
+  if (!lessonUrl) {
+    errEl.textContent = 'Please enter the Lesson Finder URL.';
+    errEl.classList.add('visible');
+    inputEl.classList.add('error');
+    return;
+  }
+  if (!isGoogleSheetUrl(lessonUrl)) {
+    errEl.textContent = "That doesn't look like a Google Sheets URL.";
+    errEl.classList.add('visible');
+    inputEl.classList.add('error');
+    return;
+  }
+
+  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null };
+  const btn  = document.getElementById('connect-btn');
+  btn.disabled = true;
+  const result = await loadAllData(urls);
+  btn.disabled = false;
+
+  if (result === true) {
+    // Always write all three keys so the saved state exactly mirrors what
+    // the user entered. Empty fields are cleared (removeItem) so stale
+    // values from a previous session never silently persist.
+    localStorage.setItem(LS_LESSON_URL, lessonUrl);
+    roomUrl     ? localStorage.setItem(LS_ROOM_URL,     roomUrl)     : localStorage.removeItem(LS_ROOM_URL);
+    teachersUrl ? localStorage.setItem(LS_TEACHERS_URL, teachersUrl) : localStorage.removeItem(LS_TEACHERS_URL);
+    const now = new Date();
+    showApp(`Connected ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+  } else {
+    errEl.textContent = `Could not load: ${result.message}. Make sure the sheet is published to web.`;
+    errEl.classList.add('visible');
+    inputEl.classList.add('error');
+  }
+});
+
+// Refresh button
+document.getElementById('refresh-btn').addEventListener('click', async () => {
+  if (!state.sheetUrls.lessonUrl) return;
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  const result = await loadAllData(state.sheetUrls);
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+  if (result === true) {
+    const now = new Date();
+    document.getElementById('status-line').textContent =
+      `Refreshed ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    setAppMode(state.appMode);
+  } else {
+    alert('Refresh failed: ' + result.message);
+  }
+});
+
+// RS site tabs (event delegation)
+document.getElementById('rs-site-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.rs-site-tab');
+  if (!btn) return;
+  state.rs.activeSite = btn.dataset.site;
+  const daysForSite = RS_DAYS_ORDER.filter(d => state.rs.events.some(ev => ev.site === state.rs.activeSite && ev.day === d));
+  state.rs.activeDay = daysForSite[0] || '';
+  renderSiteTabs();
+  renderDayTabs();
+  renderGrid();
+});
+
+// RS day tabs (event delegation)
+document.getElementById('rs-day-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.rs-day-tab');
+  if (!btn) return;
+  state.rs.activeDay = btn.dataset.day;
+  renderDayTabs();
+  renderGrid();
+});
+
+// RS print button
+document.getElementById('rs-print-btn').addEventListener('click', rsPrintAllDays);
+
+// RS tooltip via event delegation on grid wrapper
+let _rsTtTarget = null;
+const _rsTt    = document.getElementById('rs-tooltip');
+const _rsTtTit = document.getElementById('rs-tt-title');
+const _rsTtBod = document.getElementById('rs-tt-body');
+
+document.getElementById('rs-grid-wrap').addEventListener('mouseover', e => {
+  const ev = e.target.closest('.rs-event');
+  if (ev && ev !== _rsTtTarget) {
+    _rsTtTarget = ev;
+    const d = ev.dataset;
+    _rsTtTit.textContent = d.item;
+    const lines = [
+      `${d.from}–${d.to}`,
+      d.instructor,
+      d.student ? `Student: ${d.student}` : '',
+      d.facility,
+      d.type === 'CLASS' ? 'Class (group)' : 'Private lesson',
+    ].filter(Boolean);
+    _rsTtBod.innerHTML = lines.map(l => escHtml(l)).join('<br>');
+    _rsTt.style.display = 'block';
+  } else if (!ev) {
+    _rsTt.style.display = 'none';
+    _rsTtTarget = null;
+  }
+});
+
+document.getElementById('rs-grid-wrap').addEventListener('mousemove', e => {
+  if (_rsTt.style.display !== 'block') return;
+  const x = e.clientX + 14, y = e.clientY + 14;
+  const w = _rsTt.offsetWidth  || 200;
+  const h = _rsTt.offsetHeight || 80;
+  _rsTt.style.left = (x + w > window.innerWidth  ? e.clientX - w - 10 : x) + 'px';
+  _rsTt.style.top  = (y + h > window.innerHeight ? e.clientY - h - 10 : y) + 'px';
+});
+
+document.getElementById('rs-grid-wrap').addEventListener('mouseleave', () => {
+  _rsTt.style.display = 'none';
+  _rsTtTarget = null;
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+(function init() {
+  // Restore last-used view
+  const savedView = localStorage.getItem(LS_LAST_VIEW);
+  if (savedView === 'lessonFinder' || savedView === 'roomSchedule') state.appMode = savedView;
+
+  // Resolve URLs: saved → hardcoded default → ''
+  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || DEFAULT_LESSON_URL;
+  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || DEFAULT_ROOM_URL;
+  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || DEFAULT_TEACHERS_URL;
+
+  // Pre-fill setup form
+  document.getElementById('lesson-url-input').value   = lessonUrl;
+  document.getElementById('room-url-input').value     = roomUrl;
+  document.getElementById('teachers-url-input').value = teachersUrl;
+
+  if (!lessonUrl) {
+    showSetup();
+    return;
+  }
+
+  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null })
+    .then(result => {
+      if (result === true) {
+        const now = new Date();
+        showApp(`Loaded ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+      } else {
+        showSetup('Could not load data — the sheet may need to be re-published. Contact your administrator.');
+        document.getElementById('lesson-url-input').classList.add('error');
+      }
+    });
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFCMC Lesson Finder</title>
+<meta name="description" content="San Francisco Community Music Center — Lesson Availability Finder">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f2035;
+    --paper: #f4f8fc;
+    --paper-dark: #e6eff8;
+    --rule: #c8d8e8;
+    --accent: #d4a017;
+    --accent-soft: #fdf3d0;
+    --teal: #2a6496;
+    --teal-soft: #ddeaf6;
+    --gold: #b8860b;
+    --gold-soft: #fdf3d0;
+    --muted: #5a7a96;
+    --header-h: 57px;
+    --tabbar-h: 38px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    height: var(--header-h);
+    border-bottom: 2px solid #1a4a7a;
+    padding: 0 20px 0 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #2060a0;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: baseline; gap: 14px; flex-shrink: 0; }
+  #header h1 { font-family: 'DM Serif Display', serif; font-size: 21px; letter-spacing: -0.3px; color: #ffffff; white-space: nowrap; }
+  #header h1 span { font-style: italic; color: #f5c518; }
+  #status-line { font-family: 'DM Mono', monospace; font-size: 11px; color: #a0c0e0; white-space: nowrap; }
+
+  /* ── HEADER SEARCH ── */
+  #header-search-wrap {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+  #header-search {
+    width: 100%;
+    padding: 7px 12px 7px 34px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    background: #ffffff;
+    color: #0f2035;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  #header-search::placeholder { color: #8aabcc; }
+  #header-search:focus { border-color: #f5c518; box-shadow: 0 0 0 2px rgba(245,197,24,0.25); }
+  .header-search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: #8aabcc; pointer-events: none;
+  }
+  #header-search:focus ~ .header-search-icon { color: #f5c518; }
+
+  /* Autocomplete dropdown */
+  #search-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 200;
+    overflow: hidden;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  #search-dropdown.open { display: block; }
+  .sd-group-label {
+    padding: 6px 12px 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    background: var(--paper-dark);
+    border-bottom: 1px solid var(--rule);
+  }
+  .sd-item {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid var(--rule);
+    transition: background 0.1s;
+  }
+  .sd-item:last-child { border-bottom: none; }
+  .sd-item:hover, .sd-item.highlighted { background: var(--accent-soft); }
+  .sd-item-name { flex: 1; }
+  .sd-item-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-left: 10px; }
+  .sd-item.already-active { opacity: 0.45; pointer-events: none; }
+  .sd-empty { padding: 12px 14px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+  #upload-zone {
+    border: 1.5px dashed #5a4030;
+    border-radius: 4px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #a0c0e0;
+    transition: all 0.15s;
+    white-space: nowrap;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  #upload-zone:hover { border-color: #f5c518; color: #f5c518; }
+  #upload-zone.drag-over { border-color: #f5c518; color: #f5c518; background: rgba(245,197,24,0.1); }
+  #file-input { display: none; }
+
+  /* ── TAB BAR ── */
+  #tab-bar {
+    height: var(--tabbar-h);
+    border-bottom: 1.5px solid var(--rule);
+    display: none;
+    align-items: flex-end;
+    padding: 0 20px;
+    gap: 4px;
+    background: var(--paper-dark);
+    flex-shrink: 0;
+  }
+  #tab-bar.visible { display: flex; }
+  .tab-btn {
+    padding: 6px 16px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    margin-bottom: -1.5px;
+    transition: color 0.15s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+  /* ── PAGE ── */
+  #page {
+    height: calc(100vh - var(--header-h));
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── UPLOAD PROMPT ── */
+  #upload-prompt {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
+    padding: 40px;
+    overflow-y: auto;
+  }
+  #upload-prompt h2 { font-family: 'DM Serif Display', serif; font-size: 28px; font-style: italic; color: var(--muted); }
+  #upload-prompt p { color: var(--muted); font-size: 13px; max-width: 340px; line-height: 1.6; }
+  .big-drop {
+    border: 2px dashed var(--rule);
+    border-radius: 8px;
+    padding: 40px 60px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .big-drop:hover, .big-drop.drag-over { border-color: var(--ink); background: var(--paper-dark); }
+  .big-drop-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+  .big-drop p { color: var(--ink); font-size: 14px; font-weight: 500; }
+  .big-drop small { color: var(--muted); font-size: 12px; }
+
+  /* ── TAB PANELS ── */
+  .tab-panel { display: none; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  /* ── AVAILABILITY PANEL ── */
+  #panel-availability { flex-direction: row; }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1.5px solid var(--rule);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  aside::-webkit-scrollbar { width: 3px; }
+  aside::-webkit-scrollbar-thumb { background: var(--rule); }
+
+  /* Reset button */
+  .reset-wrap { padding: 12px 12px 10px; border-bottom: 1px solid var(--rule); }
+  .reset-btn {
+    width: 100%;
+    padding: 7px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .reset-btn:hover { opacity: 0.72; }
+  .reset-btn:disabled { opacity: 0.22; cursor: default; }
+
+  /* ── CHIP FILTER SECTIONS ── */
+  .chip-section {
+    border-bottom: 1px solid var(--rule);
+  }
+  .chip-section-head {
+    padding: 10px 14px 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip-section-head:hover { background: rgba(0,0,0,0.02); }
+  .chip-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    transition: color 0.1s;
+  }
+  .chip-section.has-selection .chip-section-title { color: var(--ink); }
+  .chip-section-right { display: flex; align-items: center; gap: 6px; }
+  .chip-sel-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 6px;
+    display: none;
+  }
+  .chip-sel-badge.visible { display: inline-block; }
+  .cs-arrow {
+    width: 10px; height: 10px;
+    opacity: 0.4;
+    transition: transform 0.18s;
+    flex-shrink: 0;
+  }
+  .chip-section.collapsed .cs-arrow { transform: rotate(-90deg); }
+
+  .chip-section-body {
+    padding: 0 10px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .chip-section.collapsed .chip-section-body { display: none; }
+
+  .filter-chip {
+    padding: 4px 9px;
+    border: 1.5px solid var(--rule);
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.1s;
+    white-space: nowrap;
+    user-select: none;
+    line-height: 1.4;
+  }
+  .filter-chip:hover { border-color: var(--ink); }
+  .filter-chip.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  /* Color-coded active states per section */
+  .chip-section[data-key="instrument"] .filter-chip.active { background: var(--teal); border-color: var(--teal); }
+  .chip-section[data-key="day"] .filter-chip.active { background: var(--gold); border-color: var(--gold); }
+  .chip-section[data-key="duration"] .filter-chip.active { background: var(--accent); border-color: var(--accent); }
+
+  /* Dimmed chips = valid but not matching current other filters */
+  .filter-chip.dimmed { opacity: 0.35; }
+
+  /* Show-more toggle */
+  .chip-show-more {
+    padding: 3px 9px;
+    border: 1.5px dashed var(--rule);
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    background: transparent;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.1s;
+    white-space: nowrap;
+  }
+  .chip-show-more:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ── BRANCH / AGE ── */
+  .static-filter-section {
+    border-bottom: 1px solid var(--rule);
+    padding: 10px 12px;
+  }
+  .static-filter-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 7px;
+  }
+  .branch-filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .branch-filter-chip {
+    padding: 4px 8px;
+    text-align: center;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink);
+    border: 1.5px solid var(--rule);
+    background: transparent;
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .branch-filter-chip:hover { border-color: var(--ink); }
+  .branch-filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .age-filter-wrap { display: flex; align-items: center; gap: 8px; }
+  .age-filter-label-text { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .age-filter-input {
+    width: 52px;
+    padding: 4px 6px;
+    border: 1.5px solid var(--rule);
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+  .age-filter-input:focus { border-color: var(--ink); }
+  .age-clear-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: none;
+    text-decoration: underline;
+  }
+  .age-clear-btn.visible { display: block; }
+
+  /* ── MAIN CONTENT ── */
+  .avail-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 28px;
+  }
+
+  /* ── RESULTS BAR ── */
+  .results-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule);
+  }
+  #result-count { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+  .sort-group { display: flex; gap: 4px; align-items: center; }
+  .sort-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+  .sort-btn {
+    padding: 3px 8px; border-radius: 3px; border: 1.5px solid var(--rule);
+    background: transparent; font-family: 'DM Mono', monospace; font-size: 10px;
+    cursor: pointer; color: var(--muted); transition: all 0.1s;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .sort-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── ACTIVE FILTER CHIPS ── */
+  #active-filters {
+    display: none;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 0 0 12px;
+  }
+  #active-filters.visible { display: flex; }
+  .active-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 10px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .active-chip:hover { opacity: 0.75; }
+  .active-chip-x { font-size: 12px; line-height: 1; opacity: 0.7; }
+  .active-chip[data-key="instrument"] { background: var(--teal); color: #fff; }
+  .active-chip[data-key="day"] { background: var(--gold); color: #fff; }
+  .active-chip[data-key="instructor"] { background: var(--accent); color: #fff; }
+  .active-chip[data-key="duration"] { background: var(--ink); color: #fff; }
+  .active-chip[data-key="branch"] { background: var(--muted); color: #fff; }
+  .active-chip[data-key="studentAge"] { background: var(--muted); color: #fff; }
+
+  /* ── TABLE ── */
+  #results-table { width: 100%; border-collapse: collapse; }
+  #results-table thead th {
+    font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); text-align: left;
+    padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap;
+  }
+  #results-table tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+  #results-table tbody tr:hover { background: var(--paper-dark); }
+  #results-table tbody td { padding: 9px 10px; vertical-align: middle; }
+  .td-instrument { font-family: 'DM Serif Display', serif; font-size: 15px; }
+  .td-instructor { font-weight: 500; }
+  .td-dept { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .td-day { font-weight: 500; white-space: nowrap; }
+  .td-time { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; }
+  .slot-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .slot-badge { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 2px; white-space: nowrap; }
+  .badge-30 { background: var(--gold-soft); color: var(--gold); }
+  .badge-45 { background: var(--teal-soft); color: var(--teal); }
+  .badge-60 { background: var(--accent-soft); color: var(--accent); }
+  .window-note { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .branch-pills { display: flex; gap: 3px; flex-wrap: wrap; }
+  .branch-pill { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 5px; border-radius: 2px; background: var(--paper-dark); color: var(--muted); border: 1px solid var(--rule); }
+  .age-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+  .group-header td { padding: 14px 10px 4px; font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); border-bottom: none !important; }
+  .group-header td span { font-style: italic; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-left: 8px; font-weight: 300; }
+  #empty-state { display: none; text-align: center; padding: 80px 20px; }
+  #empty-state.visible { display: block; }
+  #empty-state p { color: var(--muted); font-size: 15px; margin-bottom: 6px; }
+  #empty-state small { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--rule); }
+
+  /* ── TEACHERS PANEL ── */
+  #panel-teachers { overflow-y: auto; padding: 28px 32px; }
+  .teachers-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .teachers-header h2 { font-family: 'DM Serif Display', serif; font-size: 20px; }
+  .teachers-header p { font-size: 12px; color: var(--muted); font-style: italic; }
+  .save-indicator { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--teal); opacity: 0; transition: opacity 0.3s; }
+  .save-indicator.show { opacity: 1; }
+  #teacher-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; max-width: 900px; }
+  #teacher-table thead th {
+    font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); text-align: left;
+    padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap;
+  }
+  #teacher-table tbody tr { border-bottom: 1px solid var(--rule); }
+  #teacher-table tbody tr:hover { background: var(--paper-dark); }
+  #teacher-table tbody td { padding: 7px 10px; vertical-align: middle; }
+  .td-tname { font-weight: 500; font-size: 13px; }
+  .branch-checks { display: flex; gap: 10px; align-items: center; }
+  .branch-check { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink); cursor: pointer; user-select: none; }
+  .branch-check input { accent-color: var(--ink); cursor: pointer; }
+  .age-input {
+    width: 52px; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper);
+    color: var(--ink); outline: none; text-align: center;
+  }
+  .age-input:focus { border-color: var(--ink); }
+  .notes-input {
+    width: 100%; padding: 3px 7px; border: 1px solid transparent; border-radius: 3px;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; background: transparent;
+    color: var(--ink); outline: none; resize: none; min-width: 160px;
+  }
+  .notes-input:hover { border-color: var(--rule); background: var(--paper); }
+  .notes-input:focus { border-color: var(--ink); background: var(--paper); }
+  .profile-actions { display: flex; gap: 8px; align-items: center; }
+  .profile-btn {
+    padding: 5px 12px; border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px;
+    background: transparent; border: 1.5px solid var(--rule); color: var(--muted);
+  }
+  .profile-btn:hover { border-color: var(--ink); color: var(--ink); }
+  #profile-import-input { display: none; }
+
+  /* ── REFRESH BUTTON ── */
+  #refresh-btn {
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: transparent;
+    color: #a0c0e0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-left: auto;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  #refresh-btn:hover { border-color: #f5c518; color: #f5c518; }
+  #refresh-btn:disabled { opacity: 0.3; cursor: default; }
+  #refresh-btn.spinning svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SETUP SCREEN ── */
+  #setup-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .setup-card {
+    background: #fff;
+    border: 1.5px solid var(--rule);
+    border-radius: 8px;
+    padding: 36px 40px;
+    max-width: 560px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .setup-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 6px; }
+  .setup-card .setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+  .setup-steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+  .setup-step { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--teal); color: #fff;
+    font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .step-text { font-size: 13px; line-height: 1.55; color: var(--ink); }
+  .step-text strong { font-weight: 500; }
+  .step-text code {
+    font-family: 'DM Mono', monospace; font-size: 11px; background: var(--paper-dark);
+    padding: 1px 5px; border-radius: 3px; color: var(--teal);
+  }
+  .setup-divider { border: none; border-top: 1.5px solid var(--rule); margin: 24px 0; }
+  .setup-url-label {
+    font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 7px;
+  }
+  #sheet-url-input, #teachers-url-input {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper);
+    color: var(--ink); outline: none; transition: border-color 0.15s; margin-bottom: 12px;
+  }
+  #sheet-url-input:focus { border-color: var(--teal); }
+  #sheet-url-input.error, #teachers-url-input.error { border-color: #c0392b; }
+  #url-error { font-size: 12px; color: #c0392b; margin-bottom: 10px; display: none; }
+  #url-error.visible { display: block; }
+  #connect-btn {
+    width: 100%; padding: 10px; background: var(--teal); color: #fff; border: none;
+    border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+    transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  #connect-btn:hover { opacity: 0.85; }
+  #connect-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── LOADING OVERLAY ── */
+  #loading-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(244,248,252,0.85);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+  }
+  #loading-overlay.visible { display: flex; }
+  .loading-spinner {
+    width: 32px; height: 32px; border: 3px solid var(--rule);
+    border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  .loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  /* ── TEACHER SHEET TABLE ── */
+  .teacher-sheet-note {
+    font-size: 12px; color: var(--muted); font-style: italic;
+    margin-bottom: 16px; line-height: 1.5;
+  }
+  .teacher-sheet-note a { color: var(--teal); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-left">
+    <h1>SFCMC <span>Lesson Finder</span></h1>
+    <span id="status-line">No file loaded</span>
+  </div>
+
+  <div id="header-search-wrap">
+    <svg class="header-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="header-search" type="text" placeholder="Instrument, day, or teacher name…" autocomplete="off" disabled>
+    <div id="search-dropdown"></div>
+  </div>
+
+  <button id="refresh-btn" disabled title="Refresh data from Google Sheets">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Refresh Data
+  </button>
+</div>
+
+<!-- PAGE -->
+<div id="page">
+
+  <!-- TAB BAR -->
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="availability">Availability</button>
+    <button class="tab-btn" data-tab="teachers">Teachers</button>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <span class="loading-text" id="loading-text">Loading from Google Sheets…</span>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <h2>Connect to Google Sheets</h2>
+      <p class="setup-sub">This app pulls schedule and teacher data live from a Google Sheet you control. One-time setup takes about 2 minutes.</p>
+
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>Create a Google Sheet</strong> with two tabs: one for your schedule export, one for teacher profiles (columns: Name, Branches, AgeMin, Notes).
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Publish each tab separately:</strong> File → Share → Publish to web → select each tab individually → CSV → Publish. You'll get two separate URLs.
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Paste both URLs below.</strong> Teachers URL is optional — leave blank if you don't have one yet.
+          </div>
+        </div>
+      </div>
+
+      <hr class="setup-divider">
+
+      <label class="setup-url-label" for="sheet-url-input">Schedule Tab — Published CSV URL</label>
+      <input id="sheet-url-input" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv" autocomplete="off" spellcheck="false">
+      <label class="setup-url-label" for="teachers-url-input" style="margin-top:10px">Teachers Tab — Published CSV URL <span style="font-size:10px;color:var(--muted)">(optional)</span></label>
+      <input id="teachers-url-input" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv" autocomplete="off" spellcheck="false">
+      <div id="url-error"></div>
+      <button id="connect-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Connect &amp; Load
+      </button>
+    </div>
+  </div>
+
+  <!-- AVAILABILITY PANEL -->
+  <div id="panel-availability" class="tab-panel">
+    <aside>
+      <div class="reset-wrap">
+        <button class="reset-btn" id="reset-btn" disabled>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset all filters
+        </button>
+      </div>
+
+      <!-- Chip sections built by JS -->
+      <div id="chip-filters"></div>
+
+      <div class="static-filter-section">
+        <span class="static-filter-label">Branch</span>
+        <div class="branch-filter-chips">
+          <button class="branch-filter-chip" data-branch="Richmond">Richmond</button>
+          <button class="branch-filter-chip" data-branch="Mission">Mission</button>
+          <button class="branch-filter-chip" data-branch="Online">Online</button>
+          <button class="branch-filter-chip" data-branch="Home Studio">Home</button>
+        </div>
+      </div>
+      <div class="static-filter-section">
+        <span class="static-filter-label">Student Age</span>
+        <div class="age-filter-wrap">
+          <span class="age-filter-label-text">Age</span>
+          <input class="age-filter-input" id="student-age-input" type="number" min="1" max="99" placeholder="—">
+          <button class="age-clear-btn" id="age-clear-btn">Clear</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="avail-main">
+      <div class="results-bar">
+        <span id="result-count"></span>
+        <div class="sort-group">
+          <span class="sort-label">Group by</span>
+          <button class="sort-btn active" data-sort="instrument">Instrument</button>
+          <button class="sort-btn" data-sort="day">Day</button>
+          <button class="sort-btn" data-sort="instructor">Instructor</button>
+        </div>
+      </div>
+      <div id="active-filters"></div>
+      <table id="results-table">
+        <thead><tr>
+          <th>Instrument</th><th>Instructor</th><th>Dept</th>
+          <th>Day</th><th>Time</th><th>Available Slots</th><th>Branch</th><th>Age Min</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div id="empty-state">
+        <p>No slots match these filters.</p>
+        <small>Try resetting filters or loading a new export.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEACHERS PANEL -->
+  <div id="panel-teachers" class="tab-panel">
+    <div class="teachers-header">
+      <div>
+        <h2>Teacher Profiles</h2>
+        <p>Pulled from the <em>Teachers</em> tab of your Google Sheet. Edit the sheet and click Refresh Data to update.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="save-indicator" id="save-indicator"></span>
+      </div>
+    </div>
+    <table id="teacher-table">
+      <thead><tr>
+        <th style="width:180px">Instructor</th>
+        <th>Branch(es)</th>
+        <th>Age Min</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody id="teacher-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── Constants & state ──────────────────────────────────────────────────────
+const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
+const SHEET_URL_KEY = 'sfcmcSheetUrl';
+
+// ── Hardcoded sheet URLs ───────────────────────────────────────────────────
+// To update: replace these URLs with new ones from File → Share → Publish to web
+const DEFAULT_SCHEDULE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?output=csv';
+const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?gid=2113258322&single=true&output=csv';
+const SKIP_SUBJECTS = new Set([
+  'Group Class','Group Classes','Room Reservation','Hold','No Subject',
+  'This instrument is already added.','Accompanist','Collegium Musicum',
+  'Feldenkrais','Embodiment and Expression','Music Therapy for Special Needs',
+  'Ear Training','Eartraining','Sight Singing'
+]);
+const DAY_ORDER = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+let allRecords = [];
+let teacherProfiles = {}; // { name: { branches:[], ageMin:'', notes:'' } }
+let filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+let filterBranches = new Set();
+let filterStudentAge = '';
+let sortBy = 'instrument';
+let activeTab = 'availability';
+let sheetBaseUrl = '';
+const chipShowLimits = { instrument: 10, instructor: 8, day: 7, duration: 4 };
+const chipShowAll = { instrument: false, instructor: false, day: false, duration: false };
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function parseMins(d) {
+  if (!d) return 0;
+  const s = String(d);
+  const hrs = s.match(/(\d+)\s*hr/), mins = s.match(/(\d+)\s*min/);
+  return (hrs ? parseInt(hrs[1])*60 : 0) + (mins ? parseInt(mins[1]) : 0);
+}
+function getSlots(mins) {
+  const s = [];
+  if (mins >= 30) s.push(30);
+  if (mins >= 45) s.push(45);
+  if (mins >= 60) s.push(60);
+  return s;
+}
+function timeToSort(t) {
+  if (!t) return '99:99';
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return '99:99';
+  let h = parseInt(m[1]);
+  const ap = m[3].toUpperCase();
+  if (ap==='PM' && h!==12) h+=12;
+  if (ap==='AM' && h===12) h=0;
+  return String(h).padStart(2,'0')+':'+m[2];
+}
+function hasActiveFilters() {
+  return Object.values(filters).some(s => s.size > 0) || filterBranches.size > 0 || filterStudentAge !== '';
+}
+
+// ── Google Sheets URL helpers ──────────────────────────────────────────────
+function isGoogleSheetUrl(url) {
+  return url && url.includes('docs.google.com/spreadsheets');
+}
+
+async function fetchCsvUrl(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await resp.text();
+}
+
+function parseCsv(csvText) {
+  const wb = XLSX.read(csvText, { type: 'string' });
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+}
+
+// ── Process schedule rows ──────────────────────────────────────────────────
+function processRows(rows) {
+  const records = [];
+  const header = rows[0].map(h => String(h||'').trim());
+  const idx = {
+    dept:       header.findIndex(h => /department/i.test(h)),
+    subject:    header.findIndex(h => /subject/i.test(h)),
+    instructor: header.findIndex(h => /instructor/i.test(h)),
+    day:        header.findIndex(h => /^day$/i.test(h)),
+    time:       header.findIndex(h => /^time$/i.test(h)),
+    duration:   header.findIndex(h => /duration/i.test(h)),
+    date:       header.findIndex(h => /^date$/i.test(h)),
+  };
+  const get = (row,k) => idx[k]>=0 ? String(row[idx[k]]||'').trim() : '';
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const instructor = get(row,'instructor');
+    if (!instructor || instructor==='Reserved Room' || instructor==='SCHEDULE UNAVAILABLE') continue;
+    const subjectRaw = get(row,'subject');
+    if (!subjectRaw || subjectRaw.includes('Room Reservation')) continue;
+    const mins = parseMins(get(row,'duration'));
+    if (mins < 30) continue;
+    const subjects = subjectRaw.split(';').map(s=>s.trim()).filter(s=>s&&!SKIP_SUBJECTS.has(s));
+    for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
+      records.push({ department: get(row,'dept'), instrument, instructor,
+        day: get(row,'day'), time: get(row,'time'), minutes: mins,
+        date: get(row,'date'), slots: getSlots(mins) });
+    }
+  }
+  return records;
+}
+
+// ── Process teacher rows ───────────────────────────────────────────────────
+function processTeacherRows(rows) {
+  const profiles = {};
+  if (rows.length < 2) return profiles;
+  const header = rows[0].map(h => String(h||'').trim().toLowerCase());
+  const iName     = header.findIndex(h => /^name$/i.test(h));
+  const iBranches = header.findIndex(h => /branch/i.test(h));
+  const iAge      = header.findIndex(h => /age/i.test(h));
+  const iNotes    = header.findIndex(h => /notes?/i.test(h));
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const name = iName >= 0 ? String(row[iName]||'').trim() : '';
+    if (!name) continue;
+    const branchRaw = iBranches >= 0 ? String(row[iBranches]||'').trim() : '';
+    const branches = branchRaw ? branchRaw.split(/[,;]+/).map(b => b.trim()).filter(Boolean) : [];
+    profiles[name] = {
+      branches,
+      ageMin: iAge >= 0 ? String(row[iAge]||'').trim() : '',
+      notes:  iNotes >= 0 ? String(row[iNotes]||'').trim() : '',
+    };
+  }
+  return profiles;
+}
+
+function getProfile(name) {
+  return teacherProfiles[name] || { branches: [], ageMin: '', notes: '' };
+}
+
+// ── Loading UI ─────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg || 'Loading from Google Sheets…';
+  document.getElementById('loading-overlay').classList.add('visible');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('visible');
+}
+
+// ── Main data load ─────────────────────────────────────────────────────────
+async function loadFromSheet(urls) {
+  showLoading('Fetching schedule data…');
+  try {
+    const scheduleCsv = await fetchCsvUrl(urls.scheduleUrl);
+    const scheduleRows = parseCsv(scheduleCsv);
+
+    showLoading('Fetching teacher profiles…');
+    let teacherRows = [];
+    if (urls.teachersUrl) {
+      try {
+        const teacherCsv = await fetchCsvUrl(urls.teachersUrl);
+        teacherRows = parseCsv(teacherCsv);
+      } catch (e) {
+        console.warn('Teachers tab failed to load:', e.message);
+      }
+    }
+
+    allRecords = processRows(scheduleRows);
+    teacherProfiles = processTeacherRows(teacherRows);
+
+    filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+    filterBranches = new Set();
+    filterStudentAge = '';
+    Object.keys(chipShowAll).forEach(k => chipShowAll[k] = false);
+
+    hideLoading();
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    showApp(`Refreshed ${timeStr}`);
+    return true;
+  } catch (err) {
+    hideLoading();
+    return err;
+  }
+}
+
+// ── Connect button ─────────────────────────────────────────────────────────
+document.getElementById('connect-btn').addEventListener('click', async () => {
+  const scheduleUrl = document.getElementById('sheet-url-input').value.trim();
+  const teachersUrl = document.getElementById('teachers-url-input').value.trim();
+  const errEl = document.getElementById('url-error');
+  const input = document.getElementById('sheet-url-input');
+  errEl.classList.remove('visible');
+  input.classList.remove('error');
+
+  if (!scheduleUrl) {
+    errEl.textContent = 'Please enter a Schedule URL.';
+    errEl.classList.add('visible');
+    input.classList.add('error');
+    return;
+  }
+  if (!isGoogleSheetUrl(scheduleUrl)) {
+    errEl.textContent = 'That doesn\'t look like a Google Sheets URL.';
+    errEl.classList.add('visible');
+    input.classList.add('error');
+    return;
+  }
+
+  const urls = { scheduleUrl, teachersUrl: teachersUrl || null };
+
+  document.getElementById('connect-btn').disabled = true;
+  const result = await loadFromSheet(urls);
+  document.getElementById('connect-btn').disabled = false;
+
+  if (result === true) {
+    sheetBaseUrl = urls;
+    localStorage.setItem(SHEET_URL_KEY, JSON.stringify(urls));
+  } else {
+    errEl.textContent = `Could not load: ${result.message}. Make sure the sheet is published to web.`;
+    errEl.classList.add('visible');
+    input.classList.add('error');
+  }
+});
+
+// ── Refresh button ─────────────────────────────────────────────────────────
+document.getElementById('refresh-btn').addEventListener('click', async () => {
+  if (!sheetBaseUrl) return;
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  const result = await loadFromSheet(sheetBaseUrl);
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+  if (result !== true) {
+    alert('Refresh failed: ' + result.message);
+  }
+});
+
+// ── Auto-restore saved sheet URL ───────────────────────────────────────────
+(function init() {
+  // Always auto-load from hardcoded URLs — no setup needed for end users
+  sheetBaseUrl = { scheduleUrl: DEFAULT_SCHEDULE_URL, teachersUrl: DEFAULT_TEACHERS_URL };
+  loadFromSheet(sheetBaseUrl).then(result => {
+    if (result !== true) {
+      // Only show setup screen if auto-load fails (e.g. sheet unpublished)
+      document.getElementById('sheet-url-input').value = DEFAULT_SCHEDULE_URL;
+      document.getElementById('teachers-url-input').value = DEFAULT_TEACHERS_URL;
+      document.getElementById('url-error').textContent = 'Could not load data — the sheet may need to be re-published. Contact your administrator.';
+      document.getElementById('url-error').classList.add('visible');
+    }
+  });
+})();
+
+// ── Filtering & sorting ────────────────────────────────────────────────────
+function getFiltered() {
+  let r = allRecords;
+  if (filters.instructor.size) r = r.filter(x => filters.instructor.has(x.instructor));
+  if (filters.instrument.size) r = r.filter(x => filters.instrument.has(x.instrument));
+  if (filters.day.size)        r = r.filter(x => filters.day.has(x.day));
+  if (filters.duration.size)   r = r.filter(x => x.slots.some(s => filters.duration.has(s)));
+  if (filterBranches.size > 0) {
+    r = r.filter(x => {
+      const prof = getProfile(x.instructor);
+      return prof.branches.some(b => filterBranches.has(b));
+    });
+  }
+  if (filterStudentAge !== '') {
+    const age = parseInt(filterStudentAge);
+    if (!isNaN(age)) {
+      r = r.filter(x => {
+        const prof = getProfile(x.instructor);
+        if (!prof.ageMin) return true;
+        return parseInt(prof.ageMin) <= age;
+      });
+    }
+  }
+  return [...r].sort((a,b) => {
+    if (sortBy==='instrument')
+      return a.instrument.localeCompare(b.instrument) || DAY_ORDER.indexOf(a.day)-DAY_ORDER.indexOf(b.day) || timeToSort(a.time).localeCompare(timeToSort(b.time));
+    if (sortBy==='day')
+      return DAY_ORDER.indexOf(a.day)-DAY_ORDER.indexOf(b.day) || timeToSort(a.time).localeCompare(timeToSort(b.time)) || a.instructor.localeCompare(b.instructor);
+    return a.instructor.localeCompare(b.instructor) || DAY_ORDER.indexOf(a.day)-DAY_ORDER.indexOf(b.day) || timeToSort(a.time).localeCompare(timeToSort(b.time));
+  });
+}
+
+function getAvailableValues(field) {
+  const base = allRecords.filter(x => {
+    if (field!=='instructor' && filters.instructor.size && !filters.instructor.has(x.instructor)) return false;
+    if (field!=='instrument' && filters.instrument.size && !filters.instrument.has(x.instrument)) return false;
+    if (field!=='day'        && filters.day.size        && !filters.day.has(x.day)) return false;
+    if (field!=='duration'   && filters.duration.size   && !x.slots.some(s=>filters.duration.has(s))) return false;
+    return true;
+  });
+  if (field === 'duration') {
+    const s = new Set();
+    base.forEach(x => x.slots.forEach(d => s.add(d)));
+    return s;
+  }
+  const s = new Set();
+  base.forEach(x => {
+    const v = field==='instructor'?x.instructor : field==='instrument'?x.instrument : x.day;
+    if (v) s.add(v);
+  });
+  return s;
+}
+
+// ── Build chip sidebar ─────────────────────────────────────────────────────
+function buildChipSidebar() {
+  const container = document.getElementById('chip-filters');
+  container.innerHTML = '';
+
+  const sections = [
+    { key: 'instrument', label: 'Subject' },
+    { key: 'day',        label: 'Day' },
+    { key: 'duration',   label: 'Lesson Length' },
+    { key: 'instructor', label: 'Instructor' },
+  ];
+
+  sections.forEach(({ key, label }) => {
+    const section = document.createElement('div');
+    section.className = 'chip-section';
+    section.dataset.key = key;
+    if (key === 'instructor') section.classList.add('collapsed');
+    if (filters[key].size) section.classList.add('has-selection');
+
+    const selCount = filters[key].size;
+    section.innerHTML = `
+      <div class="chip-section-head">
+        <span class="chip-section-title">${label}</span>
+        <span class="chip-section-right">
+          <span class="chip-sel-badge ${selCount ? 'visible' : ''}">${selCount || ''}</span>
+          <svg class="cs-arrow" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3L5 7L9 3"/></svg>
+        </span>
+      </div>
+      <div class="chip-section-body" id="chips-${key}"></div>
+    `;
+    container.appendChild(section);
+    section.querySelector('.chip-section-head').addEventListener('click', () => {
+      section.classList.toggle('collapsed');
+    });
+  });
+
+  updateChipSidebar();
+}
+
+function updateChipSidebar() {
+  const sections = [
+    { key: 'instrument', sorter: (a,b) => a.localeCompare(b) },
+    { key: 'day',        sorter: (a,b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b) },
+    { key: 'duration',   sorter: (a,b) => a - b },
+    { key: 'instructor', sorter: (a,b) => a.localeCompare(b) },
+  ];
+
+  sections.forEach(({ key, sorter }) => {
+    const container = document.getElementById('chips-'+key);
+    if (!container) return;
+
+    const allVals = key === 'duration'
+      ? [30, 45, 60].filter(d => allRecords.some(x => x.slots.includes(d)))
+      : [...new Set(allRecords.map(x => key==='instructor'?x.instructor : key==='instrument'?x.instrument : x.day))].sort(sorter);
+
+    const available = getAvailableValues(key);
+    const limit = chipShowAll[key] ? Infinity : chipShowLimits[key];
+    const showValues = allVals.slice(0, limit);
+    const remaining = allVals.length - showValues.length;
+
+    let html = '';
+    showValues.forEach(val => {
+      const sv = String(val);
+      const isActive = filters[key].has(val);
+      const isAvailable = available.has(val);
+      const dimmed = !isActive && !isAvailable && hasActiveFilters();
+      const label = key === 'duration' ? val + ' min' : escHtml(sv);
+      html += `<span class="filter-chip ${isActive?'active':''} ${dimmed?'dimmed':''}" data-key="${key}" data-value="${escHtml(sv)}">${label}</span>`;
+    });
+    if (remaining > 0) {
+      html += `<span class="chip-show-more" data-key="${key}">+${remaining} more</span>`;
+    }
+    container.innerHTML = html;
+
+    const section = container.closest('.chip-section');
+    const selCount = filters[key].size;
+    const badge = section.querySelector('.chip-sel-badge');
+    badge.textContent = selCount || '';
+    badge.classList.toggle('visible', selCount > 0);
+    section.classList.toggle('has-selection', selCount > 0);
+  });
+
+  document.getElementById('reset-btn').disabled = !hasActiveFilters();
+}
+
+document.getElementById('chip-filters').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip');
+  if (chip) {
+    const key = chip.dataset.key;
+    const rawVal = chip.dataset.value;
+    const val = key === 'duration' ? parseInt(rawVal) : rawVal;
+    if (filters[key].has(val)) filters[key].delete(val);
+    else filters[key].add(val);
+    renderTable();
+    updateChipSidebar();
+    return;
+  }
+  const more = e.target.closest('.chip-show-more');
+  if (more) {
+    chipShowAll[more.dataset.key] = true;
+    updateChipSidebar();
+  }
+});
+
+// ── Header search autocomplete ─────────────────────────────────────────────
+let ddHighlight = -1;
+
+function buildSearchDropdown(query) {
+  const dd = document.getElementById('search-dropdown');
+  const q = query.trim().toLowerCase();
+  if (!q || allRecords.length === 0) { dd.classList.remove('open'); return; }
+
+  const instruments = [...new Set(allRecords.map(r => r.instrument))].sort();
+  const days = [...new Set(allRecords.map(r => r.day))].sort((a,b) => DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
+  const instructors = [...new Set(allRecords.map(r => r.instructor))].sort();
+
+  const matchInstruments = instruments.filter(v => v.toLowerCase().includes(q));
+  const matchDays = days.filter(v => v.toLowerCase().includes(q));
+  const matchInstructors = instructors.filter(v => v.toLowerCase().includes(q));
+
+  const total = matchInstruments.length + matchDays.length + matchInstructors.length;
+  if (total === 0) {
+    dd.innerHTML = '<div class="sd-empty">No matches found</div>';
+    dd.classList.add('open');
+    return;
+  }
+
+  let html = '';
+  if (matchInstruments.length) {
+    html += `<div class="sd-group-label">Subject</div>`;
+    matchInstruments.slice(0, 5).forEach(v => {
+      const active = filters.instrument.has(v);
+      const count = allRecords.filter(r => r.instrument === v).length;
+      html += `<div class="sd-item ${active?'already-active':''}" data-key="instrument" data-value="${escHtml(v)}">
+        <span class="sd-item-name">${escHtml(v)}</span>
+        <span class="sd-item-meta">${count} slot${count!==1?'s':''}</span>
+      </div>`;
+    });
+  }
+  if (matchDays.length) {
+    html += `<div class="sd-group-label">Day</div>`;
+    matchDays.forEach(v => {
+      const active = filters.day.has(v);
+      const count = allRecords.filter(r => r.day === v).length;
+      html += `<div class="sd-item ${active?'already-active':''}" data-key="day" data-value="${escHtml(v)}">
+        <span class="sd-item-name">${escHtml(v)}</span>
+        <span class="sd-item-meta">${count} slot${count!==1?'s':''}</span>
+      </div>`;
+    });
+  }
+  if (matchInstructors.length) {
+    html += `<div class="sd-group-label">Instructor</div>`;
+    matchInstructors.slice(0, 6).forEach(v => {
+      const active = filters.instructor.has(v);
+      const count = allRecords.filter(r => r.instructor === v).length;
+      html += `<div class="sd-item ${active?'already-active':''}" data-key="instructor" data-value="${escHtml(v)}">
+        <span class="sd-item-name">${escHtml(v)}</span>
+        <span class="sd-item-meta">${count} slot${count!==1?'s':''}</span>
+      </div>`;
+    });
+  }
+
+  dd.innerHTML = html;
+  dd.classList.add('open');
+  ddHighlight = -1;
+}
+
+function selectSearchItem(key, value) {
+  const val = key === 'duration' ? parseInt(value) : value;
+  filters[key].add(val);
+  document.getElementById('header-search').value = '';
+  document.getElementById('search-dropdown').classList.remove('open');
+  ddHighlight = -1;
+  renderTable();
+  updateChipSidebar();
+}
+
+document.getElementById('header-search').addEventListener('input', e => buildSearchDropdown(e.target.value));
+document.getElementById('header-search').addEventListener('keydown', e => {
+  const dd = document.getElementById('search-dropdown');
+  const items = [...dd.querySelectorAll('.sd-item:not(.already-active)')];
+  if (!dd.classList.contains('open') || !items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); ddHighlight = Math.min(ddHighlight+1, items.length-1); items.forEach((el,i)=>el.classList.toggle('highlighted',i===ddHighlight)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); ddHighlight = Math.max(ddHighlight-1, 0); items.forEach((el,i)=>el.classList.toggle('highlighted',i===ddHighlight)); }
+  else if (e.key === 'Enter' && ddHighlight >= 0) { const el = items[ddHighlight]; selectSearchItem(el.dataset.key, el.dataset.value); }
+  else if (e.key === 'Escape') { dd.classList.remove('open'); }
+});
+document.getElementById('search-dropdown').addEventListener('click', e => {
+  const item = e.target.closest('.sd-item');
+  if (item && !item.classList.contains('already-active')) selectSearchItem(item.dataset.key, item.dataset.value);
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('header-search-wrap').contains(e.target))
+    document.getElementById('search-dropdown').classList.remove('open');
+});
+
+// ── Render table ───────────────────────────────────────────────────────────
+function renderTable() {
+  const rows = getFiltered();
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+  const af = document.getElementById('active-filters');
+  const count = document.getElementById('result-count');
+
+  // Active filter chips
+  let afHtml = '';
+  ['instrument','day','instructor','duration'].forEach(key => {
+    filters[key].forEach(val => {
+      const label = key==='duration' ? val+' min' : escHtml(String(val));
+      afHtml += `<span class="active-chip" data-key="${key}" data-value="${escHtml(String(val))}">${label} <span class="active-chip-x">×</span></span>`;
+    });
+  });
+  filterBranches.forEach(b => {
+    afHtml += `<span class="active-chip" data-key="branch" data-value="${escHtml(b)}">${escHtml(b)} <span class="active-chip-x">×</span></span>`;
+  });
+  if (filterStudentAge) {
+    afHtml += `<span class="active-chip" data-key="studentAge" data-value="${escHtml(filterStudentAge)}">Age: ${escHtml(filterStudentAge)} <span class="active-chip-x">×</span></span>`;
+  }
+  af.innerHTML = afHtml;
+  af.classList.toggle('visible', afHtml !== '');
+
+  count.textContent = `${rows.length} slot${rows.length!==1?'s':''}`;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+
+  let html = '';
+  let lastGroup = null;
+  rows.forEach(r => {
+    const groupVal = sortBy==='instrument' ? r.instrument : sortBy==='day' ? r.day : r.instructor;
+    if (groupVal !== lastGroup) {
+      const count = rows.filter(x => (sortBy==='instrument'?x.instrument:sortBy==='day'?x.day:x.instructor) === groupVal).length;
+      html += `<tr class="group-header"><td colspan="8">${escHtml(groupVal)} <span>${count} slot${count!==1?'s':''}</span></td></tr>`;
+      lastGroup = groupVal;
+    }
+    const prof = getProfile(r.instructor);
+    const branchPills = prof.branches.length
+      ? prof.branches.map(b=>`<span class="branch-pill">${escHtml(b)}</span>`).join('')
+      : '<span style="color:var(--rule);font-size:11px">—</span>';
+    const ageBadge = prof.ageMin ? `<span class="age-badge">${escHtml(prof.ageMin)}+</span>` : '';
+    const slotBadges = r.slots.map(s=>`<span class="slot-badge badge-${s}">${s} min</span>`).join('');
+    html += `<tr>
+      <td class="td-instrument">${escHtml(r.instrument)}</td>
+      <td class="td-instructor">${escHtml(r.instructor)}</td>
+      <td class="td-dept">${escHtml(r.department)}</td>
+      <td class="td-day">${escHtml(r.day)}</td>
+      <td class="td-time">${escHtml(r.time)}</td>
+      <td><div class="slot-badges">${slotBadges}</div></td>
+      <td><div class="branch-pills">${branchPills}</div></td>
+      <td>${ageBadge}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// Active filter chip removal
+document.getElementById('active-filters').addEventListener('click', e => {
+  const chip = e.target.closest('.active-chip');
+  if (!chip) return;
+  const key = chip.dataset.key, val = chip.dataset.value;
+  if (key === 'branch') { filterBranches.delete(val); document.querySelector(`.branch-filter-chip[data-branch="${CSS.escape(val)}"]`)?.classList.remove('active'); }
+  else if (key === 'studentAge') { filterStudentAge=''; const ai=document.getElementById('student-age-input'); if(ai) ai.value=''; document.getElementById('age-clear-btn').classList.remove('visible'); }
+  else { const v = key==='duration' ? parseInt(val) : val; filters[key].delete(v); }
+  renderTable();
+  updateChipSidebar();
+});
+
+// ── Render teachers ────────────────────────────────────────────────────────
+function renderTeachers() {
+  const names = [...new Set(allRecords.map(r => r.instructor))].sort();
+  if (!names.length) {
+    document.getElementById('teacher-body').innerHTML = '<tr><td colspan="4" style="padding:20px;color:var(--muted);font-style:italic">No data loaded yet.</td></tr>';
+    return;
+  }
+
+  const rows = names.map(name => {
+    const p = getProfile(name);
+    const branchList = p.branches.length ? escHtml(p.branches.join(', ')) : '<span style="color:var(--rule)">—</span>';
+    const ageMin = p.ageMin || '<span style="color:var(--rule)">—</span>';
+    const notes = p.notes || '<span style="color:var(--rule);font-style:italic">—</span>';
+    return `<tr>
+      <td class="td-tname">${escHtml(name)}</td>
+      <td>${branchList}</td>
+      <td><span class="age-badge">${ageMin}</span></td>
+      <td style="font-size:12px;color:var(--ink)">${notes}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('teacher-body').innerHTML = rows;
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id==='panel-'+tab));
+  if (tab==='teachers') renderTeachers();
+}
+
+// ── Show app ───────────────────────────────────────────────────────────────
+function showApp(statusMsg) {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('tab-bar').classList.add('visible');
+  document.getElementById('header-search').disabled = false;
+  document.getElementById('refresh-btn').disabled = false;
+  buildChipSidebar();
+  renderTable();
+  switchTab('availability');
+  document.getElementById('status-line').textContent = statusMsg || 'Loaded';
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+document.getElementById('reset-btn').addEventListener('click', () => {
+  filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+  filterBranches = new Set();
+  filterStudentAge = '';
+  Object.keys(chipShowAll).forEach(k => chipShowAll[k] = false);
+  const ai = document.getElementById('student-age-input');
+  if (ai) ai.value = '';
+  document.getElementById('age-clear-btn').classList.remove('visible');
+  document.querySelectorAll('.branch-filter-chip').forEach(b => b.classList.remove('active'));
+  renderTable();
+  updateChipSidebar();
+});
+
+// ── Sort buttons ───────────────────────────────────────────────────────────
+document.querySelector('.sort-group').addEventListener('click', e => {
+  const btn = e.target.closest('.sort-btn');
+  if (!btn) return;
+  sortBy = btn.dataset.sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b===btn));
+  renderTable();
+});
+
+// ── Tab bar ────────────────────────────────────────────────────────────────
+document.getElementById('tab-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (btn) switchTab(btn.dataset.tab);
+});
+
+// ── Branch chips ───────────────────────────────────────────────────────────
+document.querySelector('.branch-filter-chips').addEventListener('click', e => {
+  const btn = e.target.closest('.branch-filter-chip');
+  if (!btn) return;
+  const branch = btn.dataset.branch;
+  if (filterBranches.has(branch)) { filterBranches.delete(branch); btn.classList.remove('active'); }
+  else { filterBranches.add(branch); btn.classList.add('active'); }
+  renderTable();
+  updateChipSidebar();
+});
+
+// ── Student age ────────────────────────────────────────────────────────────
+document.getElementById('student-age-input').addEventListener('input', e => {
+  filterStudentAge = e.target.value;
+  document.getElementById('age-clear-btn').classList.toggle('visible', filterStudentAge !== '');
+  renderTable();
+  updateChipSidebar();
+});
+document.getElementById('age-clear-btn').addEventListener('click', () => {
+  filterStudentAge = '';
+  document.getElementById('student-age-input').value = '';
+  document.getElementById('age-clear-btn').classList.remove('visible');
+  renderTable();
+  updateChipSidebar();
+});
+</script>
+</body>
+</html>
