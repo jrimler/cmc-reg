@@ -913,6 +913,7 @@ async function loadAllData(urls) {
     hideLoading();
     return true;
   } catch (err) {
+    console.error('loadAllData failed:', err);
     hideLoading();
     return err;
   }
