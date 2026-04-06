@@ -107,6 +107,15 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 #refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
 
+/* Settings button */
+#settings-btn { display: flex; align-items: center; justify-content: center; padding: 6px 9px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+#settings-btn:hover { background: rgba(255,255,255,0.22); }
+
+/* Cancel button in setup card */
+#cancel-setup-btn { width: 100%; margin-top: 10px; padding: 9px; background: transparent; color: var(--muted); border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: background 0.15s, color 0.15s; }
+#cancel-setup-btn:hover { background: var(--paper-dark); color: var(--ink); }
+#cancel-setup-btn.hidden { display: none; }
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    MAIN CONTENT AREA
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -403,6 +412,9 @@ body {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
     Refresh
   </button>
+  <button id="settings-btn" title="Update sheet URLs">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
 </div>
 
 <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════════ -->
@@ -471,6 +483,7 @@ body {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         Connect &amp; Load
       </button>
+      <button id="cancel-setup-btn" class="hidden">Cancel</button>
     </div>
   </div>
 
@@ -617,6 +630,7 @@ const LF_CHIP_LIMITS = { instrument: 10, instructor: 8, day: 7, duration: 4 };
 // ── GLOBAL STATE ───────────────────────────────────────────────────────────────
 const state = {
   appMode:   'lessonFinder',
+  appReady:  false,
   sheetUrls: { lessonUrl: '', roomUrl: '', teachersUrl: '' },
 
   lf: {
@@ -1496,6 +1510,7 @@ function switchLFTab(tab) {
 
 // ── SHOW / HIDE APP SCREENS ────────────────────────────────────────────────────
 function showApp(statusMsg) {
+  state.appReady = true;
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('lf-tab-bar').classList.add('visible');
   document.getElementById('header-search').disabled = false;
@@ -1687,6 +1702,22 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
     errEl.classList.add('visible');
     inputEl.classList.add('error');
   }
+});
+
+// Settings (gear) button
+document.getElementById('settings-btn').addEventListener('click', () => {
+  // Pre-fill inputs from current loaded URLs, falling back to whatever's already in the fields
+  if (state.sheetUrls.lessonUrl)   document.getElementById('lesson-url-input').value   = state.sheetUrls.lessonUrl;
+  if (state.sheetUrls.roomUrl)     document.getElementById('room-url-input').value     = state.sheetUrls.roomUrl;
+  if (state.sheetUrls.teachersUrl) document.getElementById('teachers-url-input').value = state.sheetUrls.teachersUrl;
+  document.getElementById('url-error').classList.remove('visible');
+  document.getElementById('cancel-setup-btn').classList.toggle('hidden', !state.appReady);
+  document.getElementById('setup-screen').classList.remove('hidden');
+});
+
+// Cancel button (only visible when app has already loaded data)
+document.getElementById('cancel-setup-btn').addEventListener('click', () => {
+  document.getElementById('setup-screen').classList.add('hidden');
 });
 
 // Refresh button
