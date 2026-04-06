@@ -758,7 +758,7 @@
       <table id="results-table">
         <thead><tr>
           <th>Instrument</th><th>Instructor</th><th>Dept</th>
-          <th>Day</th><th>Time</th><th>Available Slots</th><th>Branch</th><th>Age Min</th>
+          <th>Day</th><th>Time</th><th>Available Slots</th><th>Branch</th><th>Age Min</th><th>Notes</th>
         </tr></thead>
         <tbody id="table-body"></tbody>
       </table>
@@ -1351,6 +1351,7 @@ function renderTable() {
       <td><div class="slot-badges">${slotBadges}</div></td>
       <td><div class="branch-pills">${branchPills}</div></td>
       <td>${ageBadge}</td>
+      <td style="font-size:12px;color:var(--ink)">${prof.notes ? escHtml(prof.notes) : '<span style="color:var(--rule)">—</span>'}</td>
     </tr>`;
   });
   tbody.innerHTML = html;
