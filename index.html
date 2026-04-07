@@ -451,6 +451,60 @@ body {
 #ts-modal-save   { padding: 7px 14px; background: var(--teal); color: #fff; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; transition: opacity 0.15s; }
 #ts-modal-save:hover { opacity: 0.85; }
 
+.sidebar-toggle-btn { display: none; }
+
+@media (max-width: 768px) {
+  #app-header { padding: 0 10px 0 12px; gap: 8px; }
+  #status-line { display: none; }
+  #app-header h1 { font-size: 16px; }
+  .view-btn { padding: 5px 8px; font-size: 10px; }
+  #refresh-btn { padding: 6px 9px; font-size: 0; gap: 0; }
+
+  .sidebar-toggle-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--paper-dark);
+    border: 1.5px solid var(--rule); border-radius: 4px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    cursor: pointer; color: var(--ink); margin-bottom: 10px;
+  }
+  .sidebar-toggle-btn.sidebar-open { border-color: var(--accent); color: var(--accent); }
+
+  #lf-sidebar {
+    position: fixed; top: var(--header-h); left: 0; bottom: 0;
+    width: 280px; z-index: 150;
+    transform: translateX(-100%); transition: transform 0.22s ease;
+    border-right: 1.5px solid var(--rule);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.12);
+  }
+  #lf-sidebar.sidebar-open { transform: translateX(0); }
+  #lf-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
+  #lf-sidebar-scrim.visible { display: block; }
+
+  #ts-sidebar {
+    position: fixed; top: var(--header-h); left: 0; bottom: 0;
+    width: 240px; z-index: 150;
+    transform: translateX(-100%); transition: transform 0.22s ease;
+    border-right: 1.5px solid var(--rule);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.12);
+  }
+  #ts-sidebar.sidebar-open { transform: translateX(0); }
+  #ts-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
+  #ts-sidebar-scrim.visible { display: block; }
+
+  .avail-main { padding: 12px 14px; }
+  #lf-results-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: max-content; max-width: none; }
+  #lf-results-table thead th, #lf-results-table tbody td { padding: 7px 7px; }
+
+  .results-bar { flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+  #lf-result-count { width: 100%; }
+  .sort-label { display: none; }
+  .viewmode-btn, .sort-btn { padding: 3px 6px; font-size: 9px; }
+
+  #rs-day-tabs { overflow-x: auto; }
+  #rs-day-tabs::-webkit-scrollbar { height: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -557,6 +611,7 @@ body {
 
     <!-- Availability panel -->
     <div id="lf-panel-availability" class="lf-panel">
+      <div id="lf-sidebar-scrim"></div>
       <aside id="lf-sidebar">
         <div class="reset-wrap">
           <button class="lf-reset-btn" id="lf-reset-btn" disabled>
@@ -585,6 +640,10 @@ body {
       </aside>
 
       <div class="avail-main">
+        <button id="lf-sidebar-toggle" class="sidebar-toggle-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          Filters
+        </button>
         <div id="lf-search-wrap">
           <svg class="lf-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input id="lf-search" type="text" placeholder="Instrument, day, or teacher name…" autocomplete="off" disabled>
@@ -657,10 +716,15 @@ body {
   <!-- ══ TEACHER SCHEDULES VIEW ════════════════════════════════════════════ -->
   <div id="ts-view" class="view">
     <div id="ts-layout">
+      <div id="ts-sidebar-scrim"></div>
       <aside id="ts-sidebar">
         <div id="ts-teacher-list"></div>
       </aside>
       <div id="ts-main">
+        <button id="ts-sidebar-toggle" class="sidebar-toggle-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          Teachers
+        </button>
         <div id="ts-toolbar">
           <span id="ts-teacher-name"></span>
           <button id="ts-add-block-btn" disabled>+ Add Block</button>
@@ -2207,6 +2271,10 @@ document.getElementById('ts-teacher-list').addEventListener('click', e => {
   document.getElementById('ts-add-block-btn').disabled = false;
   document.getElementById('ts-empty').classList.remove('visible');
   renderTsWeekGrid(state.ts.activeTeacher);
+  if (window.innerWidth <= 768) {
+    ['ts-sidebar','ts-sidebar-scrim','ts-sidebar-toggle'].forEach(id =>
+      document.getElementById(id).classList.remove('sidebar-open', 'visible'));
+  }
 });
 
 document.getElementById('ts-week-grid').addEventListener('click', e => {
@@ -2255,6 +2323,33 @@ document.getElementById('ts-modal-delete').addEventListener('click', () => {
 
 document.getElementById('ts-modal-cancel').addEventListener('click', tsCloseModal);
 document.getElementById('ts-modal-backdrop').addEventListener('click', tsCloseModal);
+
+// ── MOBILE SIDEBAR TOGGLES ──────────────────────────────────────────────────────
+document.getElementById('lf-sidebar-toggle').addEventListener('click', () => {
+  const s = document.getElementById('lf-sidebar');
+  const scrim = document.getElementById('lf-sidebar-scrim');
+  const btn = document.getElementById('lf-sidebar-toggle');
+  const open = s.classList.toggle('sidebar-open');
+  scrim.classList.toggle('visible', open);
+  btn.classList.toggle('sidebar-open', open);
+});
+document.getElementById('lf-sidebar-scrim').addEventListener('click', () => {
+  ['lf-sidebar','lf-sidebar-scrim','lf-sidebar-toggle'].forEach(id =>
+    document.getElementById(id).classList.remove('sidebar-open', 'visible'));
+});
+
+document.getElementById('ts-sidebar-toggle').addEventListener('click', () => {
+  const s = document.getElementById('ts-sidebar');
+  const scrim = document.getElementById('ts-sidebar-scrim');
+  const btn = document.getElementById('ts-sidebar-toggle');
+  const open = s.classList.toggle('sidebar-open');
+  scrim.classList.toggle('visible', open);
+  btn.classList.toggle('sidebar-open', open);
+});
+document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
+  ['ts-sidebar','ts-sidebar-scrim','ts-sidebar-toggle'].forEach(id =>
+    document.getElementById(id).classList.remove('sidebar-open', 'visible'));
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 (function init() {
