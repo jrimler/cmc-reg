@@ -746,9 +746,9 @@ body {
 
 // Hardcoded fallback URLs — replace when sheets are re-published
 // File → Share → Publish to web → select tab → CSV → Publish
-const DEFAULT_LESSON_URL   = '';
-const DEFAULT_ROOM_URL     = '';
-const DEFAULT_TEACHERS_URL = '';
+const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=0&single=true&output=csv';
+const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=850131709&single=true&output=csv';
+const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
 
 const LS_LESSON_URL   = 'sfcmcLessonUrl';
 const LS_ROOM_URL     = 'sfcmcRoomUrl';
@@ -2394,10 +2394,10 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
   // Load teacher schedule blocks from localStorage
   tsLoadBlocks();
 
-  // Resolve URLs from localStorage only — no hardcoded fallbacks
-  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || '';
-  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || '';
-  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || '';
+  // Resolve URLs: localStorage first, then hardcoded defaults
+  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || DEFAULT_LESSON_URL;
+  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || DEFAULT_ROOM_URL;
+  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || DEFAULT_TEACHERS_URL;
 
   // Pre-fill setup form with whatever is saved
   document.getElementById('lesson-url-input').value   = lessonUrl;
