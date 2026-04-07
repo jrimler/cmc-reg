@@ -750,9 +750,9 @@ const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=850131709&single=true&output=csv';
 const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
 
-const LS_LESSON_URL   = 'sfcmcLessonUrl';
-const LS_ROOM_URL     = 'sfcmcRoomUrl';
-const LS_TEACHERS_URL = 'sfcmcTeachersUrl';
+const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
+const LS_ROOM_URL     = null;
+const LS_TEACHERS_URL = null;
 const LS_LAST_VIEW    = 'sfcmcLastView';
 const LS_LAST_SITE    = 'sfcmcLastSite';
 const LS_TS_BLOCKS    = 'sfcmcTsBlocks';
@@ -2172,9 +2172,6 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
   btn.disabled = false;
 
   if (result === true) {
-    localStorage.setItem(LS_LESSON_URL, lessonUrl);
-    roomUrl     ? localStorage.setItem(LS_ROOM_URL,     roomUrl)     : localStorage.removeItem(LS_ROOM_URL);
-    teachersUrl ? localStorage.setItem(LS_TEACHERS_URL, teachersUrl) : localStorage.removeItem(LS_TEACHERS_URL);
     const now = new Date();
     showApp(`Connected ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
   } else {
@@ -2394,10 +2391,13 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
   // Load teacher schedule blocks from localStorage
   tsLoadBlocks();
 
-  // Resolve URLs: localStorage first, then hardcoded defaults
-  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || DEFAULT_LESSON_URL;
-  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || DEFAULT_ROOM_URL;
-  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || DEFAULT_TEACHERS_URL;
+  // URLs are hardcoded — clear any stale localStorage values from old sessions
+  localStorage.removeItem('sfcmcLessonUrl');
+  localStorage.removeItem('sfcmcRoomUrl');
+  localStorage.removeItem('sfcmcTeachersUrl');
+  const lessonUrl   = DEFAULT_LESSON_URL;
+  const roomUrl     = DEFAULT_ROOM_URL;
+  const teachersUrl = DEFAULT_TEACHERS_URL;
 
   // Pre-fill setup form with whatever is saved
   document.getElementById('lesson-url-input').value   = lessonUrl;
