@@ -545,52 +545,25 @@ body {
   <div id="setup-screen">
     <div class="setup-card">
       <h2>Connect to Google Sheets</h2>
-      <p class="setup-sub">Each tool pulls from its own published CSV tab. Paste the URLs below — they're saved in your browser and auto-loaded on return.</p>
+      <p class="setup-sub">Paste published CSV URLs below. They'll be saved and auto-loaded every time.</p>
 
-      <div class="setup-steps">
-        <div class="setup-step">
-          <div class="step-num">1</div>
-          <div class="step-text">
-            <strong>Lesson Finder sheet</strong> — your OpenSlotsReport export published as CSV.
-            Columns: <code>Department</code> <code>Subject</code> <code>Instructor</code> <code>Day</code> <code>Time</code> <code>Duration</code> <code>Date</code> <code>TimePeriod</code>
-          </div>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">2</div>
-          <div class="step-text">
-            <strong>Room Schedule sheet</strong> — your RadGridExport published as CSV.
-            Columns: <code>Date</code> <code>Item</code> <code>From</code> <code>To</code> <code>Day</code> <code>Duration</code> <code>Facility</code> <code>Site</code> <code>Instructor</code> <code>PL Student</code> <code>Type</code>
-          </div>
-        </div>
-        <div class="setup-step">
-          <div class="step-num">3</div>
-          <div class="step-text">
-            <strong>Teacher profiles sheet</strong> — optional supplemental data.
-            Columns: <code>Name</code> <code>Branches</code> <code>AgeMin</code> <code>Notes</code>.
-            Branches here override those derived from Room Schedule data.
-          </div>
-        </div>
-      </div>
-
-      <hr class="setup-divider">
-
-      <label class="setup-url-label" for="lesson-url-input">Lesson Finder — Published CSV URL</label>
+      <label class="setup-url-label" for="lesson-url-input">Open Slots (Lessons) — Published CSV URL</label>
       <input id="lesson-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
              autocomplete="off" spellcheck="false">
 
       <label class="setup-url-label" for="room-url-input">
         Room Schedule — Published CSV URL <span class="opt">(optional)</span>
       </label>
       <input id="room-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
              autocomplete="off" spellcheck="false">
 
       <label class="setup-url-label" for="teachers-url-input">
-        Teacher Profiles — Published CSV URL <span class="opt">(optional)</span>
+        Instructor Notes — Published CSV URL <span class="opt">(optional)</span>
       </label>
       <input id="teachers-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&output=csv"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
              autocomplete="off" spellcheck="false">
 
       <div id="url-error"></div>
@@ -773,9 +746,9 @@ body {
 
 // Hardcoded fallback URLs — replace when sheets are re-published
 // File → Share → Publish to web → select tab → CSV → Publish
-const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=0&single=true&output=csv';
-const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=850131709&single=true&output=csv';
-const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=967666928&single=true&output=csv';
+const DEFAULT_LESSON_URL   = '';
+const DEFAULT_ROOM_URL     = '';
+const DEFAULT_TEACHERS_URL = '';
 
 const LS_LESSON_URL   = 'sfcmcLessonUrl';
 const LS_ROOM_URL     = 'sfcmcRoomUrl';
@@ -2199,16 +2172,22 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
   btn.disabled = false;
 
   if (result === true) {
-    // Always write all three keys so the saved state exactly mirrors what
-    // the user entered. Empty fields are cleared (removeItem) so stale
-    // values from a previous session never silently persist.
     localStorage.setItem(LS_LESSON_URL, lessonUrl);
     roomUrl     ? localStorage.setItem(LS_ROOM_URL,     roomUrl)     : localStorage.removeItem(LS_ROOM_URL);
     teachersUrl ? localStorage.setItem(LS_TEACHERS_URL, teachersUrl) : localStorage.removeItem(LS_TEACHERS_URL);
     const now = new Date();
     showApp(`Connected ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
   } else {
-    errEl.textContent = `Could not load: ${result.message}. Make sure the sheet is published to web.`;
+    const msg = result.message || '';
+    let hint = '';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('CORS')) {
+      hint = 'Network error — the sheet URL could not be reached. Open the URL in a new browser tab to check it works.';
+    } else if (msg.includes('HTTP')) {
+      hint = `Server error (${msg}) — the sheet may not be published. Go to File → Share → Publish to web in Google Sheets.`;
+    } else {
+      hint = `Error: ${msg}. Open the URL in a new tab — if it downloads a CSV, try again. If not, re-publish the sheet.`;
+    }
+    errEl.textContent = hint;
     errEl.classList.add('visible');
     inputEl.classList.add('error');
   }
@@ -2415,12 +2394,12 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
   // Load teacher schedule blocks from localStorage
   tsLoadBlocks();
 
-  // Resolve URLs: saved → hardcoded default → ''
-  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || DEFAULT_LESSON_URL;
-  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || DEFAULT_ROOM_URL;
-  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || DEFAULT_TEACHERS_URL;
+  // Resolve URLs from localStorage only — no hardcoded fallbacks
+  const lessonUrl   = localStorage.getItem(LS_LESSON_URL)   || '';
+  const roomUrl     = localStorage.getItem(LS_ROOM_URL)     || '';
+  const teachersUrl = localStorage.getItem(LS_TEACHERS_URL) || '';
 
-  // Pre-fill setup form
+  // Pre-fill setup form with whatever is saved
   document.getElementById('lesson-url-input').value   = lessonUrl;
   document.getElementById('room-url-input').value     = roomUrl;
   document.getElementById('teachers-url-input').value = teachersUrl;
@@ -2436,7 +2415,7 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
         const now = new Date();
         showApp(`Loaded ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       } else {
-        showSetup('Could not load data — the sheet may need to be re-published. Contact your administrator.');
+        showSetup();
         document.getElementById('lesson-url-input').classList.add('error');
       }
     });
