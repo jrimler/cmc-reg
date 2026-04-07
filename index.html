@@ -427,12 +427,13 @@ body {
 
 /* TS event blocks */
 .ts-block { position: absolute; left: 2px; right: 2px; border-radius: 2px; padding: 2px 4px; font-size: 10px; overflow: hidden; box-sizing: border-box; border-left: 3px solid transparent; }
-.ts-block.type-lesson     { background: #d4e8f8; border-left-color: #4a90d9; cursor: default; }
-.ts-block.type-available  { background: #d4f0d4; border-left-color: #38a870; cursor: pointer; }
-.ts-block.type-break      { background: #f8ecd0; border-left-color: #c08020; cursor: pointer; }
-.ts-block.type-unavailable{ background: #f8d8d8; border-left-color: #c0392b; cursor: pointer; }
+.ts-block.type-lesson     { background: #d4e8f8; border-left-color: #4a90d9; cursor: default; z-index: 2; }
+.ts-block.type-available  { background: #d4f0d4; border-left-color: #38a870; cursor: pointer; z-index: 2; }
+.ts-block.type-break      { background: #f8ecd0; border-left-color: #c08020; cursor: pointer; z-index: 2; }
+.ts-block.type-unavailable{ background: #f8d8d8; border-left-color: #c0392b; cursor: pointer; z-index: 2; }
+.ts-block.type-window     { background: rgba(255, 215, 80, 0.15); border-left-color: #c9a800; border-left-width: 3px; cursor: default; z-index: 1; }
 .ts-block:hover { filter: brightness(0.93); }
-.ts-block.type-lesson:hover { filter: none; }
+.ts-block.type-lesson:hover, .ts-block.type-window:hover { filter: none; }
 .ts-block-label { font-family: 'DM Mono', monospace; font-size: 9px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* TS Modal */
@@ -772,9 +773,9 @@ body {
 
 // Hardcoded fallback URLs — replace when sheets are re-published
 // File → Share → Publish to web → select tab → CSV → Publish
-const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?output=csv';
+const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=0&single=true&output=csv';
 const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=850131709&single=true&output=csv';
-const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ298VaIWtjhU-Mj3SWgL5i2JMkiGPDUeX5eT9tK36no6aghVuq_U08ftw5JROcohuPJFIWzHz53z4E/pub?gid=2113258322&single=true&output=csv';
+const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTetWEzobIOwf8zZGaulabu1iGTqPAztuIg75LzpiKo93DUodzad1czzA36ijA1pZevKlHlogiGeT-v/pub?gid=967666928&single=true&output=csv';
 
 const LS_LESSON_URL   = 'sfcmcLessonUrl';
 const LS_ROOM_URL     = 'sfcmcRoomUrl';
@@ -797,6 +798,7 @@ const LF_SKIP_SUBJECTS = new Set([
 const LF_DAY_ORDER  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const RS_DAYS_ORDER = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 const RS_DAYS_FULL  = { Su:'Sun', Mo:'Mon', Tu:'Tue', We:'Wed', Th:'Thu', Fr:'Fri', Sa:'Sat' };
+const LF_DAY_TO_SHORT = { Monday:'Mo', Tuesday:'Tu', Wednesday:'We', Thursday:'Th', Friday:'Fr', Saturday:'Sa', Sunday:'Su' };
 
 // Instruments shown first in the Subject chip section
 const INSTRUMENT_PRIORITY = ['Piano','Voice','Violin','Guitar'];
@@ -820,6 +822,7 @@ const state = {
     activeTab: 'availability',
     chipShowAll: { instrument: false, day: false, duration: false },
     viewMode: 'byInstrument',
+    availabilityWindows: [],
   },
 
   rs: {
@@ -901,9 +904,12 @@ function parseCsv(csvText) {
 // Columns: Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod
 // Day: full names ("Tuesday"). Duration: "30 mins", "45 mins", "1 hr".
 // Instructor: "First Last" — no normalization needed.
+// Each availability window is expanded into one record per 15-min start increment.
+// Returns { records, availabilityWindows }.
 function processLessonRows(rows) {
   const records = [];
-  if (rows.length < 2) return records;
+  const availabilityWindows = [];
+  if (rows.length < 2) return { records, availabilityWindows };
 
   const header = rows[0].map(h => String(h || '').trim());
   const col = {
@@ -930,20 +936,41 @@ function processLessonRows(rows) {
       .map(s => s.trim())
       .filter(s => s && !LF_SKIP_SUBJECTS.has(s));
 
+    const dayFull          = get(row, 'day');
+    const dayShort         = LF_DAY_TO_SHORT[dayFull] || '';
+    const windowStartMins  = rsParseTime(get(row, 'time'));
+    const windowEndMins    = windowStartMins + mins;
+    const windowFrom       = rsFmtTime(windowStartMins);
+    const windowTo         = rsFmtTime(windowEndMins);
+
     for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
       if (LF_SKIP_SUBJECTS.has(instrument)) continue;
-      records.push({
+
+      // Store original window for TS view (deduplicated by from/to per teacher/day below)
+      availabilityWindows.push({
+        instructor, instrument,
         department: get(row, 'dept'),
-        instrument, instructor,
-        day:  get(row, 'day'),
-        time: get(row, 'time'),
-        minutes: mins,
-        date:    get(row, 'date'),
-        slots:   getSlots(mins),
+        day: dayFull, dayShort,
+        from: windowFrom, to: windowTo,
       });
+
+      // Expand into one record per valid 15-min start within the window
+      for (let stepStart = windowStartMins; stepStart <= windowEndMins - 30; stepStart += 15) {
+        const remaining = windowEndMins - stepStart;
+        records.push({
+          department: get(row, 'dept'),
+          instrument, instructor,
+          day:     dayFull,
+          time:    rsFmtTime(stepStart),
+          minutes: remaining,
+          date:    get(row, 'date'),
+          slots:   getSlots(remaining),
+        });
+      }
     }
   }
-  return records;
+
+  return { records, availabilityWindows };
 }
 
 // ── PROCESS ROOM ROWS (RadGridExport format) ───────────────────────────────────
@@ -1085,7 +1112,9 @@ async function loadAllData(urls) {
     ]);
 
     // Populate LF records first (buildTeacherProfiles needs them for name union)
-    state.lf.records = processLessonRows(lessonRows);
+    const { records, availabilityWindows } = processLessonRows(lessonRows);
+    state.lf.records             = records;
+    state.lf.availabilityWindows = availabilityWindows;
 
     // Process room data → events + derivedBranches
     const { events, derivedBranches } = processRoomRows(roomRows);
@@ -1567,11 +1596,22 @@ function renderTsWeekGrid(teacherName) {
   // Collect manual blocks
   const manualBlocks = state.ts.blocks[teacherName] || [];
 
+  // Collect availability windows from Lessons sheet (deduplicated by from/to)
+  const seenWindows = new Set();
+  const availWindows = (state.lf.availabilityWindows || [])
+    .filter(w => w.instructor === teacherName)
+    .filter(w => {
+      const key = `${w.dayShort}|${w.from}|${w.to}`;
+      if (seenWindows.has(key)) return false;
+      seenWindows.add(key); return true;
+    });
+
   // Build per-day buckets (using RS_DAYS_ORDER)
   const perDay = {};
-  RS_DAYS_ORDER.forEach(d => { perDay[d] = { lessons: [], blocks: [] }; });
-  lessonEvts.forEach(e => { if (perDay[e.day]) perDay[e.day].lessons.push(e); });
-  manualBlocks.forEach(b => { if (perDay[b.day]) perDay[b.day].blocks.push(b); });
+  RS_DAYS_ORDER.forEach(d => { perDay[d] = { lessons: [], blocks: [], windows: [] }; });
+  lessonEvts.forEach(e  => { if (perDay[e.day])       perDay[e.day].lessons.push(e); });
+  manualBlocks.forEach(b => { if (perDay[b.day])       perDay[b.day].blocks.push(b); });
+  availWindows.forEach(w  => { if (perDay[w.dayShort]) perDay[w.dayShort].windows.push(w); });
 
   // Compute overall time range across all days
   let lo = 9 * 60, hi = 18 * 60; // defaults: 9am–6pm
@@ -1581,6 +1621,10 @@ function renderTsWeekGrid(teacherName) {
   });
   manualBlocks.forEach(b => {
     const s = tsTimeToMins(b.from), n = tsTimeToMins(b.to);
+    if (s < lo) lo = s; if (n > hi) hi = n;
+  });
+  availWindows.forEach(w => {
+    const s = rsParseTime(w.from), n = rsParseTime(w.to);
     if (s < lo) lo = s; if (n > hi) hi = n;
   });
   lo = Math.floor(lo / 30) * 30;
@@ -1605,7 +1649,7 @@ function renderTsWeekGrid(teacherName) {
   html += '</div>';
 
   RS_DAYS_ORDER.forEach(d => {
-    const { lessons, blocks: mblocks } = perDay[d];
+    const { lessons, blocks: mblocks, windows } = perDay[d];
     html += `<div class="ts-day-col" style="height:${colH}px">`;
 
     // Background slot rows
@@ -1614,6 +1658,17 @@ function renderTsWeekGrid(teacherName) {
       const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
       html += `<div class="ts-slot-row${cls}" style="height:${TS_PX}px"></div>`;
     }
+
+    // Availability windows from Lessons sheet (background layer, behind booked lessons)
+    windows.forEach(w => {
+      const startM = rsParseTime(w.from);
+      const endM   = rsParseTime(w.to);
+      const top    = (startM - lo) / 15 * TS_PX;
+      const height = Math.max((endM - startM) / 15 * TS_PX - 2, 14);
+      html += `<div class="ts-block type-window" style="top:${top}px;height:${height}px" title="Available: ${escHtml(w.from)}–${escHtml(w.to)}">
+        ${height >= 30 ? `<span class="ts-block-label" style="opacity:0.7">${escHtml(w.from)}–${escHtml(w.to)}</span>` : ''}
+      </div>`;
+    });
 
     // Lesson events (read-only)
     lessons.forEach(ev => {
