@@ -140,6 +140,51 @@ Room Schedule:  renderSiteTabs / renderDayTabs / rsBuildGrid
 
 ---
 
+## Session progress (2026-04-07)
+
+### Done
+
+**URL persistence overhaul**
+- Removed localStorage for sheet URLs entirely — stale saved values were silently overriding correct ones
+- All four sheet URLs now hardcoded as constants (`DEFAULT_LESSON_URL`, `DEFAULT_ROOM_URL`, `DEFAULT_TEACHERS_URL`, `DEFAULT_AVAIL_URL`)
+- On every load, any old localStorage URL keys are automatically cleared
+- Migrated to new Google Spreadsheet with verified, working tab gids
+
+**Setup screen**
+- Removed verbose step-by-step instructions, cleaner layout
+- Better error messages that distinguish network failures from HTTP errors
+
+**Open slots expansion (Lesson Finder)**
+- Each row in the Lessons sheet represents an availability window (e.g. 4:00 PM, 1 hr)
+- Previously only generated one record per window (starting at window open)
+- Now expands into one record per 15-min start increment within the window (4:00, 4:15, 4:30… up to window end − 30 min)
+- Each expanded record recalculates eligible lesson lengths based on remaining window time
+- Raw windows stored separately in `state.lf.availabilityWindows` for use by other views
+
+**Teacher Schedules view — availability layer**
+- Availability windows from the Lessons sheet now render as gold/amber background blocks on the week grid
+- Sit behind booked lessons (blue); deduplicated by day/from/to to avoid multi-instrument stacking
+
+**Room Schedule — manual availability windows**
+- Added `processAvailRows()` parser for a new manually-maintained sheet tab
+- Tab columns: `Instructor | Day | From | To | Room`
+- `state.rs.availWindows` stores parsed windows; `state.rs.facilityToSite` lookup derived automatically from booked events (no Site column needed in the tab)
+- Availability windows render as green blocks in the correct room column, behind booked lessons
+- Room columns expand to include rooms that appear in availability data even if no lessons are booked there
+
+---
+
+### Still to do
+
+1. **Create the manual availability tab** in Google Sheets with columns `Instructor | Day | From | To | Room`, publish as CSV, provide URL to hardcode as `DEFAULT_AVAIL_URL`
+2. **Test availability windows in Room Schedule** once real data is in the tab — verify room names match exactly
+3. **Test open slots expansion** with real Lessons sheet data — confirm 15-min increments are rendering correctly in Lesson Finder
+4. **Verify Teacher Schedules gold blocks** are appearing correctly with live data
+5. **Decide**: Teacher Schedules view currently shows windows from the Lessons sheet (open slots). Once the manual availability tab exists, consider whether TS view should use that instead (more accurate — includes room context)
+6. **README update** — reflect new 4-URL data source architecture and removal of localStorage for URLs
+
+---
+
 ## Known limitations
 
 - **Google Sheets CSV cache**: Updates take 5–10 min to propagate after editing. Google CDN limitation — cannot be bypassed client-side.
