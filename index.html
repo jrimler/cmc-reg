@@ -359,6 +359,7 @@ body {
 .rs-event.is-class { border-left-width: 5px; }
 .rs-event.rs-conflict { outline: 2px solid var(--red); outline-offset: -1px; z-index: 6; }
 .rs-event.rs-conflict::after { content: '!'; position: absolute; top: 2px; right: 3px; font-size: 9px; font-weight: 700; color: var(--red); font-family: 'DM Mono', monospace; }
+.rs-event.rs-avail { z-index: 1; cursor: default; }
 .rs-event-item { font-family: 'DM Serif Display', serif; font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .rs-event-info { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(0,0,0,0.52); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
 
@@ -749,6 +750,7 @@ body {
 const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=0&single=true&output=csv';
 const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=850131709&single=true&output=csv';
 const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
+const DEFAULT_AVAIL_URL    = ''; // set once teacher availability tab is published
 
 const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
 const LS_ROOM_URL     = null;
@@ -799,10 +801,12 @@ const state = {
   },
 
   rs: {
-    events:     [],
-    sites:      [],
-    activeSite: '',
-    activeDay:  '',
+    events:      [],
+    availWindows: [], // { instructor, day, from, to, facility }
+    facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
+    sites:       [],
+    activeSite:  '',
+    activeDay:   '',
   },
 
   ts: {
@@ -1004,6 +1008,34 @@ function processRoomRows(rows) {
   return { events, derivedBranches };
 }
 
+// ── PROCESS AVAILABILITY ROWS → windows[] ─────────────────────────────────────
+// Manually-maintained tab: Instructor | Day | From | To | Room
+// Day uses short codes (Mo, Tu…). From/To in "9:00 AM" format.
+function processAvailRows(rows) {
+  const windows = [];
+  if (rows.length < 2) return windows;
+  const header = rows[0].map(h => String(h || '').trim());
+  const col = {
+    instructor: header.findIndex(h => /instructor/i.test(h)),
+    day:        header.findIndex(h => /^day$/i.test(h)),
+    from:       header.findIndex(h => /^from$/i.test(h)),
+    to:         header.findIndex(h => /^to$/i.test(h)),
+    facility:   header.findIndex(h => /^room$|^facility$/i.test(h)),
+  };
+  const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
+  for (let i = 1; i < rows.length; i++) {
+    const row        = rows[i];
+    const instructor = get(row, 'instructor');
+    const facility   = get(row, 'facility');
+    const day        = get(row, 'day');
+    const from       = get(row, 'from');
+    const to         = get(row, 'to');
+    if (!instructor || !facility || !day || !from || !to) continue;
+    windows.push({ instructor, day, from, to, facility });
+  }
+  return windows;
+}
+
 // ── PROCESS TEACHER ROWS → raw map ────────────────────────────────────────────
 // Returns { name → { branches[], ageMin, notes } }
 // Does not merge with derived branches — that happens in buildTeacherProfiles().
@@ -1073,14 +1105,17 @@ function hideLoading() {
 async function loadAllData(urls) {
   showLoading('Fetching data…');
   try {
-    // Fetch all three in parallel; non-critical sources resolve to [] on failure
-    const [lessonRows, roomRows, teacherRows] = await Promise.all([
+    // Fetch all four in parallel; non-critical sources resolve to [] on failure
+    const [lessonRows, roomRows, teacherRows, availRows] = await Promise.all([
       fetchCsvUrl(urls.lessonUrl).then(parseCsv),
       urls.roomUrl
         ? fetchCsvUrl(urls.roomUrl).then(parseCsv).catch(e => { console.warn('Room data failed:', e.message); return []; })
         : Promise.resolve([]),
       urls.teachersUrl
         ? fetchCsvUrl(urls.teachersUrl).then(parseCsv).catch(e => { console.warn('Teachers data failed:', e.message); return []; })
+        : Promise.resolve([]),
+      urls.availUrl
+        ? fetchCsvUrl(urls.availUrl).then(parseCsv).catch(e => { console.warn('Availability data failed:', e.message); return []; })
         : Promise.resolve([]),
     ]);
 
@@ -1092,6 +1127,15 @@ async function loadAllData(urls) {
     // Process room data → events + derivedBranches
     const { events, derivedBranches } = processRoomRows(roomRows);
     state.rs.events = events;
+
+    // Build facility→site lookup from booked events
+    const facilityToSite = {};
+    events.forEach(e => { if (e.facility && e.site) facilityToSite[e.facility] = e.site; });
+    state.rs.facilityToSite = facilityToSite;
+
+    // Process manual availability windows
+    state.rs.availWindows = processAvailRows(availRows);
+
     state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
     if (state.rs.sites.length > 0) {
       if (!state.rs.sites.includes(state.rs.activeSite)) {
@@ -1736,6 +1780,7 @@ function onTSViewActivated() {
 // Two-color scheme: private lessons vs group/class
 const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
 const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
+const RS_COLOR_AVAIL   = { bg: 'rgba(60,180,100,0.13)', border: '#38a870' };
 
 // "9:00 AM" → minutes from midnight
 function rsParseTime(str) {
@@ -1782,18 +1827,19 @@ function rsDetectConflicts(evts) {
 }
 
 // Build the time-grid HTML. forPrint: omit data-* attrs, use narrower columns.
-function rsBuildGrid(evts, rooms, forPrint) {
-  if (!evts.length) return '';
+function rsBuildGrid(evts, availWins, rooms, forPrint) {
+  if (!evts.length && !availWins.length) return '';
   const ROOM_W = forPrint ? 115 : 140;
   const PX     = forPrint ? 22 : 28; // pixels per 15-min slot
 
-  // Compute time range (rounded to 30-min boundaries)
+  // Compute time range from both booked events and availability windows
   let lo = Infinity, hi = -Infinity;
-  evts.forEach(e => {
+  [...evts, ...availWins].forEach(e => {
     const s = rsParseTime(e.from), n = rsParseTime(e.to);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
   });
+  if (!isFinite(lo)) { lo = 9 * 60; hi = 18 * 60; }
   lo = Math.floor(lo / 30) * 30;
   hi = Math.ceil(hi  / 30) * 30;
   const totalSlots = (hi - lo) / 15;
@@ -1835,6 +1881,17 @@ function rsBuildGrid(evts, rooms, forPrint) {
       const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
       html += `<div class="rs-slot-row${cls}"></div>`;
     }
+
+    // Availability windows in this room (rendered behind booked events)
+    availWins.filter(w => w.facility === room).forEach(w => {
+      const startM = rsParseTime(w.from);
+      const endM   = rsParseTime(w.to);
+      const top    = (startM - lo) / 15 * PX;
+      const height = Math.max((endM - startM) / 15 * PX - 2, 16);
+      let inner = `<span class="rs-event-item" style="opacity:0.8">Available — ${escHtml(w.instructor)}</span>`;
+      if (height >= 36) inner += `<span class="rs-event-info" style="opacity:0.6">${escHtml(w.from)}–${escHtml(w.to)}</span>`;
+      html += `<div class="rs-event rs-avail" style="top:${top}px;height:${height}px;background:${RS_COLOR_AVAIL.bg};border-left-color:${RS_COLOR_AVAIL.border}">${inner}</div>`;
+    });
 
     // Events in this room
     evts.filter(e => e.facility === room).forEach(ev => {
@@ -1897,14 +1954,19 @@ function renderGrid() {
   const grid  = document.getElementById('rs-grid');
   const empty = document.getElementById('rs-empty');
   if (!grid) return;
-  const evts = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
-  if (!evts.length) {
+  const evts      = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
+  const availWins = state.rs.availWindows.filter(w =>
+    w.day === state.rs.activeDay &&
+    state.rs.facilityToSite[w.facility] === state.rs.activeSite
+  );
+  if (!evts.length && !availWins.length) {
     grid.innerHTML = '';
     if (empty) empty.classList.add('visible');
     return;
   }
   if (empty) empty.classList.remove('visible');
-  grid.innerHTML = rsBuildGrid(evts, rsGetRooms(evts), false);
+  const allRooms = rsGetRooms([...evts, ...availWins.map(w => ({ facility: w.facility }))]);
+  grid.innerHTML = rsBuildGrid(evts, availWins, allRooms, false);
 }
 
 function rsPrintAllDays() {
@@ -1925,7 +1987,7 @@ function rsPrintAllDays() {
         <span class="rs-print-site">${escHtml(PRINT_SITE)}</span>
         <span class="rs-print-day">${RS_DAYS_FULL[day]}</span>
       </div>
-      <div>${rsBuildGrid(evts, rooms, true)}</div>
+      <div>${rsBuildGrid(evts, [], rooms, true)}</div>
     </div>`);
   });
   if (!pages.length) {
@@ -2398,6 +2460,7 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
   const lessonUrl   = DEFAULT_LESSON_URL;
   const roomUrl     = DEFAULT_ROOM_URL;
   const teachersUrl = DEFAULT_TEACHERS_URL;
+  const availUrl    = DEFAULT_AVAIL_URL;
 
   // Pre-fill setup form with whatever is saved
   document.getElementById('lesson-url-input').value   = lessonUrl;
@@ -2409,7 +2472,7 @@ document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
     return;
   }
 
-  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null })
+  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, availUrl: availUrl || null })
     .then(result => {
       if (result === true) {
         const now = new Date();
