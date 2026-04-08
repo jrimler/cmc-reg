@@ -115,6 +115,11 @@ body {
 #cancel-setup-btn:hover { background: var(--paper-dark); color: var(--ink); }
 #cancel-setup-btn.hidden { display: none; }
 
+/* Teachers collapsible in setup card */
+#teachers-toggle-btn { width: 100%; padding: 8px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; color: var(--muted); text-align: left; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s, color 0.15s; margin-bottom: 12px; }
+#teachers-toggle-btn:hover { background: var(--paper-dark); color: var(--ink); }
+#teachers-section-body { border: 1.5px solid var(--rule); border-radius: 4px; overflow: hidden; margin-bottom: 12px; max-height: 320px; overflow-y: auto; }
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    MAIN CONTENT AREA
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -177,7 +182,6 @@ body {
 
 /* Panel layout */
 #lf-panel-availability { display: flex; flex-direction: row; overflow: hidden; }
-#lf-panel-teachers { overflow-y: auto; padding: 28px 32px; }
 
 /* Sidebar */
 #lf-sidebar { width: 224px; flex-shrink: 0; border-right: 1.5px solid var(--rule); overflow-y: auto; display: flex; flex-direction: column; background: #fff; }
@@ -394,65 +398,6 @@ body {
 }
 #rs-print-section { display: none; }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TEACHER SCHEDULES VIEW
-   ═══════════════════════════════════════════════════════════════════════════════ */
-#ts-layout { display: flex; flex-direction: row; flex: 1; overflow: hidden; min-height: 0; }
-#ts-sidebar { width: 200px; flex-shrink: 0; border-right: 1.5px solid var(--rule); overflow-y: auto; background: #fff; padding: 8px 0; }
-#ts-sidebar::-webkit-scrollbar { width: 3px; }
-#ts-sidebar::-webkit-scrollbar-thumb { background: var(--rule); }
-.ts-teacher-item { padding: 8px 14px; cursor: pointer; font-size: 13px; border-left: 3px solid transparent; transition: background 0.1s, border-color 0.1s; }
-.ts-teacher-item:hover { background: var(--paper-dark); }
-.ts-teacher-item.active { background: var(--teal-soft); border-left-color: var(--teal); color: var(--teal); }
-#ts-main { flex: 1; overflow-y: auto; padding: 20px 28px; min-width: 0; }
-#ts-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule); }
-#ts-teacher-name { font-family: 'DM Serif Display', serif; font-size: 20px; }
-#ts-add-block-btn { padding: 6px 14px; background: var(--teal); color: #fff; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer; transition: opacity 0.15s; }
-#ts-add-block-btn:hover { opacity: 0.85; }
-#ts-add-block-btn:disabled { opacity: 0.35; cursor: default; }
-#ts-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-style: italic; display: none; }
-#ts-empty.visible { display: block; }
-
-/* Week grid */
-#ts-week-grid { display: grid; grid-template-columns: 54px repeat(7, 1fr); border: 1.5px solid var(--rule); border-radius: 4px; overflow: hidden; }
-.ts-day-header { background: var(--paper-dark); font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); text-align: center; padding: 6px 4px; border-bottom: 1.5px solid var(--rule); border-right: 1px solid var(--rule); }
-.ts-day-header:last-child { border-right: none; }
-.ts-time-col-head { border-right: 2px solid var(--rule); }
-.ts-time-label-cell { padding: 0; border-right: 2px solid var(--rule); position: relative; }
-.ts-time-tick-label { position: absolute; top: -7px; right: 4px; font-family: 'DM Mono', monospace; font-size: 8px; color: var(--muted); white-space: nowrap; }
-.ts-day-col { position: relative; border-right: 1px solid var(--rule); }
-.ts-day-col:last-child { border-right: none; }
-.ts-slot-row { width: 100%; box-sizing: border-box; border-top: 1px solid rgba(200,216,232,0.2); }
-.ts-slot-row.half-hour { border-top-color: var(--rule); }
-.ts-slot-row.on-hour { border-top-color: #b0c4d8; border-top-width: 1.5px; }
-
-/* TS event blocks */
-.ts-block { position: absolute; left: 2px; right: 2px; border-radius: 2px; padding: 2px 4px; font-size: 10px; overflow: hidden; box-sizing: border-box; border-left: 3px solid transparent; }
-.ts-block.type-lesson     { background: #d4e8f8; border-left-color: #4a90d9; cursor: default; z-index: 2; }
-.ts-block.type-available  { background: #d4f0d4; border-left-color: #38a870; cursor: pointer; z-index: 2; }
-.ts-block.type-break      { background: #f8ecd0; border-left-color: #c08020; cursor: pointer; z-index: 2; }
-.ts-block.type-unavailable{ background: #f8d8d8; border-left-color: #c0392b; cursor: pointer; z-index: 2; }
-.ts-block.type-window     { background: rgba(255, 215, 80, 0.15); border-left-color: #c9a800; border-left-width: 3px; cursor: default; z-index: 1; }
-.ts-block:hover { filter: brightness(0.93); }
-.ts-block.type-lesson:hover, .ts-block.type-window:hover { filter: none; }
-.ts-block-label { font-family: 'DM Mono', monospace; font-size: 9px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* TS Modal */
-#ts-modal { position: fixed; inset: 0; z-index: 500; display: flex; align-items: center; justify-content: center; }
-#ts-modal.hidden { display: none; }
-#ts-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.35); }
-#ts-modal-card { position: relative; background: #fff; border-radius: 6px; padding: 24px 28px; width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); display: flex; flex-direction: column; gap: 12px; }
-#ts-modal-card h3 { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 2px; }
-#ts-modal-card label { display: flex; flex-direction: column; gap: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-#ts-modal-card input, #ts-modal-card select { padding: 6px 8px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--ink); outline: none; transition: border-color 0.15s; }
-#ts-modal-card input:focus, #ts-modal-card select:focus { border-color: var(--teal); }
-#ts-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-#ts-modal-delete { padding: 7px 14px; background: transparent; color: var(--red); border: 1.5px solid var(--red); border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; transition: background 0.15s; }
-#ts-modal-delete:hover { background: #fdf0f0; }
-#ts-modal-cancel { padding: 7px 14px; background: transparent; color: var(--muted); border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; }
-#ts-modal-save   { padding: 7px 14px; background: var(--teal); color: #fff; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; transition: opacity 0.15s; }
-#ts-modal-save:hover { opacity: 0.85; }
-
 .sidebar-toggle-btn { display: none; }
 
 @media (max-width: 768px) {
@@ -483,17 +428,6 @@ body {
   #lf-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
   #lf-sidebar-scrim.visible { display: block; }
 
-  #ts-sidebar {
-    position: fixed; top: var(--header-h); left: 0; bottom: 0;
-    width: 240px; z-index: 150;
-    transform: translateX(-100%); transition: transform 0.22s ease;
-    border-right: 1.5px solid var(--rule);
-    box-shadow: 4px 0 16px rgba(0,0,0,0.12);
-  }
-  #ts-sidebar.sidebar-open { transform: translateX(0); }
-  #ts-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
-  #ts-sidebar-scrim.visible { display: block; }
-
   .avail-main { padding: 12px 14px; }
   #lf-results-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: max-content; max-width: none; }
   #lf-results-table thead th, #lf-results-table tbody td { padding: 7px 7px; }
@@ -521,7 +455,6 @@ body {
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
     <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
-    <button class="view-btn" data-view="teacherSchedules">Teacher Schedules</button>
   </div>
 
   <button id="refresh-btn" disabled title="Refresh data from Google Sheets">
@@ -568,6 +501,24 @@ body {
              autocomplete="off" spellcheck="false">
 
       <div id="url-error"></div>
+
+      <button id="teachers-toggle-btn" type="button">
+        View instructor list
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3L5 7L9 3"/></svg>
+      </button>
+      <div id="teachers-section-body" style="display:none">
+        <table id="lf-teacher-table">
+          <thead><tr>
+            <th style="width:170px">Instructor</th>
+            <th>Instruments</th>
+            <th>Branch(es)</th>
+            <th>Age Min</th>
+            <th>Notes</th>
+          </tr></thead>
+          <tbody id="lf-teacher-body"></tbody>
+        </table>
+      </div>
+
       <button id="connect-btn">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         Connect &amp; Load
@@ -581,7 +532,6 @@ body {
 
     <div id="lf-tab-bar">
       <button class="tab-btn active" data-tab="availability">Availability</button>
-      <button class="tab-btn" data-tab="teachers">Teachers</button>
     </div>
 
     <!-- Availability panel -->
@@ -652,24 +602,6 @@ body {
       </div>
     </div><!-- #lf-panel-availability -->
 
-    <!-- Teachers panel -->
-    <div id="lf-panel-teachers" class="lf-panel" style="display:none">
-      <div class="lf-teachers-header">
-        <h2>Teacher Profiles</h2>
-        <p>Branches pulled from the Teachers sheet (or derived from Room Schedule data). Instruments derived from lesson records.</p>
-      </div>
-      <table id="lf-teacher-table">
-        <thead><tr>
-          <th style="width:170px">Instructor</th>
-          <th>Instruments</th>
-          <th>Branch(es)</th>
-          <th>Age Min</th>
-          <th>Notes</th>
-        </tr></thead>
-        <tbody id="lf-teacher-body"></tbody>
-      </table>
-    </div>
-
   </div><!-- #lf-view -->
 
   <!-- ══ ROOM SCHEDULE VIEW ════════════════════════════════════════════════ -->
@@ -685,51 +617,6 @@ body {
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
       <div id="rs-empty">No events for this site and day.</div>
-    </div>
-  </div>
-
-  <!-- ══ TEACHER SCHEDULES VIEW ════════════════════════════════════════════ -->
-  <div id="ts-view" class="view">
-    <div id="ts-layout">
-      <div id="ts-sidebar-scrim"></div>
-      <aside id="ts-sidebar">
-        <div id="ts-teacher-list"></div>
-      </aside>
-      <div id="ts-main">
-        <button id="ts-sidebar-toggle" class="sidebar-toggle-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          Teachers
-        </button>
-        <div id="ts-toolbar">
-          <span id="ts-teacher-name"></span>
-          <button id="ts-add-block-btn" disabled>+ Add Block</button>
-        </div>
-        <div id="ts-week-grid"></div>
-        <div id="ts-empty" class="visible">Select a teacher to view their schedule.</div>
-      </div>
-    </div>
-    <!-- Modal -->
-    <div id="ts-modal" class="hidden">
-      <div id="ts-modal-backdrop"></div>
-      <div id="ts-modal-card">
-        <h3 id="ts-modal-title">Add Block</h3>
-        <label>Day<select id="ts-modal-day"></select></label>
-        <label>From<input id="ts-modal-from" type="time"></label>
-        <label>To<input id="ts-modal-to" type="time"></label>
-        <label>Type
-          <select id="ts-modal-type">
-            <option value="available">Available</option>
-            <option value="break">Break</option>
-            <option value="unavailable">Unavailable</option>
-          </select>
-        </label>
-        <label>Note<input id="ts-modal-note" type="text" placeholder="Optional note"></label>
-        <div id="ts-modal-actions">
-          <button id="ts-modal-delete" class="hidden">Delete</button>
-          <button id="ts-modal-cancel">Cancel</button>
-          <button id="ts-modal-save">Save</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -750,14 +637,13 @@ body {
 const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=0&single=true&output=csv';
 const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=850131709&single=true&output=csv';
 const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
-const DEFAULT_AVAIL_URL    = ''; // set once teacher availability tab is published
+const DEFAULT_AVAIL_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=790798156&single=true&output=csv';
 
 const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
 const LS_ROOM_URL     = null;
 const LS_TEACHERS_URL = null;
 const LS_LAST_VIEW    = 'sfcmcLastView';
 const LS_LAST_SITE    = 'sfcmcLastSite';
-const LS_TS_BLOCKS    = 'sfcmcTsBlocks';
 
 const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
 
@@ -805,14 +691,10 @@ const state = {
     availWindows: [], // { instructor, day, from, to, facility }
     facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
     sites:       [],
-    activeSite:  '',
+    activeSite:  'Richmond',
     activeDay:   '',
   },
 
-  ts: {
-    activeTeacher: '',
-    blocks: {},  // { teacherName: [{ id, day, from, to, type, note }] }
-  },
 };
 
 // ── SHARED UTILITIES ───────────────────────────────────────────────────────────
@@ -921,7 +803,6 @@ function processLessonRows(rows) {
     for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
       if (LF_SKIP_SUBJECTS.has(instrument)) continue;
 
-      // Store window for Teacher Schedules view
       availabilityWindows.push({
         instructor, instrument,
         department: get(row, 'dept'),
@@ -1006,7 +887,7 @@ function processRoomRows(rows) {
 }
 
 // ── PROCESS AVAILABILITY ROWS → windows[] ─────────────────────────────────────
-// Manually-maintained tab: Instructor | Day | From | To | Room
+// Tab columns: Instructor | Day | From | To | Room | Site
 // Day uses short codes (Mo, Tu…). From/To in "9:00 AM" format.
 function processAvailRows(rows) {
   const windows = [];
@@ -1018,6 +899,7 @@ function processAvailRows(rows) {
     from:       header.findIndex(h => /^from$/i.test(h)),
     to:         header.findIndex(h => /^to$/i.test(h)),
     facility:   header.findIndex(h => /^room$|^facility$/i.test(h)),
+    site:       header.findIndex(h => /^site$/i.test(h)),
   };
   const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
   for (let i = 1; i < rows.length; i++) {
@@ -1027,8 +909,9 @@ function processAvailRows(rows) {
     const day        = get(row, 'day');
     const from       = get(row, 'from');
     const to         = get(row, 'to');
+    const site       = get(row, 'site');
     if (!instructor || !facility || !day || !from || !to) continue;
-    windows.push({ instructor, day, from, to, facility });
+    windows.push({ instructor, day, from, to, facility, site });
   }
   return windows;
 }
@@ -1128,10 +1011,14 @@ async function loadAllData(urls) {
     // Build facility→site lookup from booked events
     const facilityToSite = {};
     events.forEach(e => { if (e.facility && e.site) facilityToSite[e.facility] = e.site; });
-    state.rs.facilityToSite = facilityToSite;
 
-    // Process manual availability windows
-    state.rs.availWindows = processAvailRows(availRows);
+    // Process manual availability windows, then fill in any facility→site gaps
+    const availWindows = processAvailRows(availRows);
+    availWindows.forEach(w => {
+      if (w.facility && w.site && !facilityToSite[w.facility]) facilityToSite[w.facility] = w.site;
+    });
+    state.rs.facilityToSite = facilityToSite;
+    state.rs.availWindows = availWindows;
 
     state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
     if (state.rs.sites.length > 0) {
@@ -1579,199 +1466,6 @@ function renderTeachers() {
   document.getElementById('lf-teacher-body').innerHTML = rows;
 }
 
-// ── TEACHER SCHEDULES ──────────────────────────────────────────────────────────
-function tsLoadBlocks() {
-  try {
-    const raw = localStorage.getItem(LS_TS_BLOCKS);
-    state.ts.blocks = raw ? JSON.parse(raw) : {};
-  } catch { state.ts.blocks = {}; }
-}
-function tsSaveBlocks() {
-  localStorage.setItem(LS_TS_BLOCKS, JSON.stringify(state.ts.blocks));
-}
-
-function renderTsSidebar() {
-  const names = [...new Set(state.lf.records.map(r => r.instructor))].sort();
-  document.getElementById('ts-teacher-list').innerHTML = names.map(n =>
-    `<div class="ts-teacher-item${n === state.ts.activeTeacher ? ' active' : ''}" data-name="${escHtml(n)}">${escHtml(n)}</div>`
-  ).join('') || '<div style="padding:12px 14px;font-size:12px;color:var(--muted);font-style:italic">No data loaded yet.</div>';
-}
-
-function renderTsWeekGrid(teacherName) {
-  const grid  = document.getElementById('ts-week-grid');
-  const empty = document.getElementById('ts-empty');
-  if (!teacherName) { grid.innerHTML = ''; empty.classList.add('visible'); return; }
-
-  const TS_PX = 24; // pixels per 15-min slot
-
-  // Collect lesson events from RS data
-  const lessonEvts = state.rs.events.filter(e => e.instructor === teacherName);
-
-  // Collect manual blocks
-  const manualBlocks = state.ts.blocks[teacherName] || [];
-
-  // Collect availability windows from Lessons sheet (deduplicated by from/to)
-  const seenWindows = new Set();
-  const availWindows = (state.lf.availabilityWindows || [])
-    .filter(w => w.instructor === teacherName)
-    .filter(w => {
-      const key = `${w.dayShort}|${w.from}|${w.to}`;
-      if (seenWindows.has(key)) return false;
-      seenWindows.add(key); return true;
-    });
-
-  // Build per-day buckets (using RS_DAYS_ORDER)
-  const perDay = {};
-  RS_DAYS_ORDER.forEach(d => { perDay[d] = { lessons: [], blocks: [], windows: [] }; });
-  lessonEvts.forEach(e  => { if (perDay[e.day])       perDay[e.day].lessons.push(e); });
-  manualBlocks.forEach(b => { if (perDay[b.day])       perDay[b.day].blocks.push(b); });
-  availWindows.forEach(w  => { if (perDay[w.dayShort]) perDay[w.dayShort].windows.push(w); });
-
-  // Compute overall time range across all days
-  let lo = 9 * 60, hi = 18 * 60; // defaults: 9am–6pm
-  [...lessonEvts].forEach(e => {
-    const s = rsParseTime(e.from), n = rsParseTime(e.to);
-    if (s < lo) lo = s; if (n > hi) hi = n;
-  });
-  manualBlocks.forEach(b => {
-    const s = tsTimeToMins(b.from), n = tsTimeToMins(b.to);
-    if (s < lo) lo = s; if (n > hi) hi = n;
-  });
-  availWindows.forEach(w => {
-    const s = rsParseTime(w.from), n = rsParseTime(w.to);
-    if (s < lo) lo = s; if (n > hi) hi = n;
-  });
-  lo = Math.floor(lo / 30) * 30;
-  hi = Math.ceil(hi  / 30) * 30;
-  const totalSlots = (hi - lo) / 15;
-  const colH = totalSlots * TS_PX;
-
-  // Header row
-  let html = '<div class="ts-time-col-head ts-day-header"></div>';
-  RS_DAYS_ORDER.forEach(d => {
-    html += `<div class="ts-day-header">${RS_DAYS_FULL[d]}</div>`;
-  });
-
-  // Time label column + day columns
-  html += `<div class="ts-time-label-cell" style="height:${colH}px">`;
-  for (let i = 0; i < totalSlots; i++) {
-    const mins = lo + i * 15;
-    if (mins % 60 === 0) {
-      html += `<div class="ts-time-tick-label" style="top:${i * TS_PX}px">${escHtml(rsFmtTime(mins))}</div>`;
-    }
-  }
-  html += '</div>';
-
-  RS_DAYS_ORDER.forEach(d => {
-    const { lessons, blocks: mblocks, windows } = perDay[d];
-    html += `<div class="ts-day-col" style="height:${colH}px">`;
-
-    // Background slot rows
-    for (let i = 0; i < totalSlots; i++) {
-      const mins = lo + i * 15;
-      const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
-      html += `<div class="ts-slot-row${cls}" style="height:${TS_PX}px"></div>`;
-    }
-
-    // Availability windows from Lessons sheet (background layer, behind booked lessons)
-    windows.forEach(w => {
-      const startM = rsParseTime(w.from);
-      const endM   = rsParseTime(w.to);
-      const top    = (startM - lo) / 15 * TS_PX;
-      const height = Math.max((endM - startM) / 15 * TS_PX - 2, 14);
-      html += `<div class="ts-block type-window" style="top:${top}px;height:${height}px" title="Available: ${escHtml(w.from)}–${escHtml(w.to)}">
-        ${height >= 30 ? `<span class="ts-block-label" style="opacity:0.7">${escHtml(w.from)}–${escHtml(w.to)}</span>` : ''}
-      </div>`;
-    });
-
-    // Lesson events (read-only)
-    lessons.forEach(ev => {
-      const startM = rsParseTime(ev.from);
-      const endM   = rsParseTime(ev.to);
-      const top    = (startM - lo) / 15 * TS_PX;
-      const height = Math.max((endM - startM) / 15 * TS_PX - 2, 14);
-      html += `<div class="ts-block type-lesson" style="top:${top}px;height:${height}px">
-        <span class="ts-block-label">${escHtml(ev.item)}</span>
-        ${height >= 30 ? `<span class="ts-block-label" style="opacity:0.6">${escHtml(ev.from)}–${escHtml(ev.to)}</span>` : ''}
-      </div>`;
-    });
-
-    // Manual blocks (editable)
-    mblocks.forEach(b => {
-      const startM = tsTimeToMins(b.from);
-      const endM   = tsTimeToMins(b.to);
-      const top    = (startM - lo) / 15 * TS_PX;
-      const height = Math.max((endM - startM) / 15 * TS_PX - 2, 14);
-      const typeLabel = b.type.charAt(0).toUpperCase() + b.type.slice(1);
-      html += `<div class="ts-block type-${escHtml(b.type)}" data-block-id="${escHtml(String(b.id))}" style="top:${top}px;height:${height}px" title="${escHtml(b.note || typeLabel)}">
-        <span class="ts-block-label">${escHtml(b.note || typeLabel)}</span>
-        ${height >= 30 ? `<span class="ts-block-label" style="opacity:0.6">${escHtml(b.from)}–${escHtml(b.to)}</span>` : ''}
-      </div>`;
-    });
-
-    html += '</div>'; // ts-day-col
-  });
-
-  grid.innerHTML = html;
-  empty.classList.remove('visible');
-}
-
-function tsTimeToMins(t) {
-  if (!t) return 0;
-  const [hh, mm] = t.split(':').map(Number);
-  return hh * 60 + (mm || 0);
-}
-
-function tsMinsToTime(m) {
-  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
-}
-
-let _tsEditId = null, _tsEditTeacher = null;
-
-function tsOpenModal(blockId, teacherName, prefillDay) {
-  _tsEditId      = blockId;
-  _tsEditTeacher = teacherName;
-  const isEdit   = blockId !== null;
-  document.getElementById('ts-modal-title').textContent = isEdit ? 'Edit Block' : 'Add Block';
-  document.getElementById('ts-modal-delete').classList.toggle('hidden', !isEdit);
-
-  // Populate day select
-  const daySelect = document.getElementById('ts-modal-day');
-  daySelect.innerHTML = RS_DAYS_ORDER.map(d => `<option value="${d}">${RS_DAYS_FULL[d]}</option>`).join('');
-
-  if (isEdit) {
-    const block = (state.ts.blocks[teacherName] || []).find(b => b.id === blockId);
-    if (block) {
-      daySelect.value = block.day;
-      document.getElementById('ts-modal-from').value = block.from;
-      document.getElementById('ts-modal-to').value   = block.to;
-      document.getElementById('ts-modal-type').value = block.type;
-      document.getElementById('ts-modal-note').value = block.note || '';
-    }
-  } else {
-    if (prefillDay) daySelect.value = prefillDay;
-    document.getElementById('ts-modal-from').value = '09:00';
-    document.getElementById('ts-modal-to').value   = '10:00';
-    document.getElementById('ts-modal-type').value = 'available';
-    document.getElementById('ts-modal-note').value = '';
-  }
-  document.getElementById('ts-modal').classList.remove('hidden');
-}
-
-function tsCloseModal() {
-  _tsEditId = null; _tsEditTeacher = null;
-  document.getElementById('ts-modal').classList.add('hidden');
-}
-
-function onTSViewActivated() {
-  renderTsSidebar();
-  if (state.ts.activeTeacher) {
-    document.getElementById('ts-teacher-name').textContent = state.ts.activeTeacher;
-    document.getElementById('ts-add-block-btn').disabled = false;
-    renderTsWeekGrid(state.ts.activeTeacher);
-    document.getElementById('ts-empty').classList.remove('visible');
-  }
-}
 
 // ── ROOM SCHEDULE DATA & RENDERING ────────────────────────────────────────────
 // Two-color scheme: private lessons vs group/class
@@ -2003,16 +1697,13 @@ function setAppMode(mode) {
   document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === mode));
   document.getElementById('lf-view').classList.toggle('active', mode === 'lessonFinder');
   document.getElementById('rs-view').classList.toggle('active', mode === 'roomSchedule');
-  document.getElementById('ts-view').classList.toggle('active', mode === 'teacherSchedules');
-  if (mode === 'lessonFinder')     onLFViewActivated();
-  if (mode === 'roomSchedule')     onRSViewActivated();
-  if (mode === 'teacherSchedules') onTSViewActivated();
+  if (mode === 'lessonFinder') onLFViewActivated();
+  if (mode === 'roomSchedule') onRSViewActivated();
 }
 
 function onLFViewActivated() {
   buildChipSidebar();
   renderTable();
-  if (state.lf.activeTab === 'teachers') renderTeachers();
 }
 
 function onRSViewActivated() {
@@ -2027,14 +1718,12 @@ function switchLFTab(tab) {
   document.querySelectorAll('.lf-panel').forEach(p => {
     p.style.display = p.id === `lf-panel-${tab}` ? '' : 'none';
   });
-  if (tab === 'teachers') renderTeachers();
 }
 
 // ── SHOW / HIDE APP SCREENS ────────────────────────────────────────────────────
 function showApp(statusMsg) {
   state.appReady = true;
   document.getElementById('setup-screen').classList.add('hidden');
-  document.getElementById('lf-tab-bar').classList.add('visible');
   document.getElementById('lf-search').disabled = false;
   document.getElementById('refresh-btn').disabled = false;
   document.getElementById('status-line').textContent = statusMsg || 'Loaded';
@@ -2351,69 +2040,6 @@ document.getElementById('rs-grid-wrap').addEventListener('mouseleave', () => {
   _rsTtTarget = null;
 });
 
-// ── TEACHER SCHEDULES LISTENERS ────────────────────────────────────────────────
-document.getElementById('ts-teacher-list').addEventListener('click', e => {
-  const item = e.target.closest('.ts-teacher-item');
-  if (!item) return;
-  state.ts.activeTeacher = item.dataset.name;
-  renderTsSidebar();
-  document.getElementById('ts-teacher-name').textContent = state.ts.activeTeacher;
-  document.getElementById('ts-add-block-btn').disabled = false;
-  document.getElementById('ts-empty').classList.remove('visible');
-  renderTsWeekGrid(state.ts.activeTeacher);
-  if (window.innerWidth <= 768) {
-    ['ts-sidebar','ts-sidebar-scrim','ts-sidebar-toggle'].forEach(id =>
-      document.getElementById(id).classList.remove('sidebar-open', 'visible'));
-  }
-});
-
-document.getElementById('ts-week-grid').addEventListener('click', e => {
-  const block = e.target.closest('.ts-block[data-block-id]');
-  if (block && state.ts.activeTeacher) {
-    tsOpenModal(parseFloat(block.dataset.blockId), state.ts.activeTeacher, null);
-  }
-});
-
-document.getElementById('ts-add-block-btn').addEventListener('click', () => {
-  if (!state.ts.activeTeacher) return;
-  tsOpenModal(null, state.ts.activeTeacher, null);
-});
-
-document.getElementById('ts-modal-save').addEventListener('click', () => {
-  const teacher = _tsEditTeacher;
-  const day  = document.getElementById('ts-modal-day').value;
-  const from = document.getElementById('ts-modal-from').value;
-  const to   = document.getElementById('ts-modal-to').value;
-  const type = document.getElementById('ts-modal-type').value;
-  const note = document.getElementById('ts-modal-note').value.trim();
-  if (!day || !from || !to || from >= to) {
-    alert('Please fill in all fields. "From" must be earlier than "To".');
-    return;
-  }
-  if (!state.ts.blocks[teacher]) state.ts.blocks[teacher] = [];
-  if (_tsEditId !== null) {
-    const idx = state.ts.blocks[teacher].findIndex(b => b.id === _tsEditId);
-    if (idx >= 0) state.ts.blocks[teacher][idx] = { id: _tsEditId, day, from, to, type, note };
-  } else {
-    state.ts.blocks[teacher].push({ id: Date.now() + Math.random(), day, from, to, type, note });
-  }
-  tsSaveBlocks();
-  tsCloseModal();
-  renderTsWeekGrid(teacher);
-});
-
-document.getElementById('ts-modal-delete').addEventListener('click', () => {
-  if (_tsEditId === null || !_tsEditTeacher) return;
-  if (!confirm('Delete this block?')) return;
-  state.ts.blocks[_tsEditTeacher] = (state.ts.blocks[_tsEditTeacher] || []).filter(b => b.id !== _tsEditId);
-  tsSaveBlocks();
-  tsCloseModal();
-  renderTsWeekGrid(_tsEditTeacher);
-});
-
-document.getElementById('ts-modal-cancel').addEventListener('click', tsCloseModal);
-document.getElementById('ts-modal-backdrop').addEventListener('click', tsCloseModal);
-
 // ── MOBILE SIDEBAR TOGGLES ──────────────────────────────────────────────────────
 document.getElementById('lf-sidebar-toggle').addEventListener('click', () => {
   const s = document.getElementById('lf-sidebar');
@@ -2428,27 +2054,23 @@ document.getElementById('lf-sidebar-scrim').addEventListener('click', () => {
     document.getElementById(id).classList.remove('sidebar-open', 'visible'));
 });
 
-document.getElementById('ts-sidebar-toggle').addEventListener('click', () => {
-  const s = document.getElementById('ts-sidebar');
-  const scrim = document.getElementById('ts-sidebar-scrim');
-  const btn = document.getElementById('ts-sidebar-toggle');
-  const open = s.classList.toggle('sidebar-open');
-  scrim.classList.toggle('visible', open);
-  btn.classList.toggle('sidebar-open', open);
-});
-document.getElementById('ts-sidebar-scrim').addEventListener('click', () => {
-  ['ts-sidebar','ts-sidebar-scrim','ts-sidebar-toggle'].forEach(id =>
-    document.getElementById(id).classList.remove('sidebar-open', 'visible'));
+// ── TEACHERS COLLAPSIBLE (setup card) ──────────────────────────────────────────
+let _teachersRendered = false;
+document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
+  const body = document.getElementById('teachers-section-body');
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  if (open && !_teachersRendered && state.appReady) {
+    renderTeachers();
+    _teachersRendered = true;
+  }
 });
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 (function init() {
   // Restore last-used view
   const savedView = localStorage.getItem(LS_LAST_VIEW);
-  if (['lessonFinder','roomSchedule','teacherSchedules'].includes(savedView)) state.appMode = savedView;
-
-  // Load teacher schedule blocks from localStorage
-  tsLoadBlocks();
+  if (['lessonFinder','roomSchedule'].includes(savedView)) state.appMode = savedView;
 
   // URLs are hardcoded — clear any stale localStorage values from old sessions
   localStorage.removeItem('sfcmcLessonUrl');
