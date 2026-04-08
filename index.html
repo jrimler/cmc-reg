@@ -936,6 +936,7 @@ function processLessonRows(rows) {
         instrument, instructor,
         day:     dayFull,
         time:    get(row, 'time'),
+        endTime: rsFmtTime(endMins),
         minutes: mins,
         date:    get(row, 'date'),
         slots:   getSlots(mins),
@@ -1478,7 +1479,7 @@ function renderTable() {
       <td class="td-instructor">${escHtml(r.instructor)}</td>
       <td class="td-dept">${escHtml(r.department)}</td>
       <td class="td-day">${escHtml(r.day)}</td>
-      <td class="td-time">${escHtml(r.time)}</td>
+      <td class="td-time">${escHtml(r.time)}${r.endTime ? ` – ${escHtml(r.endTime)}` : ''}</td>
       <td><div class="slot-badges">${slotBadges}</div></td>
       <td><div class="branch-pills">${branchPills}</div></td>
       <td>${ageBadge}</td>
@@ -1526,7 +1527,7 @@ function renderTableByInstructor() {
             <td class="td-instructor">${escHtml(r.instructor)}</td>
             <td class="td-dept">${escHtml(r.department)}</td>
             <td class="td-day">${escHtml(r.day)}</td>
-            <td class="td-time">${escHtml(r.time)}</td>
+            <td class="td-time">${escHtml(r.time)}${r.endTime ? ` – ${escHtml(r.endTime)}` : ''}</td>
             <td><div class="slot-badges">${slotBadges}</div></td>
             <td><div class="branch-pills">${branchPills}</div></td>
             <td>${ageBadge}</td>
