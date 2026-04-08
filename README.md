@@ -37,21 +37,22 @@ No build step. No framework. No dependencies beyond CDN-loaded XLSX.js.
 - XLSX.js v0.18.5 (CDN) for CSV parsing
 - Google Sheets published CSV as live data source
 - Google Fonts: DM Serif Display, DM Mono, DM Sans
-- `localStorage` for persisting sheet URLs and last-used view
+- `localStorage` for persisting last-used view and teacher schedule blocks (URLs are now hardcoded)
 
 ---
 
 ## Data sources
 
-Three Google Sheets tabs, each published as CSV:
+Four Google Sheets tabs, each published as CSV and hardcoded as URL constants:
 
-| Source | Format | Used by |
-|---|---|---|
-| Lesson Finder | OpenSlotsReport — `Department, Subject, Instructor, Day, Time, Duration, Date` | Lesson Finder |
-| Room Schedule | RadGridExport — `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type` | Room Schedule |
-| Teacher Profiles | `Name, Branches, AgeMin, Notes` | Both views |
+| Constant | Sheet | Format | Used by |
+|---|---|---|---|
+| `DEFAULT_LESSON_URL` | Open Slots Report | `Department, Subject, Instructor, Day, Time, Duration, Date` | Lesson Finder, Teacher Schedules |
+| `DEFAULT_ROOM_URL` | Room Schedule | `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type` | Room Schedule, Teacher Schedules |
+| `DEFAULT_TEACHERS_URL` | Instructor Notes | `Name, Branches, AgeMin, Notes` | Lesson Finder → Teachers tab |
+| `DEFAULT_AVAIL_URL` | Teacher Availability | `Instructor, Day, From, To, Room` | Room Schedule (green availability blocks) |
 
-Room Schedule and Teacher Profiles URLs are optional — Lesson Finder works without them.
+Room Schedule, Instructor Notes, and Teacher Availability URLs are optional — Lesson Finder works without them. `DEFAULT_AVAIL_URL` is currently empty pending sheet creation.
 
 ---
 
@@ -101,22 +102,30 @@ The gear icon in the header reopens setup to update URLs at any time.
 
 ```js
 state = {
-  appMode:   'lessonFinder' | 'roomSchedule',
-  sheetUrls: { lessonUrl, roomUrl, teachersUrl },
+  appMode:   'lessonFinder' | 'roomSchedule' | 'teacherSchedules',
+  sheetUrls: { lessonUrl, roomUrl, teachersUrl, availUrl },
 
   lf: {
-    records,          // processed lesson slot rows
-    teacherProfiles,  // merged from Teachers sheet + RS-derived branches
-    filters,          // active chip filters (Sets: instrument, day, instructor, duration)
-    filterBranches,   filterStudentAge,
-    sortBy,           activeTab,
-    chipShowAll,
+    records,              // processed open slot rows (one per CSV row)
+    availabilityWindows,  // raw windows for Teacher Schedules view
+    teacherProfiles,      // merged from Teachers sheet + RS-derived branches
+    filters,              // active chip filters (Sets: instrument, day, instructor, duration)
+    filterBranches,       filterStudentAge,
+    sortBy,               activeTab,
+    chipShowAll,          viewMode,
   },
 
   rs: {
-    events,      // all room schedule events
-    sites,       // sorted unique site names
-    activeSite,  activeDay,
+    events,          // all booked room schedule events
+    availWindows,    // manual teacher availability windows
+    facilityToSite,  // { 'Studio A': 'Richmond', … } derived from events
+    sites,           // sorted unique site names
+    activeSite,      activeDay,
+  },
+
+  ts: {
+    activeTeacher,
+    blocks,  // manual blocks in localStorage { teacherName: [{ id, day, from, to, type, note }] }
   },
 }
 ```
@@ -124,18 +133,20 @@ state = {
 ### Data flow
 
 ```
-localStorage / defaults
+Hardcoded URL constants (DEFAULT_*_URL)
     ↓
-fetchCsvUrl() × 3  (parallel, cache-busted)
+fetchCsvUrl() × 4  (parallel, cache-busted)
     ↓
-parseCsv() × 3
+parseCsv() × 4
     ↓
-processLessonRows()  → state.lf.records
-processRoomRows()    → state.rs.events + derivedBranches
+processLessonRows()  → state.lf.records + state.lf.availabilityWindows
+processRoomRows()    → state.rs.events + derivedBranches + state.rs.facilityToSite
 processTeacherRows() + buildTeacherProfiles() → state.lf.teacherProfiles
+processAvailRows()   → state.rs.availWindows
     ↓
-Lesson Finder:  buildChipSidebar / renderTable / renderTeachers
-Room Schedule:  renderSiteTabs / renderDayTabs / rsBuildGrid
+Lesson Finder:      updateChipSidebar / renderTable / renderTeachers
+Room Schedule:      renderSiteTabs / renderDayTabs / rsBuildGrid (events + availWindows)
+Teacher Schedules:  renderTsSidebar / renderTsWeekGrid (events + availabilityWindows + manual blocks)
 ```
 
 ---
@@ -145,43 +156,38 @@ Room Schedule:  renderSiteTabs / renderDayTabs / rsBuildGrid
 ### Done
 
 **URL persistence overhaul**
-- Removed localStorage for sheet URLs entirely — stale saved values were silently overriding correct ones
-- All four sheet URLs now hardcoded as constants (`DEFAULT_LESSON_URL`, `DEFAULT_ROOM_URL`, `DEFAULT_TEACHERS_URL`, `DEFAULT_AVAIL_URL`)
-- On every load, any old localStorage URL keys are automatically cleared
-- Migrated to new Google Spreadsheet with verified, working tab gids
+- Removed localStorage for sheet URLs — stale saved values were silently overriding correct ones
+- All four sheet URLs now hardcoded as constants; old localStorage keys auto-cleared on every load
+- Migrated to new verified Google Spreadsheet
 
 **Setup screen**
-- Removed verbose step-by-step instructions, cleaner layout
-- Better error messages that distinguish network failures from HTTP errors
+- Simplified — removed verbose step-by-step instructions
+- Better error messages distinguishing network failures from HTTP errors
 
-**Open slots expansion (Lesson Finder)**
-- Each row in the Lessons sheet represents an availability window (e.g. 4:00 PM, 1 hr)
-- Previously only generated one record per window (starting at window open)
-- Now expands into one record per 15-min start increment within the window (4:00, 4:15, 4:30… up to window end − 30 min)
-- Each expanded record recalculates eligible lesson lengths based on remaining window time
-- Raw windows stored separately in `state.lf.availabilityWindows` for use by other views
+**Lesson Finder — availability window display**
+- Each row in the Open Slots Report is an availability window (e.g. Monday, 5:00 PM, 3 hrs 30 mins = available 5:00–8:30 PM)
+- Time column now shows the full range ("5:00 PM – 8:30 PM") instead of just the start time
+- Slot badges (30/45/60 min) correctly reflect what lesson lengths fit within the window
+- `endTime` field added to each record; `state.lf.availabilityWindows` stores raw windows for Teacher Schedules view
 
 **Teacher Schedules view — availability layer**
-- Availability windows from the Lessons sheet now render as gold/amber background blocks on the week grid
+- Availability windows from the Open Slots Report render as gold/amber background blocks on the week grid
 - Sit behind booked lessons (blue); deduplicated by day/from/to to avoid multi-instrument stacking
 
-**Room Schedule — manual availability windows**
-- Added `processAvailRows()` parser for a new manually-maintained sheet tab
-- Tab columns: `Instructor | Day | From | To | Room`
-- `state.rs.availWindows` stores parsed windows; `state.rs.facilityToSite` lookup derived automatically from booked events (no Site column needed in the tab)
+**Room Schedule — manual teacher availability**
+- Added `processAvailRows()` parser for a manually-maintained sheet tab (`Instructor | Day | From | To | Room`)
+- `state.rs.availWindows` and `state.rs.facilityToSite` (derived from booked events — no Site column needed)
 - Availability windows render as green blocks in the correct room column, behind booked lessons
-- Room columns expand to include rooms that appear in availability data even if no lessons are booked there
+- Room columns expand to include rooms from availability data even if no lessons are booked there
 
 ---
 
 ### Still to do
 
-1. **Create the manual availability tab** in Google Sheets with columns `Instructor | Day | From | To | Room`, publish as CSV, provide URL to hardcode as `DEFAULT_AVAIL_URL`
-2. **Test availability windows in Room Schedule** once real data is in the tab — verify room names match exactly
-3. **Test open slots expansion** with real Lessons sheet data — confirm 15-min increments are rendering correctly in Lesson Finder
-4. **Verify Teacher Schedules gold blocks** are appearing correctly with live data
-5. **Decide**: Teacher Schedules view currently shows windows from the Lessons sheet (open slots). Once the manual availability tab exists, consider whether TS view should use that instead (more accurate — includes room context)
-6. **README update** — reflect new 4-URL data source architecture and removal of localStorage for URLs
+1. **Create the Teacher Availability tab** in Google Sheets (`Instructor | Day | From | To | Room`), publish as CSV, provide URL → hardcode as `DEFAULT_AVAIL_URL`
+2. **Test Room Schedule green blocks** once availability data is live — verify room names match exactly
+3. **Verify Teacher Schedules gold blocks** are rendering correctly with live Open Slots data
+4. **Decide**: Teacher Schedules view shows open-slot windows from the Lessons sheet. Once the manual availability tab exists, consider whether TS should use that instead (more stable — not dependent on weekly report upload)
 
 ---
 
