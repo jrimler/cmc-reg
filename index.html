@@ -881,7 +881,7 @@ function parseCsv(csvText) {
 // Columns: Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod
 // Day: full names ("Tuesday"). Duration: "30 mins", "45 mins", "1 hr".
 // Instructor: "First Last" — no normalization needed.
-// Each availability window is expanded into one record per 15-min start increment.
+// Each row is one specific available start time — no expansion.
 // Returns { records, availabilityWindows }.
 function processLessonRows(rows) {
   const records = [];
@@ -913,37 +913,33 @@ function processLessonRows(rows) {
       .map(s => s.trim())
       .filter(s => s && !LF_SKIP_SUBJECTS.has(s));
 
-    const dayFull          = get(row, 'day');
-    const dayShort         = LF_DAY_TO_SHORT[dayFull] || '';
-    const windowStartMins  = rsParseTime(get(row, 'time'));
-    const windowEndMins    = windowStartMins + mins;
-    const windowFrom       = rsFmtTime(windowStartMins);
-    const windowTo         = rsFmtTime(windowEndMins);
+    const dayFull  = get(row, 'day');
+    const dayShort = LF_DAY_TO_SHORT[dayFull] || '';
+    const startMins = rsParseTime(get(row, 'time'));
+    const endMins   = startMins + mins;
 
     for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
       if (LF_SKIP_SUBJECTS.has(instrument)) continue;
 
-      // Store original window for TS view (deduplicated by from/to per teacher/day below)
+      // Store window for Teacher Schedules view
       availabilityWindows.push({
         instructor, instrument,
         department: get(row, 'dept'),
         day: dayFull, dayShort,
-        from: windowFrom, to: windowTo,
+        from: rsFmtTime(startMins),
+        to:   rsFmtTime(endMins),
       });
 
-      // Expand into one record per valid 15-min start within the window
-      for (let stepStart = windowStartMins; stepStart <= windowEndMins - 30; stepStart += 15) {
-        const remaining = windowEndMins - stepStart;
-        records.push({
-          department: get(row, 'dept'),
-          instrument, instructor,
-          day:     dayFull,
-          time:    rsFmtTime(stepStart),
-          minutes: remaining,
-          date:    get(row, 'date'),
-          slots:   getSlots(remaining),
-        });
-      }
+      // One record per row — the report already specifies exact start times
+      records.push({
+        department: get(row, 'dept'),
+        instrument, instructor,
+        day:     dayFull,
+        time:    get(row, 'time'),
+        minutes: mins,
+        date:    get(row, 'date'),
+        slots:   getSlots(mins),
+      });
     }
   }
 
