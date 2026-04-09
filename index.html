@@ -416,7 +416,7 @@ body.rs-measuring .rs-corner,
 body.rs-measuring .rs-time-col { position: static !important; }
 
 @media print {
-  @page { size: 8.5in 11in; margin: 0.4in 0.5in; }
+  @page { size: 11in 8.5in; margin: 0.4in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
   /* Hide everything except the print container */
@@ -1856,16 +1856,19 @@ function rsBuildPrintPage(day, evts) {
 // Measure the natural rendered height of a .rs-print-page element and apply
 // zoom so it fits within one portrait page (11in - 0.8in margins = 979px at 96dpi).
 // Uses body.rs-measuring to simulate print conditions during measurement.
-const PRINT_AVAIL_H = 979;
+const PRINT_AVAIL_W = 960; // landscape 10in usable width  (11in - 1in margins) at 96dpi
+const PRINT_AVAIL_H = 700; // landscape 7.3in usable height (8.5in - 0.8in margins - header) at 96dpi
 
 function rsApplyPrintZoom(pageEl) {
   pageEl.style.zoom = '';
   document.body.classList.add('rs-measuring');
+  const naturalW = pageEl.scrollWidth;
   const naturalH = pageEl.scrollHeight;
   document.body.classList.remove('rs-measuring');
-  if (naturalH > PRINT_AVAIL_H) {
-    pageEl.style.zoom = (PRINT_AVAIL_H / naturalH).toFixed(4);
-  }
+  const scaleW = PRINT_AVAIL_W / naturalW;
+  const scaleH = PRINT_AVAIL_H / naturalH;
+  const scale  = Math.min(1, scaleW, scaleH);
+  if (scale < 1) pageEl.style.zoom = scale.toFixed(4);
   pageEl.style.overflow = 'hidden';
 }
 
@@ -1887,9 +1890,12 @@ function rsPrintWeek() {
   const pages = [];
   RS_DAYS_ORDER.forEach(day => {
     const evts = rsForSiteDay(site, day);
+    const printEvts = evts.filter(e => RS_PRINT_ROOMS.has(e.facility));
+    console.log(`[print week] ${day}: ${evts.length} total events, ${printEvts.length} printable`);
     const html = rsBuildPrintPage(day, evts);
     if (html) pages.push(html);
   });
+  console.log(`[print week] pages generated: ${pages.length}`);
   if (!pages.length) { alert(`No data available to print for ${site}.`); return; }
   const container = document.getElementById('rs-print-pages');
   container.innerHTML = pages.join('');
