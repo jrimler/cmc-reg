@@ -1779,7 +1779,7 @@ function rsBuildPrintPage(day, evts) {
 
   // Compute padded time range (±15 min, snapped to 30-min boundaries)
   let lo = Infinity, hi = -Infinity;
-  printEvts.forEach(e => {
+  evts.forEach(e => {
     const s = rsParseTime(e.from), n = rsParseTime(e.to);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
@@ -1794,7 +1794,7 @@ function rsBuildPrintPage(day, evts) {
     `<span class="rs-pg-hdr-date">${escHtml(dateNote)}</span>` +
     `</div>`;
 
-  return `<div class="rs-print-page">${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi })}</div>`;
+  return `<div class="rs-print-page">${hdr}${rsBuildGrid(evts, [], rooms, true, { lo, hi })}</div>`;
 }
 
 function rsPrintDay() {

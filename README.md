@@ -182,12 +182,69 @@ Teacher Schedules:  renderTsSidebar / renderTsWeekGrid (events + availabilityWin
 
 ---
 
+## Session progress (2026-04-09)
+
+### Done
+
+**Room Schedule — removed green availability blocks from grid**
+- Green availability blocks (`state.rs.availWindows`) no longer render in the Room Schedule grid
+- Underlying data (`state.rs.availWindows`, `processAvailRows()`) preserved for future use in other views
+- Surgical removal from `rsBuildGrid` only — no data or parser changes
+
+**Room Schedule — print feature rebuilt from scratch**
+- Replaced the old print implementation with a clean `@media print` CSS approach
+- Print layout: landscape 8.5×11in, 0.4in top/bottom margins, 0.5in left/right margins
+- All non-print content hidden via `body > *:not(#rs-print-pages)` — no DOM restructuring needed
+- `#rs-print-pages` div populated just before `window.print()`, cleared in `afterprint` listener
+- `body.printing-single` / `body.printing-week` class switching controls per-page breaks
+- Print-specific grid rendering uses tighter dimensions (115px room width, 22px slot height vs 140px/28px on screen)
+
+**Room Schedule — "Print this day" button**
+- Prints the currently active site/day as a single landscape page
+- Time range cropped to actual events ±15 minutes (rounded to 30-min intervals)
+- Auto-zoom: computed from grid dimensions to fit within printable area (10in × 7.7in); minimum scale 7/12 to keep text readable
+- `forPrint` flag passed to `rsBuildGrid` to use compact dimensions
+
+**Room Schedule — "Print full week" button**
+- Iterates over all days with events for the active site and generates one page per day
+- Each page has its own time-range crop, so a light Monday doesn't waste vertical space
+
+**Room Schedule — print page header**
+- Each print page shows: site name + day (left), date from CSV data (right)
+- Header styled with DM Serif Display (title) and DM Mono (date), matching app typography
+
+**Room Schedule — student name on event blocks**
+- Student name now appears on event blocks when the block is tall enough (≥36px height)
+- Rendered as a third line below instructor name, using the same `.rs-event-info` sizing
+- Reads from `ev.student` field (mapped from "PL Student" / "student" column in the Room Schedule sheet)
+
+**Room Schedule — per-day dates on day tabs**
+- Each day tab now shows the actual calendar date pulled from the CSV's `date` column (e.g. "4/7")
+- Rendered as a small `.rs-day-tab-date` span inside the tab button
+- Handles both M/D/YYYY and YYYY-MM-DD formats via regex (avoids `new Date()` timezone issues)
+- "Data as of" label removed from the action bar entirely
+
+**Bug fix — XLSX date serial number handling**
+- XLSX library was converting date strings to Excel serial numbers (e.g. `46481`) even with `raw: false`
+- Root fix: added `cellDates: false` to `XLSX.read()` options; `raw: false` in `sheet_to_json` returns formatted strings
+- Added `getDate()` helper in `processRoomRows` as a fallback: detects numeric values and converts from Excel serial to M/D/YYYY using UTC math (`new Date(Math.round((serial - 25569) * 86400000))`)
+- This fixed "1/1" appearing on all day tabs
+
+**Bug fix — print buttons always visible**
+- Print buttons were conditionally hidden via `class="rs-hidden"` + `renderPrintBtns()` logic
+- Removed the conditional entirely — buttons are always present in the RS view HTML, no JS toggling needed
+
+**Bug fix — print functions used hardcoded 'Richmond' site name**
+- Both `rsPrintDay` and `rsPrintWeek` filtered events with `rsForSiteDay('Richmond', day)`, causing "No data to print" errors when the actual site string in the CSV didn't match exactly
+- Fixed by switching to `state.rs.activeSite` — prints whatever site is currently selected
+
+---
+
 ### Still to do
 
 1. **Create the Teacher Availability tab** in Google Sheets (`Instructor | Day | From | To | Room`), publish as CSV, provide URL → hardcode as `DEFAULT_AVAIL_URL`
-2. **Test Room Schedule green blocks** once availability data is live — verify room names match exactly
-3. **Verify Teacher Schedules gold blocks** are rendering correctly with live Open Slots data
-4. **Decide**: Teacher Schedules view shows open-slot windows from the Lessons sheet. Once the manual availability tab exists, consider whether TS should use that instead (more stable — not dependent on weekly report upload)
+2. **Verify Teacher Schedules gold blocks** are rendering correctly with live Open Slots data
+3. **Confirm actual facility name strings** from the Room Schedule CSV — run `[...new Set(state.rs.events.filter(e=>e.site===state.rs.activeSite).map(e=>e.facility))]` in console — then optionally re-add room filtering to print functions to exclude non-print rooms (practice rooms, etc.)
 
 ---
 
