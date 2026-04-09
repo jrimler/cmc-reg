@@ -403,24 +403,46 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════════════
    PRINT
    ═══════════════════════════════════════════════════════════════════════════════ */
+#rs-print-hdr { display: none; }
+
 @media print {
-  @page { size: landscape; margin: 0.3in 0.4in; }
+  @page { size: 11in 8.5in; margin: 0.4in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  #app-header, #main-content { display: none !important; }
-  #rs-print-section { display: block !important; }
-  .rs-print-page { page-break-after: always; }
-  .rs-print-page:last-child { page-break-after: avoid; }
-  .rs-print-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1.5px solid #333; }
-  .rs-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
-  .rs-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
+
+  /* Hide all page chrome */
+  #app-header,
+  #loading-overlay,
+  #setup-screen,
+  #lf-view,
+  #as-view,
+  #rs-site-tabs,
+  #rs-day-tabs,
+  #rs-action-bar,
+  #rs-empty,
+  #rs-tooltip { display: none !important; }
+
+  /* Make containers not clip */
+  body, #main-content { overflow: visible !important; padding: 0 !important; margin: 0 !important; }
+  #rs-view { display: flex !important; flex-direction: column !important; overflow: visible !important; padding: 0 !important; }
+  #rs-grid-wrap { overflow: visible !important; flex: none !important; }
+  #rs-grid { display: inline-flex !important; flex-direction: column !important; }
+
+  /* Remove sticky positioning so headers print correctly */
   .rs-room-header { position: static !important; }
   .rs-corner, .rs-time-col { position: static !important; }
-  .rs-time-tick { height: 22px; font-size: 8px; }
-  .rs-slot-row { height: 22px; }
+
+  /* Print header */
+  #rs-print-hdr { display: flex !important; align-items: baseline; gap: 10px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
+  #rs-print-hdr .print-title { font-family: 'DM Serif Display', serif; font-size: 16px; font-weight: normal; margin: 0; }
+  #rs-print-hdr .print-date { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
+
+  /* Hide room columns not in the Richmond print set */
+  .rs-room-col:not([data-facility="(A) Room A"]):not([data-facility="(B) Room B"]):not([data-facility="(C) Room C"]):not([data-facility="(D) Room D"]):not([data-facility="(GP) Grand Piano Room"]):not([data-facility="(MP) Multi-Purpose Room"]):not([data-facility="(SP) Sun Porch"]) { display: none !important; }
+  .rs-room-col-head:not([data-facility="(A) Room A"]):not([data-facility="(B) Room B"]):not([data-facility="(C) Room C"]):not([data-facility="(D) Room D"]):not([data-facility="(GP) Grand Piano Room"]):not([data-facility="(MP) Multi-Purpose Room"]):not([data-facility="(SP) Sun Porch"]) { display: none !important; }
+
   .rs-event-item { font-size: 9px; }
   .rs-event-info { font-size: 8px; }
 }
-#rs-print-section { display: none; }
 
 .sidebar-toggle-btn { display: none; }
 
@@ -639,6 +661,7 @@ body {
         Print Richmond Schedule
       </button>
     </div>
+    <div id="rs-print-hdr"></div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
       <div id="rs-empty">No events for this site and day.</div>
@@ -676,7 +699,6 @@ body {
 </div><!-- #main-content -->
 
 <div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
-<div id="rs-print-section"></div>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════════════════════ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1600,7 +1622,7 @@ function rsBuildGrid(evts, availWins, rooms, forPrint) {
   html += '<div class="rs-room-header">';
   html += '<div class="rs-corner"></div>';
   rooms.forEach(r => {
-    html += `<div class="rs-room-col-head" style="width:${ROOM_W}px">${escHtml(r.replace(/^\(\d+\)\s*/, ''))}</div>`;
+    html += `<div class="rs-room-col-head" data-facility="${escHtml(r)}" style="width:${ROOM_W}px">${escHtml(r.replace(/^\(\d+\)\s*/, ''))}</div>`;
   });
   html += '</div>';
 
@@ -1623,7 +1645,7 @@ function rsBuildGrid(evts, availWins, rooms, forPrint) {
   html += '<div class="rs-rooms-area">';
   rooms.forEach(room => {
     const colH = totalSlots * PX;
-    html += `<div class="rs-room-col" style="width:${ROOM_W}px;height:${colH}px">`;
+    html += `<div class="rs-room-col" data-facility="${escHtml(room)}" style="width:${ROOM_W}px;height:${colH}px">`;
 
     // Background slot rows
     for (let i = 0; i < totalSlots; i++) {
@@ -1704,34 +1726,14 @@ function renderGrid() {
   grid.innerHTML = rsBuildGrid(evts, [], allRooms, false);
 }
 
-function rsPrintAllDays() {
-  const section = document.getElementById('rs-print-section');
-  if (!section) return;
-  const PRINT_SITE  = 'Richmond';
-  const PRINT_ROOMS = new Set(['A','B','C','D','GP','MP','SP']);
-  const pages = [];
-  RS_DAYS_ORDER.forEach(day => {
-    const allEvts = rsForSiteDay(PRINT_SITE, day);
-    if (!allEvts.length) return;
-    // Filter to specified rooms only (strip leading "(N) " prefix before matching)
-    const evts  = allEvts.filter(e => PRINT_ROOMS.has(e.facility.replace(/^\(\d+\)\s*/, '').trim()));
-    if (!evts.length) return;
-    const rooms = rsGetRooms(evts).filter(r => PRINT_ROOMS.has(r.replace(/^\(\d+\)\s*/, '').trim()));
-    pages.push(`<div class="rs-print-page">
-      <div class="rs-print-header">
-        <span class="rs-print-site">${escHtml(PRINT_SITE)}</span>
-        <span class="rs-print-day">${RS_DAYS_FULL[day]}</span>
-      </div>
-      <div>${rsBuildGrid(evts, [], rooms, true)}</div>
-    </div>`);
-  });
-  if (!pages.length) {
-    alert('No Richmond data available to print. Make sure the Room Schedule is loaded.');
-    return;
+function rsPrint() {
+  const hdr = document.getElementById('rs-print-hdr');
+  if (hdr) {
+    const day   = RS_DAYS_FULL[state.rs.activeDay] || '';
+    const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    hdr.innerHTML = `<span class="print-title">SFCMC Richmond \u2014 ${escHtml(day)} Schedule</span><span class="print-date">${escHtml(today)}</span>`;
   }
-  section.innerHTML = pages.join('');
   window.print();
-  setTimeout(() => { section.innerHTML = ''; }, 2000);
 }
 
 // ── VIEW SWITCHING ─────────────────────────────────────────────────────────────
@@ -2103,7 +2105,7 @@ document.getElementById('rs-day-tabs').addEventListener('click', e => {
 });
 
 // RS print button
-document.getElementById('rs-print-btn').addEventListener('click', rsPrintAllDays);
+document.getElementById('rs-print-btn').addEventListener('click', rsPrint);
 
 // RS tooltip via event delegation on grid wrapper
 let _rsTtTarget = null;
