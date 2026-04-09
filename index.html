@@ -416,7 +416,7 @@ body.rs-measuring .rs-corner,
 body.rs-measuring .rs-time-col { position: static !important; }
 
 @media print {
-  @page { size: 11in 8.5in; margin: 0.4in 0.5in; }
+  @page { size: 8.5in 11in; margin: 0.4in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
   /* Hide everything except the print container */
@@ -1856,8 +1856,8 @@ function rsBuildPrintPage(day, evts) {
 // Measure the natural rendered height of a .rs-print-page element and apply
 // zoom so it fits within one portrait page (11in - 0.8in margins = 979px at 96dpi).
 // Uses body.rs-measuring to simulate print conditions during measurement.
-const PRINT_AVAIL_W = 960; // landscape 10in usable width  (11in - 1in margins) at 96dpi
-const PRINT_AVAIL_H = 700; // landscape 7.3in usable height (8.5in - 0.8in margins - header) at 96dpi
+const PRINT_AVAIL_W = 720; // portrait 7.5in usable width  (8.5in - 1in margins) at 96dpi
+const PRINT_AVAIL_H = 979; // portrait 10.2in usable height (11in - 0.8in margins) at 96dpi
 
 function rsApplyPrintZoom(pageEl) {
   pageEl.style.zoom = '';
