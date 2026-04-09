@@ -408,6 +408,13 @@ body {
    ═══════════════════════════════════════════════════════════════════════════════ */
 #rs-print-pages { display: none; }
 
+/* Simulate print conditions for scrollHeight measurement before window.print() */
+body.rs-measuring #rs-print-pages { display: block; position: fixed; top: 0; left: 0; visibility: hidden; }
+body.rs-measuring .rs-time-tick { height: 22px !important; }
+body.rs-measuring .rs-room-header,
+body.rs-measuring .rs-corner,
+body.rs-measuring .rs-time-col { position: static !important; }
+
 @media print {
   @page { size: 8.5in 11in; margin: 0.4in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -430,6 +437,7 @@ body {
   /* Grid layout fixes */
   .rs-room-header { position: static !important; }
   .rs-corner, .rs-time-col { position: static !important; }
+  .rs-time-tick { height: 22px !important; }  /* match forPrint PX=22 */
 
   .rs-event-item { font-size: 9px; }
   .rs-event-info { font-size: 8px; }
@@ -1807,7 +1815,7 @@ function renderGrid() {
 
 
 // Build one print page for a given day's events.
-// Filters to RS_PRINT_ROOMS only, computes zoom to fit one landscape page.
+// Filters to RS_PRINT_ROOMS only. Zoom is applied separately via rsApplyPrintZoom.
 // Returns HTML string, or '' if no printable events.
 function rsBuildPrintPage(day, evts) {
   const printEvts = evts.filter(e => RS_PRINT_ROOMS.has(e.facility));
@@ -1823,15 +1831,6 @@ function rsBuildPrintPage(day, evts) {
   });
   lo = Math.floor((lo - 15) / 30) * 30;
   hi = Math.ceil((hi  + 15) / 30) * 30;
-
-  // Compute zoom so the full page fits within printable area (10in × 7.7in at 96dpi)
-  const gridW = rooms.length * 115 + 56;       // ROOM_W=115, time col=56
-  const gridH = (hi - lo) / 15 * 22 + 30 + 40; // slots + room header row + pg header
-  const scaleW = 720 / gridW;   // 7.5in printable width  (8.5in - 1in margins)
-  const scaleH = 979 / gridH;   // 10.2in printable height (11in - 0.8in margins)
-  const MIN_SCALE = 7 / 12;                     // keep text ≥ 7pt (base 12pt)
-  const zoom = Math.max(MIN_SCALE, Math.min(1, scaleW, scaleH));
-  const zoomStyle = zoom < 1 ? ` style="zoom:${zoom.toFixed(4)}"` : '';
 
   // Per-day date from the first event that has one
   const dayEvt = printEvts.find(e => e.date);
@@ -1851,7 +1850,23 @@ function rsBuildPrintPage(day, evts) {
     `<span class="rs-pg-hdr-date">${escHtml(dateLabel)}</span>` +
     `</div>`;
 
-  return `<div class="rs-print-page"${zoomStyle}>${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi })}</div>`;
+  return `<div class="rs-print-page">${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi })}</div>`;
+}
+
+// Measure the natural rendered height of a .rs-print-page element and apply
+// zoom so it fits within one portrait page (11in - 0.8in margins = 979px at 96dpi).
+// Uses body.rs-measuring to simulate print conditions during measurement.
+const PRINT_AVAIL_H = 979;
+
+function rsApplyPrintZoom(pageEl) {
+  pageEl.style.zoom = '';
+  document.body.classList.add('rs-measuring');
+  const naturalH = pageEl.scrollHeight;
+  document.body.classList.remove('rs-measuring');
+  if (naturalH > PRINT_AVAIL_H) {
+    pageEl.style.zoom = (PRINT_AVAIL_H / naturalH).toFixed(4);
+  }
+  pageEl.style.overflow = 'hidden';
 }
 
 function rsPrintDay() {
@@ -1860,7 +1875,9 @@ function rsPrintDay() {
   const evts = rsForSiteDay(state.rs.activeSite, day);
   const html = rsBuildPrintPage(day, evts);
   if (!html) { alert(`No printable events for this day.`); return; }
-  document.getElementById('rs-print-pages').innerHTML = html;
+  const container = document.getElementById('rs-print-pages');
+  container.innerHTML = html;
+  rsApplyPrintZoom(container.querySelector('.rs-print-page'));
   document.body.classList.add('printing-single');
   window.print();
 }
@@ -1874,7 +1891,9 @@ function rsPrintWeek() {
     if (html) pages.push(html);
   });
   if (!pages.length) { alert(`No data available to print for ${site}.`); return; }
-  document.getElementById('rs-print-pages').innerHTML = pages.join('');
+  const container = document.getElementById('rs-print-pages');
+  container.innerHTML = pages.join('');
+  container.querySelectorAll('.rs-print-page').forEach(rsApplyPrintZoom);
   document.body.classList.add('printing-week');
   window.print();
 }
