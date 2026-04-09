@@ -1774,14 +1774,16 @@ function renderGrid() {
 
 
 // Build one print page for a given day's events.
+// Filters to RS_PRINT_ROOMS only, computes zoom to fit one landscape page.
 // Returns HTML string, or '' if no printable events.
 function rsBuildPrintPage(day, evts) {
-  if (!evts.length) return '';
-  const rooms = rsGetRooms(evts);
+  const printEvts = evts.filter(e => RS_PRINT_ROOMS.has(e.facility));
+  if (!printEvts.length) return '';
+  const rooms = rsGetRooms(printEvts);
 
   // Compute padded time range (±15 min, snapped to 30-min boundaries)
   let lo = Infinity, hi = -Infinity;
-  evts.forEach(e => {
+  printEvts.forEach(e => {
     const s = rsParseTime(e.from), n = rsParseTime(e.to);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
@@ -1789,46 +1791,43 @@ function rsBuildPrintPage(day, evts) {
   lo = Math.floor((lo - 15) / 30) * 30;
   hi = Math.ceil((hi  + 15) / 30) * 30;
 
+  // Compute zoom so the full page fits within printable area (10in × 7.7in at 96dpi)
+  const gridW = rooms.length * 115 + 56;       // ROOM_W=115, time col=56
+  const gridH = (hi - lo) / 15 * 22 + 30 + 40; // slots + room header row + pg header
+  const scaleW = 960 / gridW;
+  const scaleH = 739 / gridH;
+  const MIN_SCALE = 7 / 12;                     // keep text ≥ 7pt (base 12pt)
+  const zoom = Math.max(MIN_SCALE, Math.min(1, scaleW, scaleH));
+  const zoomStyle = zoom < 1 ? ` style="zoom:${zoom.toFixed(4)}"` : '';
+
+  // Per-day date from the first event that has one
+  const dayEvt = printEvts.find(e => e.date);
+  let dateLabel = '';
+  if (dayEvt) {
+    const mdy = dayEvt.date.match(/^(\d{1,2})\/(\d{1,2})/);
+    const iso  = dayEvt.date.match(/^\d{4}-(\d{2})-(\d{2})/);
+    if (mdy) dateLabel = `${parseInt(mdy[1])}/${parseInt(mdy[2])}`;
+    else if (iso) dateLabel = `${parseInt(iso[1])}/${parseInt(iso[2])}`;
+    else dateLabel = dayEvt.date;
+  }
+
+  const site     = state.rs.activeSite;
   const dayLabel = AS_DAY_FULL[day] || day;
-  const dateNote = state.rs.importDate ? `Data as of ${state.rs.importDate}` : '';
   const hdr = `<div class="rs-pg-hdr">` +
-    `<span class="rs-pg-hdr-title">SFCMC Richmond \u2014 ${escHtml(dayLabel)} Schedule</span>` +
-    `<span class="rs-pg-hdr-date">${escHtml(dateNote)}</span>` +
+    `<span class="rs-pg-hdr-title">SFCMC ${escHtml(site)} \u2014 ${escHtml(dayLabel)} Schedule</span>` +
+    `<span class="rs-pg-hdr-date">${escHtml(dateLabel)}</span>` +
     `</div>`;
 
-  return `<div class="rs-print-page">${hdr}${rsBuildGrid(evts, [], rooms, true, { lo, hi })}</div>`;
+  return `<div class="rs-print-page"${zoomStyle}>${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi })}</div>`;
 }
 
 function rsPrintDay() {
   const day = state.rs.activeDay;
   if (!day) return;
-  const site = state.rs.activeSite;
-  const evts = rsForSiteDay(site, day);
+  const evts = rsForSiteDay(state.rs.activeSite, day);
   const html = rsBuildPrintPage(day, evts);
-  if (!html) { alert(`No events for ${site} on this day.`); return; }
-
-  const container = document.getElementById('rs-print-pages');
-  container.innerHTML = html;
-
-  // Compute zoom to fit within printable area (10in × 7.7in at 96dpi)
-  const rooms = rsGetRooms(evts);
-  let lo = Infinity, hi = -Infinity;
-  evts.forEach(e => {
-    const s = rsParseTime(e.from), n = rsParseTime(e.to);
-    if (s < lo) lo = s;
-    if (n > hi) hi = n;
-  });
-  lo = Math.floor((lo - 15) / 30) * 30;
-  hi = Math.ceil((hi  + 15) / 30) * 30;
-  const gridW  = rooms.length * 115 + 56;            // ROOM_W=115, time col=56
-  const gridH  = (hi - lo) / 15 * 22 + 30 + 40;     // PX=22, header row + pg header
-  const scaleW = 960 / gridW;                        // 10in printable width
-  const scaleH = 739 / gridH;                        // 7.7in printable height
-  const MIN_SCALE = 7 / 12;                          // keep text ≥ 7pt (base 12pt)
-  const zoom = Math.max(MIN_SCALE, Math.min(1, scaleW, scaleH));
-  const page = container.querySelector('.rs-print-page');
-  if (page && zoom < 1) page.style.zoom = zoom;
-
+  if (!html) { alert(`No printable events for this day.`); return; }
+  document.getElementById('rs-print-pages').innerHTML = html;
   document.body.classList.add('printing-single');
   window.print();
 }
