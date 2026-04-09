@@ -311,10 +311,11 @@ body {
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
 /* Day tabs */
-#rs-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
-.rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
+#rs-day-tabs { flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
+.rs-day-tab { padding: 5px 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; flex-direction: column; align-items: center; gap: 1px; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
+.rs-day-tab-date { font-size: 9px; opacity: 0.72; }
 
 /* Tab count badge (site tabs only) */
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
@@ -322,9 +323,6 @@ body {
 
 /* Action bar */
 #rs-action-bar { flex-shrink: 0; display: flex; align-items: center; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 12px; }
-
-/* Import date label */
-#rs-import-date { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-right: auto; }
 
 /* Print buttons */
 #rs-print-btns { display: flex; gap: 8px; flex-shrink: 0; }
@@ -649,7 +647,6 @@ body {
     <div id="rs-site-tabs"></div>
     <div id="rs-day-tabs"></div>
     <div id="rs-action-bar">
-      <span id="rs-import-date"></span>
       <div id="rs-print-btns" class="rs-hidden">
         <button class="rs-print-btn" id="rs-print-day-btn">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -1727,9 +1724,20 @@ function renderDayTabs() {
   if (!bar) return;
   const { events, activeSite, activeDay } = state.rs;
   const days = RS_DAYS_ORDER.filter(d => events.some(e => e.site === activeSite && e.day === d));
-  bar.innerHTML = days.map(d =>
-    `<button class="rs-day-tab${d === activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d]}</button>`
-  ).join('');
+
+  // Build day → formatted date map from first event found for each day
+  const dayDate = {};
+  events.filter(e => e.site === activeSite && e.date).forEach(e => {
+    if (!dayDate[e.day]) {
+      const d = new Date(e.date);
+      dayDate[e.day] = isNaN(d) ? '' : `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+  });
+
+  bar.innerHTML = days.map(d => {
+    const dateLabel = dayDate[d] ? `<span class="rs-day-tab-date">${escHtml(dayDate[d])}</span>` : '';
+    return `<button class="rs-day-tab${d === activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d]}${dateLabel}</button>`;
+  }).join('');
 }
 
 
@@ -1748,16 +1756,11 @@ function renderGrid() {
   grid.innerHTML = rsBuildGrid(evts, [], allRooms, false);
 }
 
-function renderImportDate() {
-  const el = document.getElementById('rs-import-date');
-  if (!el) return;
-  el.textContent = state.rs.importDate ? `Data as of ${state.rs.importDate}` : '';
-}
-
 function renderPrintBtns() {
   const el = document.getElementById('rs-print-btns');
   if (!el) return;
-  el.classList.toggle('rs-hidden', state.rs.activeSite !== 'Richmond');
+  const hasRichmond = state.rs.events.some(e => e.site === 'Richmond');
+  el.classList.toggle('rs-hidden', !hasRichmond);
 }
 
 // Build one print page for a given day's events.
@@ -1861,7 +1864,6 @@ function onRSViewActivated() {
   renderSiteTabs();
   renderDayTabs();
   renderGrid();
-  renderImportDate();
   renderPrintBtns();
 }
 
@@ -1926,6 +1928,7 @@ function showApp(statusMsg) {
   document.getElementById('lf-search').disabled = false;
   document.getElementById('refresh-btn').disabled = false;
   document.getElementById('status-line').textContent = statusMsg || 'Loaded';
+  renderPrintBtns();
   setAppMode(state.appMode);
 }
 
