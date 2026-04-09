@@ -193,25 +193,35 @@ Teacher Schedules:  renderTsSidebar / renderTsWeekGrid (events + availabilityWin
 
 **Room Schedule — print feature rebuilt from scratch**
 - Replaced the old print implementation with a clean `@media print` CSS approach
-- Print layout: landscape 8.5×11in, 0.4in top/bottom margins, 0.5in left/right margins
+- Print layout: portrait 8.5×11in, 0.4in top/bottom margins, 0.5in left/right margins
 - All non-print content hidden via `body > *:not(#rs-print-pages)` — no DOM restructuring needed
 - `#rs-print-pages` div populated just before `window.print()`, cleared in `afterprint` listener
 - `body.printing-single` / `body.printing-week` class switching controls per-page breaks
 - Print-specific grid rendering uses tighter dimensions (115px room width, 22px slot height vs 140px/28px on screen)
+- Black and white output: white event blocks with black borders, gray room headers, simple grid lines — screen view unchanged
 
 **Room Schedule — "Print this day" button**
-- Prints the currently active site/day as a single landscape page
+- Prints the currently active site/day as a single portrait page
 - Time range cropped to actual events ±15 minutes (rounded to 30-min intervals)
-- Auto-zoom: computed from grid dimensions to fit within printable area (10in × 7.7in); minimum scale 7/12 to keep text readable
+- Auto-zoom: measured from actual DOM `scrollHeight`/`scrollWidth` via `body.rs-measuring` simulation class; `min(scaleW, scaleH)` ensures nothing clips on either axis
 - `forPrint` flag passed to `rsBuildGrid` to use compact dimensions
 
 **Room Schedule — "Print full week" button**
 - Iterates over all days with events for the active site and generates one page per day
+- Each page independently measured and zoomed to fit one portrait page
 - Each page has its own time-range crop, so a light Monday doesn't waste vertical space
 
 **Room Schedule — print page header**
 - Each print page shows: site name + day (left), date from CSV data (right)
 - Header styled with DM Serif Display (title) and DM Mono (date), matching app typography
+
+**Room Schedule — print room filtering**
+- Only the 7 Richmond studio rooms print: Room A, B, C, D, Grand Piano, Multi-Purpose, Sun Porch
+- Filtered via `RS_PRINT_ROOMS` set in `rsBuildPrintPage` — off-site and virtual rooms excluded
+
+**Bug fix — time axis alignment in print**
+- `.rs-time-tick` was 28px on screen but the print grid uses 22px slots — labels drifted from blocks
+- Fixed by adding `height: 22px !important` override in `@media print`
 
 **Room Schedule — student name on event blocks**
 - Student name now appears on event blocks when the block is tall enough (≥36px height)
@@ -244,7 +254,7 @@ Teacher Schedules:  renderTsSidebar / renderTsWeekGrid (events + availabilityWin
 
 1. **Create the Teacher Availability tab** in Google Sheets (`Instructor | Day | From | To | Room`), publish as CSV, provide URL → hardcode as `DEFAULT_AVAIL_URL`
 2. **Verify Teacher Schedules gold blocks** are rendering correctly with live Open Slots data
-3. **Confirm actual facility name strings** from the Room Schedule CSV — run `[...new Set(state.rs.events.filter(e=>e.site===state.rs.activeSite).map(e=>e.facility))]` in console — then optionally re-add room filtering to print functions to exclude non-print rooms (practice rooms, etc.)
+3. **Investigate Tuesday missing from full-week print** — console logging added to `rsPrintWeek`; check whether Tuesday events exist and whether their facility names match `RS_PRINT_ROOMS`
 
 ---
 
