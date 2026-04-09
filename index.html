@@ -431,10 +431,9 @@ body {
   .rs-room-header { position: static !important; }
   .rs-corner, .rs-time-col { position: static !important; }
 
-  .rs-event { padding: 1px 3px !important; }
-  .rs-event-item { font-size: 7.5px; line-height: 1.15 !important; }
-  .rs-event-info { font-size: 7px; line-height: 1.15 !important; }
-  .rs-event-student { font-size: 7px; line-height: 1.15 !important; }
+  .rs-event-item { font-size: 9px; }
+  .rs-event-info { font-size: 8px; }
+  .rs-event-student { font-size: 8px; }
 
   /* Black and white overrides */
   #rs-print-pages, .rs-print-page, .rs-grid-wrap, .rs-grid,
@@ -1731,9 +1730,9 @@ function rsBuildGrid(evts, availWins, rooms, forPrint, timeRange) {
       const hasConflict = conflicts.has(evIdx);
 
       let inner = `<span class="rs-event-item">${escHtml(ev.item)}</span>`;
-      if (forPrint || height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor)}</span>`;
-      if (forPrint || height >= 36) inner += ev.student ? `<span class="rs-event-student">${escHtml(ev.student)}</span>` : '';
-      if (forPrint || height >= 52) inner += `<span class="rs-event-info">${escHtml(ev.from)}–${escHtml(ev.to)}</span>`;
+      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor)}</span>`;
+      if (height >= 36 && ev.student) inner += `<span class="rs-event-student">${escHtml(ev.student)}</span>`;
+      if (height >= 52) inner += `<span class="rs-event-info">${escHtml(ev.from)}–${escHtml(ev.to)}</span>`;
 
       const dataAttrs = forPrint ? '' : [
         `data-item="${escHtml(ev.item)}"`,
