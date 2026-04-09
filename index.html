@@ -1578,13 +1578,13 @@ function rsDetectConflicts(evts) {
 
 // Build the time-grid HTML. forPrint: omit data-* attrs, use narrower columns.
 function rsBuildGrid(evts, availWins, rooms, forPrint) {
-  if (!evts.length && !availWins.length) return '';
+  if (!evts.length) return '';
   const ROOM_W = forPrint ? 115 : 140;
   const PX     = forPrint ? 22 : 28; // pixels per 15-min slot
 
-  // Compute time range from both booked events and availability windows
+  // Compute time range from booked events
   let lo = Infinity, hi = -Infinity;
-  [...evts, ...availWins].forEach(e => {
+  evts.forEach(e => {
     const s = rsParseTime(e.from), n = rsParseTime(e.to);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
@@ -1631,17 +1631,6 @@ function rsBuildGrid(evts, availWins, rooms, forPrint) {
       const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
       html += `<div class="rs-slot-row${cls}"></div>`;
     }
-
-    // Availability windows in this room (rendered behind booked events)
-    availWins.filter(w => w.facility === room).forEach(w => {
-      const startM = rsParseTime(w.from);
-      const endM   = rsParseTime(w.to);
-      const top    = (startM - lo) / 15 * PX;
-      const height = Math.max((endM - startM) / 15 * PX - 2, 16);
-      let inner = `<span class="rs-event-item" style="opacity:0.8">Available — ${escHtml(w.instructor)}</span>`;
-      if (height >= 36) inner += `<span class="rs-event-info" style="opacity:0.6">${escHtml(w.from)}–${escHtml(w.to)}</span>`;
-      html += `<div class="rs-event rs-avail" style="top:${top}px;height:${height}px;background:${RS_COLOR_AVAIL.bg};border-left-color:${RS_COLOR_AVAIL.border}">${inner}</div>`;
-    });
 
     // Events in this room
     evts.filter(e => e.facility === room).forEach(ev => {
@@ -1704,19 +1693,15 @@ function renderGrid() {
   const grid  = document.getElementById('rs-grid');
   const empty = document.getElementById('rs-empty');
   if (!grid) return;
-  const evts      = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
-  const availWins = state.rs.availWindows.filter(w =>
-    w.day === state.rs.activeDay &&
-    state.rs.facilityToSite[w.facility] === state.rs.activeSite
-  );
+  const evts = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
   if (!evts.length && !availWins.length) {
     grid.innerHTML = '';
     if (empty) empty.classList.add('visible');
     return;
   }
   if (empty) empty.classList.remove('visible');
-  const allRooms = rsGetRooms([...evts, ...availWins.map(w => ({ facility: w.facility }))]);
-  grid.innerHTML = rsBuildGrid(evts, availWins, allRooms, false);
+  const allRooms = rsGetRooms(evts);
+  grid.innerHTML = rsBuildGrid(evts, [], allRooms, false);
 }
 
 function rsPrintAllDays() {
