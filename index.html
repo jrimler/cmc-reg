@@ -414,7 +414,9 @@ body {
 
   /* Hide everything except the print container */
   body > *:not(#rs-print-pages) { display: none !important; }
-  #rs-print-pages { display: block !important; }
+  html, body { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: hidden !important; }
+  #rs-print-pages { display: block !important; margin: 0; padding: 0; }
+  .rs-print-page { overflow: hidden; page-break-inside: avoid; }
 
   /* Page breaks between days (week mode) */
   body.printing-week .rs-print-page { page-break-after: always; }
