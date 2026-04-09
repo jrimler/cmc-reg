@@ -377,6 +377,30 @@ body {
 #rs-empty.visible { display: flex; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   ASSIGNMENTS VIEW STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.as-toolbar { flex-shrink: 0; background: #fff; border-bottom: 1.5px solid var(--rule); padding: 10px 20px; display: flex; align-items: center; gap: 14px; }
+#as-search { flex: 1; max-width: 320px; padding: 6px 10px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; }
+#as-search:focus { border-color: var(--teal); }
+.as-site-filter { display: flex; gap: 4px; }
+.as-site-chip { padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink); border: 1.5px solid var(--rule); background: transparent; transition: all 0.1s; user-select: none; }
+.as-site-chip:hover { border-color: var(--ink); }
+.as-site-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.as-table-wrap { flex: 1; overflow: auto; padding: 20px 28px; }
+.as-table-wrap::-webkit-scrollbar { width: 6px; }
+.as-table-wrap::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+#as-table { width: 100%; border-collapse: collapse; }
+#as-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+#as-table tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
+#as-table tbody tr:hover { background: var(--paper-dark); }
+#as-table tbody td { padding: 9px 10px; vertical-align: middle; font-size: 13px; }
+#as-table .td-instructor { font-weight: 500; }
+#as-table .td-mono { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; }
+#as-empty { display: none; text-align: center; padding: 80px 20px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+#as-empty.visible { display: block; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    PRINT
    ═══════════════════════════════════════════════════════════════════════════════ */
 @media print {
@@ -455,6 +479,7 @@ body {
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
     <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
+    <button class="view-btn" data-view="assignments">Assignments</button>
   </div>
 
   <button id="refresh-btn" disabled title="Refresh data from Google Sheets">
@@ -620,6 +645,34 @@ body {
     </div>
   </div>
 
+  <!-- ══ ASSIGNMENTS VIEW ═════════════════════════════════════════════════════ -->
+  <div id="as-view" class="view">
+    <div class="as-toolbar">
+      <input id="as-search" type="search" placeholder="Filter by instructor…" autocomplete="off">
+      <div class="as-site-filter">
+        <span class="as-site-chip active" data-site="">All</span>
+        <span class="as-site-chip" data-site="Richmond">Richmond</span>
+        <span class="as-site-chip" data-site="Mission">Mission</span>
+      </div>
+    </div>
+    <div class="as-table-wrap">
+      <table id="as-table">
+        <thead>
+          <tr>
+            <th>Instructor</th>
+            <th>Day</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Room</th>
+            <th>Site</th>
+          </tr>
+        </thead>
+        <tbody id="as-tbody"></tbody>
+      </table>
+      <div id="as-empty">No assignments match your filters.</div>
+    </div>
+  </div>
+
 </div><!-- #main-content -->
 
 <div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
@@ -659,6 +712,7 @@ const LF_SKIP_SUBJECTS = new Set([
 const LF_DAY_ORDER  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const RS_DAYS_ORDER = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 const RS_DAYS_FULL  = { Su:'Sun', Mo:'Mon', Tu:'Tue', We:'Wed', Th:'Thu', Fr:'Fri', Sa:'Sat' };
+const AS_DAY_FULL   = { Mo:'Monday', Tu:'Tuesday', We:'Wednesday', Th:'Thursday', Fr:'Friday', Sa:'Saturday', Su:'Sunday' };
 const LF_DAY_TO_SHORT = { Monday:'Mo', Tuesday:'Tu', Wednesday:'We', Thursday:'Th', Friday:'Fr', Saturday:'Sa', Sunday:'Su' };
 
 // Instruments shown first in the Subject chip section
@@ -693,6 +747,11 @@ const state = {
     sites:       [],
     activeSite:  'Richmond',
     activeDay:   '',
+  },
+
+  as: {
+    search:     '',
+    siteFilter: '',
   },
 
 };
@@ -1697,8 +1756,10 @@ function setAppMode(mode) {
   document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === mode));
   document.getElementById('lf-view').classList.toggle('active', mode === 'lessonFinder');
   document.getElementById('rs-view').classList.toggle('active', mode === 'roomSchedule');
+  document.getElementById('as-view').classList.toggle('active', mode === 'assignments');
   if (mode === 'lessonFinder') onLFViewActivated();
   if (mode === 'roomSchedule') onRSViewActivated();
+  if (mode === 'assignments') onASViewActivated();
 }
 
 function onLFViewActivated() {
@@ -1710,6 +1771,52 @@ function onRSViewActivated() {
   renderSiteTabs();
   renderDayTabs();
   renderGrid();
+}
+
+function onASViewActivated() {
+  renderAssignmentsTable();
+}
+
+function renderAssignmentsTable() {
+  const tbody   = document.getElementById('as-tbody');
+  const emptyEl = document.getElementById('as-empty');
+  if (!tbody) return;
+
+  const query      = state.as.search.toLowerCase().trim();
+  const siteFilter = state.as.siteFilter;
+
+  // Filter
+  let rows = state.rs.availWindows.filter(w => {
+    if (siteFilter && w.site !== siteFilter) return false;
+    if (query && !w.instructor.toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  // Sort: site → instructor → day (Mon-Sun order)
+  rows.sort((a, b) => {
+    const siteCmp = (a.site || '').localeCompare(b.site || '');
+    if (siteCmp !== 0) return siteCmp;
+    const instrCmp = a.instructor.localeCompare(b.instructor);
+    if (instrCmp !== 0) return instrCmp;
+    return RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day);
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    emptyEl.classList.add('visible');
+    return;
+  }
+  emptyEl.classList.remove('visible');
+
+  tbody.innerHTML = rows.map(w => `
+    <tr>
+      <td class="td-instructor">${escHtml(w.instructor)}</td>
+      <td>${escHtml(AS_DAY_FULL[w.day] || w.day)}</td>
+      <td class="td-mono">${escHtml(w.from)}</td>
+      <td class="td-mono">${escHtml(w.to)}</td>
+      <td>${escHtml(w.facility)}</td>
+      <td class="td-mono">${escHtml(w.site)}</td>
+    </tr>`).join('');
 }
 
 function switchLFTab(tab) {
@@ -1745,6 +1852,21 @@ function showSetup(errorMsg) {
 // View switcher
 document.querySelectorAll('.view-btn').forEach(btn => {
   btn.addEventListener('click', () => setAppMode(btn.dataset.view));
+});
+
+// Assignments search
+document.getElementById('as-search').addEventListener('input', e => {
+  state.as.search = e.target.value;
+  renderAssignmentsTable();
+});
+
+// Assignments site filter (event delegation)
+document.querySelector('.as-site-filter').addEventListener('click', e => {
+  const chip = e.target.closest('.as-site-chip');
+  if (!chip) return;
+  state.as.siteFilter = chip.dataset.site;
+  document.querySelectorAll('.as-site-chip').forEach(c => c.classList.toggle('active', c === chip));
+  renderAssignmentsTable();
 });
 
 // LF tab bar
@@ -2070,7 +2192,7 @@ document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
 (function init() {
   // Restore last-used view
   const savedView = localStorage.getItem(LS_LAST_VIEW);
-  if (['lessonFinder','roomSchedule'].includes(savedView)) state.appMode = savedView;
+  if (['lessonFinder','roomSchedule','assignments'].includes(savedView)) state.appMode = savedView;
 
   // URLs are hardcoded — clear any stale localStorage values from old sessions
   localStorage.removeItem('sfcmcLessonUrl');
