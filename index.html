@@ -1774,9 +1774,8 @@ function renderGrid() {
 // Build one print page for a given day's events.
 // Returns HTML string, or '' if no printable events.
 function rsBuildPrintPage(day, evts) {
-  const printEvts = evts.filter(e => RS_PRINT_ROOMS.has(e.facility));
-  if (!printEvts.length) return '';
-  const rooms = rsGetRooms(printEvts).filter(r => RS_PRINT_ROOMS.has(r));
+  if (!evts.length) return '';
+  const rooms = rsGetRooms(evts);
 
   // Compute padded time range (±15 min, snapped to 30-min boundaries)
   let lo = Infinity, hi = -Infinity;
@@ -1809,10 +1808,9 @@ function rsPrintDay() {
   container.innerHTML = html;
 
   // Compute zoom to fit within printable area (10in × 7.7in at 96dpi)
-  const printEvts = evts.filter(e => RS_PRINT_ROOMS.has(e.facility));
-  const rooms = rsGetRooms(printEvts).filter(r => RS_PRINT_ROOMS.has(r));
+  const rooms = rsGetRooms(evts);
   let lo = Infinity, hi = -Infinity;
-  printEvts.forEach(e => {
+  evts.forEach(e => {
     const s = rsParseTime(e.from), n = rsParseTime(e.to);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
