@@ -1800,9 +1800,10 @@ function rsBuildPrintPage(day, evts) {
 function rsPrintDay() {
   const day = state.rs.activeDay;
   if (!day) return;
-  const evts = rsForSiteDay('Richmond', day);
+  const site = state.rs.activeSite;
+  const evts = rsForSiteDay(site, day);
   const html = rsBuildPrintPage(day, evts);
-  if (!html) { alert('No Richmond events for this day.'); return; }
+  if (!html) { alert(`No events for ${site} on this day.`); return; }
 
   const container = document.getElementById('rs-print-pages');
   container.innerHTML = html;
@@ -1831,13 +1832,14 @@ function rsPrintDay() {
 }
 
 function rsPrintWeek() {
+  const site = state.rs.activeSite;
   const pages = [];
   RS_DAYS_ORDER.forEach(day => {
-    const evts = rsForSiteDay('Richmond', day);
+    const evts = rsForSiteDay(site, day);
     const html = rsBuildPrintPage(day, evts);
     if (html) pages.push(html);
   });
-  if (!pages.length) { alert('No Richmond data available to print.'); return; }
+  if (!pages.length) { alert(`No data available to print for ${site}.`); return; }
   document.getElementById('rs-print-pages').innerHTML = pages.join('');
   document.body.classList.add('printing-week');
   window.print();
