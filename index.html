@@ -409,7 +409,7 @@ body {
 #rs-print-pages { display: none; }
 
 @media print {
-  @page { size: 11in 8.5in; margin: 0.4in 0.5in; }
+  @page { size: 8.5in 11in; margin: 0.4in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
   /* Hide everything except the print container */
@@ -1794,8 +1794,8 @@ function rsBuildPrintPage(day, evts) {
   // Compute zoom so the full page fits within printable area (10in × 7.7in at 96dpi)
   const gridW = rooms.length * 115 + 56;       // ROOM_W=115, time col=56
   const gridH = (hi - lo) / 15 * 22 + 30 + 40; // slots + room header row + pg header
-  const scaleW = 960 / gridW;
-  const scaleH = 739 / gridH;
+  const scaleW = 720 / gridW;   // 7.5in printable width  (8.5in - 1in margins)
+  const scaleH = 979 / gridH;   // 10.2in printable height (11in - 0.8in margins)
   const MIN_SCALE = 7 / 12;                     // keep text ≥ 7pt (base 12pt)
   const zoom = Math.max(MIN_SCALE, Math.min(1, scaleW, scaleH));
   const zoomStyle = zoom < 1 ? ` style="zoom:${zoom.toFixed(4)}"` : '';
