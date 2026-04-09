@@ -434,6 +434,39 @@ body {
   .rs-event-item { font-size: 9px; }
   .rs-event-info { font-size: 8px; }
   .rs-event-student { font-size: 8px; }
+
+  /* Black and white overrides */
+  #rs-print-pages, .rs-print-page, .rs-grid-wrap, .rs-grid,
+  .rs-room-header, .rs-corner, .rs-time-col, .rs-room-col,
+  .rs-slot-row { background: #fff !important; box-shadow: none !important; }
+
+  .rs-room-col-head {
+    background: #f0f0f0 !important;
+    color: #000 !important;
+    border-right: 1px solid #999 !important;
+    border-bottom: 1px solid #999 !important;
+    font-weight: 600 !important;
+  }
+  .rs-corner { border-right: 1px solid #999 !important; }
+  .rs-room-col { border-right: 1px solid #ccc !important; }
+
+  .rs-slot-row { border-top-color: transparent !important; }
+  .rs-slot-row.half-hour { border-top: 1px solid #ddd !important; }
+  .rs-slot-row.on-hour  { border-top: 1.5px solid #999 !important; }
+
+  .rs-time-label { color: #000 !important; }
+
+  .rs-event {
+    background: #fff !important;
+    border: 1px solid #555 !important;
+    border-left: 3px solid #000 !important;
+    color: #000 !important;
+    filter: none !important;
+  }
+  .rs-event.is-class { border-left-width: 4px !important; }
+  .rs-event.rs-conflict { outline: none !important; }
+  .rs-event.rs-conflict::after { display: none !important; }
+  .rs-event-item, .rs-event-info, .rs-event-student { color: #000 !important; }
 }
 
 .sidebar-toggle-btn { display: none; }
