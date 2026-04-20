@@ -329,7 +329,6 @@ body {
 
 /* Print buttons */
 #rs-print-btns { display: flex; gap: 8px; flex-shrink: 0; }
-#rs-print-tip { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
 .rs-print-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
 .rs-print-btn:hover { border-color: var(--ink); color: var(--ink); }
 
@@ -703,7 +702,6 @@ body.rs-measuring .rs-time-col { position: static !important; }
           Print full week
         </button>
       </div>
-      <span id="rs-print-tip">Tip: turn off headers and footers in your browser's print dialog</span>
     </div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
@@ -1815,7 +1813,8 @@ function renderSiteTabs() {
     const count = state.rs.events.filter(e => e.site === site).length;
     return `<button class="rs-site-tab${site === activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
   }).join('');
-
+  const printable = activeSite === 'Richmond';
+  document.getElementById('rs-print-btns').style.display = printable ? '' : 'none';
 }
 
 function renderWeekSelector() {
