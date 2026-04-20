@@ -811,7 +811,7 @@ const state = {
     facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
     sites:       [],
     weeks:       [],   // sorted array of Monday date strings (ISO), e.g. ["2026-04-07"]
-    activeSite:  'Richmond',
+    activeSite:  'Richmond Branch',
     activeDay:   'Mo',
     activeWeek:  '',   // Monday date string of the currently selected week
     importDate:  '',  // most recent Date value from the loaded CSV
@@ -1177,14 +1177,13 @@ async function loadAllData(urls) {
     state.rs.availWindows = availWindows;
 
     state.rs.sites  = [...new Set(events.map(e => e.site))].sort((a, b) => {
-      if (a === 'Richmond') return -1;
-      if (b === 'Richmond') return 1;
+      if (a === 'Richmond Branch') return -1;
+      if (b === 'Richmond Branch') return 1;
       return a.localeCompare(b);
     });
-    console.log('[RS sites]', JSON.stringify(state.rs.sites));
     if (state.rs.sites.length > 0) {
       if (!state.rs.sites.includes(state.rs.activeSite)) {
-        state.rs.activeSite = state.rs.sites.includes('Richmond') ? 'Richmond' : state.rs.sites[0];
+        state.rs.activeSite = state.rs.sites.includes('Richmond Branch') ? 'Richmond Branch' : state.rs.sites[0];
       }
       const activeWeek = state.rs.activeWeek;
       const daysForSite = RS_DAYS_ORDER.filter(d =>
