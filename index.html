@@ -334,6 +334,7 @@ body {
 
 /* Print buttons */
 #rs-print-btns { display: flex; gap: 8px; flex-shrink: 0; }
+#rs-print-tip { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
 .rs-print-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
 .rs-print-btn:hover { border-color: var(--ink); color: var(--ink); }
 
@@ -424,7 +425,7 @@ body.rs-measuring .rs-corner,
 body.rs-measuring .rs-time-col { position: static !important; }
 
 @media print {
-  @page { size: 8.5in 11in; margin: 0.4in 0.5in; }
+  @page { size: 8.5in 11in; margin: 0.75in 0.5in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
   /* Hide everything except the print container */
@@ -438,9 +439,9 @@ body.rs-measuring .rs-time-col { position: static !important; }
   body.printing-week .rs-print-page:last-child { page-break-after: avoid; }
 
   /* Per-page header */
-  .rs-pg-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
-  .rs-pg-hdr-title { font-family: 'DM Serif Display', serif; font-size: 15px; font-weight: normal; }
-  .rs-pg-hdr-date { font-family: 'DM Mono', monospace; font-size: 10px; color: #666; }
+  .rs-pg-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #222; }
+  .rs-pg-hdr-title { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: normal; }
+  .rs-pg-hdr-date { font-family: 'DM Mono', monospace; font-size: 12px; color: #444; }
 
   /* Grid layout fixes */
   .rs-room-header { position: static !important; }
@@ -473,13 +474,19 @@ body.rs-measuring .rs-time-col { position: static !important; }
   .rs-time-label { color: #000 !important; }
 
   .rs-event {
-    background: #fff !important;
-    border: 1px solid #555 !important;
-    border-left: 3px solid #000 !important;
     color: #000 !important;
     filter: none !important;
   }
-  .rs-event.is-class { border-left-width: 4px !important; }
+  .rs-event:not(.is-class) {
+    background: #e8f4fd !important;
+    border: 1px solid #90bfe8 !important;
+    border-left: 3px solid #4a90d9 !important;
+  }
+  .rs-event.is-class {
+    background: #fdf9e8 !important;
+    border: 1px solid #d9c050 !important;
+    border-left: 4px solid #c8a020 !important;
+  }
   .rs-event.rs-conflict { outline: none !important; }
   .rs-event.rs-conflict::after { display: none !important; }
   .rs-event-item, .rs-event-info, .rs-event-student { color: #000 !important; }
@@ -708,6 +715,7 @@ body.rs-measuring .rs-time-col { position: static !important; }
           Print full week
         </button>
       </div>
+      <span id="rs-print-tip">Tip: turn off headers and footers in your browser's print dialog</span>
     </div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
