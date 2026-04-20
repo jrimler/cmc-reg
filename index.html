@@ -1181,6 +1181,7 @@ async function loadAllData(urls) {
       if (b === 'Richmond') return 1;
       return a.localeCompare(b);
     });
+    console.log('[RS sites]', JSON.stringify(state.rs.sites));
     if (state.rs.sites.length > 0) {
       if (!state.rs.sites.includes(state.rs.activeSite)) {
         state.rs.activeSite = state.rs.sites.includes('Richmond') ? 'Richmond' : state.rs.sites[0];
