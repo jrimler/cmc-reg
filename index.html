@@ -1156,7 +1156,7 @@ async function loadAllData(urls) {
     const { events, derivedBranches } = processRoomRows(roomRows);
     events.forEach(e => { e.weekKey = rsWeekKey(e.date); });
     state.rs.events = events;
-    console.log('[RS weeks] sample dates:', events.slice(0,3).map(e => ({ date: e.date, weekKey: e.weekKey })));
+    events.slice(0,3).forEach((e,i) => console.log(`[RS weeks] event[${i}] date="${e.date}" weekKey="${e.weekKey}"`));
 
     // Build sorted weeks array from all event week keys
     const allWeekKeys = [...new Set(events.map(e => e.weekKey).filter(Boolean))].sort();
