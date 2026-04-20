@@ -1813,8 +1813,7 @@ function renderSiteTabs() {
     const count = state.rs.events.filter(e => e.site === site).length;
     return `<button class="rs-site-tab${site === activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
   }).join('');
-  const printable = activeSite === 'Richmond';
-  document.getElementById('rs-print-btns').style.display = printable ? '' : 'none';
+  document.getElementById('rs-print-btns').style.display = activeSite === 'Richmond' ? 'flex' : 'none';
 }
 
 function renderWeekSelector() {
