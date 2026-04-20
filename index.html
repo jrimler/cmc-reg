@@ -310,6 +310,14 @@ body {
 .rs-site-tab:hover { color: var(--ink); }
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
+/* Week selector */
+#rs-week-selector { flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #fff; border-bottom: 1.5px solid var(--rule); padding: 4px 18px; }
+.rs-week-bar { display: flex; align-items: center; gap: 12px; }
+.rs-week-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink); min-width: 120px; text-align: center; }
+.rs-week-arrow { border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 16px; color: var(--muted); cursor: pointer; padding: 2px 8px; border-radius: 3px; line-height: 1; transition: color 0.1s, background 0.1s; }
+.rs-week-arrow:hover:not(:disabled) { color: var(--ink); background: rgba(0,0,0,0.05); }
+.rs-week-arrow:disabled { opacity: 0.3; cursor: default; }
+
 /* Day tabs */
 #rs-day-tabs { flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
 .rs-day-tab { padding: 5px 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; flex-direction: column; align-items: center; gap: 1px; transition: color 0.1s, background 0.1s; }
@@ -687,6 +695,7 @@ body.rs-measuring .rs-time-col { position: static !important; }
   <!-- ══ ROOM SCHEDULE VIEW ════════════════════════════════════════════════ -->
   <div id="rs-view" class="view">
     <div id="rs-site-tabs"></div>
+    <div id="rs-week-selector"></div>
     <div id="rs-day-tabs"></div>
     <div id="rs-action-bar">
       <div id="rs-print-btns">
@@ -809,8 +818,10 @@ const state = {
     availWindows: [], // { instructor, day, from, to, facility }
     facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
     sites:       [],
+    weeks:       [],   // sorted array of Monday date strings (ISO), e.g. ["2026-04-07"]
     activeSite:  'Richmond',
     activeDay:   '',
+    activeWeek:  '',   // Monday date string of the currently selected week
     importDate:  '',  // most recent Date value from the loaded CSV
   },
 
@@ -1143,7 +1154,13 @@ async function loadAllData(urls) {
 
     // Process room data → events + derivedBranches
     const { events, derivedBranches } = processRoomRows(roomRows);
+    events.forEach(e => { e.weekKey = rsWeekKey(e.date); });
     state.rs.events = events;
+
+    // Build sorted weeks array from all event week keys
+    const allWeekKeys = [...new Set(events.map(e => e.weekKey).filter(Boolean))].sort();
+    state.rs.weeks = allWeekKeys;
+    state.rs.activeWeek = allWeekKeys[0] || '';
 
     // Find the most recent date across all events for "Data as of" display
     state.rs.importDate = events.reduce((best, e) => {
@@ -1173,7 +1190,10 @@ async function loadAllData(urls) {
           : state.rs.sites.includes('Richmond') ? 'Richmond'
           : state.rs.sites[0];
       }
-      const daysForSite = RS_DAYS_ORDER.filter(d => events.some(e => e.site === state.rs.activeSite && e.day === d));
+      const activeWeek = state.rs.activeWeek;
+      const daysForSite = RS_DAYS_ORDER.filter(d =>
+        events.some(e => e.site === state.rs.activeSite && e.day === d && e.weekKey === activeWeek)
+      );
       if (!daysForSite.includes(state.rs.activeDay)) state.rs.activeDay = daysForSite[0] || '';
     }
 
@@ -1618,6 +1638,29 @@ const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
 const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
 const RS_COLOR_AVAIL   = { bg: 'rgba(60,180,100,0.13)', border: '#38a870' };
 
+// Date string (M/D/YYYY or YYYY-MM-DD) → Monday of that ISO week as YYYY-MM-DD
+function rsWeekKey(dateStr) {
+  if (!dateStr) return '';
+  const mdy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const iso  = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  let y, m, d;
+  if (mdy)      { m = +mdy[1]-1; d = +mdy[2]; y = +mdy[3]; }
+  else if (iso) { y = +iso[1]; m = +iso[2]-1; d = +iso[3]; }
+  else return '';
+  const dt = new Date(y, m, d);
+  const dow = dt.getDay(); // 0=Sun … 6=Sat
+  dt.setDate(dt.getDate() + (dow === 0 ? -6 : 1 - dow));
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+// YYYY-MM-DD Monday string → "Week of Apr 7"
+function rsWeekLabel(mondayStr) {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const iso = mondayStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!iso) return mondayStr;
+  return `Week of ${MONTHS[+iso[2]-1]} ${+iso[3]}`;
+}
+
 // "9:00 AM" → minutes from midnight
 function rsParseTime(str) {
   if (!str) return 0;
@@ -1640,7 +1683,8 @@ function rsFmtTime(mins) {
 }
 
 function rsForSiteDay(site, day) {
-  return state.rs.events.filter(e => e.site === site && e.day === day);
+  const week = state.rs.activeWeek;
+  return state.rs.events.filter(e => e.site === site && e.day === day && (!week || e.weekKey === week));
 }
 
 function rsGetRooms(evts) {
@@ -1774,16 +1818,32 @@ function renderSiteTabs() {
 
 }
 
+function renderWeekSelector() {
+  const bar = document.getElementById('rs-week-selector');
+  if (!bar) return;
+  const { weeks, activeWeek } = state.rs;
+  if (!weeks.length) { bar.innerHTML = ''; return; }
+  const idx = weeks.indexOf(activeWeek);
+  const prevDis = idx <= 0 ? ' disabled' : '';
+  const nextDis = idx >= weeks.length - 1 ? ' disabled' : '';
+  bar.innerHTML = `<div class="rs-week-bar">` +
+    `<button class="rs-week-arrow"${prevDis} id="rs-week-prev">&#x2039;</button>` +
+    `<span class="rs-week-label">${escHtml(rsWeekLabel(activeWeek))}</span>` +
+    `<button class="rs-week-arrow"${nextDis} id="rs-week-next">&#x203A;</button>` +
+    `</div>`;
+}
+
 function renderDayTabs() {
   const bar = document.getElementById('rs-day-tabs');
   if (!bar) return;
-  const { events, activeSite, activeDay } = state.rs;
-  const days = RS_DAYS_ORDER.filter(d => events.some(e => e.site === activeSite && e.day === d));
+  const { events, activeSite, activeDay, activeWeek } = state.rs;
+  const weekEvts = events.filter(e => e.site === activeSite && (!activeWeek || e.weekKey === activeWeek));
+  const days = RS_DAYS_ORDER.filter(d => weekEvts.some(e => e.day === d));
 
   // Build day → formatted date map from first event found for each day.
   // Parse without Date() to avoid timezone shifts: handle M/D/YYYY and YYYY-MM-DD.
   const dayDate = {};
-  events.filter(e => e.site === activeSite && e.date).forEach(e => {
+  weekEvts.filter(e => e.date).forEach(e => {
     if (dayDate[e.day]) return;
     const mdy = e.date.match(/^(\d{1,2})\/(\d{1,2})/);   // M/D/YYYY
     const iso  = e.date.match(/^\d{4}-(\d{2})-(\d{2})/); // YYYY-MM-DD
@@ -1929,9 +1989,9 @@ function onLFViewActivated() {
 
 function onRSViewActivated() {
   renderSiteTabs();
+  renderWeekSelector();
   renderDayTabs();
   renderGrid();
-
 }
 
 function onASViewActivated() {
@@ -2263,9 +2323,30 @@ document.getElementById('rs-site-tabs').addEventListener('click', e => {
   if (!btn) return;
   state.rs.activeSite = btn.dataset.site;
   localStorage.setItem(LS_LAST_SITE, state.rs.activeSite);
-  const daysForSite = RS_DAYS_ORDER.filter(d => state.rs.events.some(ev => ev.site === state.rs.activeSite && ev.day === d));
+  // Keep activeWeek; reset activeDay to first available in current site+week
+  const daysForSite = RS_DAYS_ORDER.filter(d =>
+    state.rs.events.some(ev => ev.site === state.rs.activeSite && ev.day === d && ev.weekKey === state.rs.activeWeek)
+  );
   state.rs.activeDay = daysForSite[0] || '';
   renderSiteTabs();
+  renderWeekSelector();
+  renderDayTabs();
+  renderGrid();
+});
+
+// RS week selector (event delegation)
+document.getElementById('rs-week-selector').addEventListener('click', e => {
+  const btn = e.target.closest('.rs-week-arrow');
+  if (!btn || btn.disabled) return;
+  const { weeks, activeWeek, activeSite } = state.rs;
+  const idx = weeks.indexOf(activeWeek);
+  if (btn.id === 'rs-week-prev' && idx > 0)             state.rs.activeWeek = weeks[idx - 1];
+  else if (btn.id === 'rs-week-next' && idx < weeks.length - 1) state.rs.activeWeek = weeks[idx + 1];
+  const daysForWeek = RS_DAYS_ORDER.filter(d =>
+    state.rs.events.some(ev => ev.site === activeSite && ev.day === d && ev.weekKey === state.rs.activeWeek)
+  );
+  state.rs.activeDay = daysForWeek[0] || '';
+  renderWeekSelector();
   renderDayTabs();
   renderGrid();
 });
