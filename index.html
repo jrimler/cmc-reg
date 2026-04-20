@@ -1176,7 +1176,11 @@ async function loadAllData(urls) {
     state.rs.facilityToSite = facilityToSite;
     state.rs.availWindows = availWindows;
 
-    state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
+    state.rs.sites  = [...new Set(events.map(e => e.site))].sort((a, b) => {
+      if (a === 'Richmond') return -1;
+      if (b === 'Richmond') return 1;
+      return a.localeCompare(b);
+    });
     if (state.rs.sites.length > 0) {
       if (!state.rs.sites.includes(state.rs.activeSite)) {
         state.rs.activeSite = state.rs.sites.includes('Richmond') ? 'Richmond' : state.rs.sites[0];
@@ -1813,7 +1817,6 @@ function renderSiteTabs() {
     const count = state.rs.events.filter(e => e.site === site).length;
     return `<button class="rs-site-tab${site === activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
   }).join('');
-  document.getElementById('rs-print-btns').style.display = activeSite === 'Richmond' ? 'flex' : 'none';
 }
 
 function renderWeekSelector() {
