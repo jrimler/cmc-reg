@@ -235,11 +235,6 @@ body {
 .avail-main { flex: 1; overflow-y: auto; padding: 20px 28px; }
 .results-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule); }
 #lf-result-count { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-.sort-group { display: flex; gap: 4px; align-items: center; }
-.sort-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
-.sort-btn { padding: 3px 8px; border-radius: 3px; border: 1.5px solid var(--rule); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; color: var(--muted); transition: all 0.1s; text-transform: uppercase; letter-spacing: 0.08em; }
-.sort-btn:hover { border-color: var(--ink); color: var(--ink); }
-.sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* View mode toggle (By Instrument / By Instructor) */
 .viewmode-group { display: flex; gap: 3px; align-items: center; }
@@ -528,8 +523,7 @@ body.rs-measuring .rs-time-col { position: static !important; }
 
   .results-bar { flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
   #lf-result-count { width: 100%; }
-  .sort-label { display: none; }
-  .viewmode-btn, .sort-btn { padding: 3px 6px; font-size: 9px; }
+  .viewmode-btn { padding: 3px 6px; font-size: 9px; }
 
   #rs-day-tabs { overflow-x: auto; }
   #rs-day-tabs::-webkit-scrollbar { height: 0; }
@@ -675,12 +669,6 @@ body.rs-measuring .rs-time-col { position: static !important; }
             <button class="viewmode-btn active" data-viewmode="byInstrument">By Instrument</button>
             <button class="viewmode-btn" data-viewmode="byInstructor">By Instructor</button>
           </div>
-          <div class="sort-group">
-            <span class="sort-label">Group by</span>
-            <button class="sort-btn active" data-sort="instrument">Instrument</button>
-            <button class="sort-btn" data-sort="day">Day</button>
-            <button class="sort-btn" data-sort="instructor">Instructor</button>
-          </div>
         </div>
         <div id="lf-active-filters"></div>
         <table id="lf-results-table">
@@ -773,8 +761,6 @@ const DEFAULT_AVAIL_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
 const LS_ROOM_URL     = null;
 const LS_TEACHERS_URL = null;
-const LS_LAST_VIEW    = 'sfcmcLastView';
-const LS_LAST_SITE    = 'sfcmcLastSite';
 
 const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
 
@@ -804,7 +790,7 @@ const RS_PRINT_ROOMS = new Set(['(A) Room A','(B) Room B','(C) Room C','(D) Room
 
 // ── GLOBAL STATE ───────────────────────────────────────────────────────────────
 const state = {
-  appMode:   'lessonFinder',
+  appMode:   'roomSchedule',
   appReady:  false,
   sheetUrls: { lessonUrl: '', roomUrl: '', teachersUrl: '' },
 
@@ -828,7 +814,7 @@ const state = {
     sites:       [],
     weeks:       [],   // sorted array of Monday date strings (ISO), e.g. ["2026-04-07"]
     activeSite:  'Richmond',
-    activeDay:   '',
+    activeDay:   'Mo',
     activeWeek:  '',   // Monday date string of the currently selected week
     importDate:  '',  // most recent Date value from the loaded CSV
   },
@@ -1195,10 +1181,7 @@ async function loadAllData(urls) {
     state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
     if (state.rs.sites.length > 0) {
       if (!state.rs.sites.includes(state.rs.activeSite)) {
-        const savedSite = localStorage.getItem(LS_LAST_SITE);
-        state.rs.activeSite = state.rs.sites.includes(savedSite) ? savedSite
-          : state.rs.sites.includes('Richmond') ? 'Richmond'
-          : state.rs.sites[0];
+        state.rs.activeSite = state.rs.sites.includes('Richmond') ? 'Richmond' : state.rs.sites[0];
       }
       const activeWeek = state.rs.activeWeek;
       const daysForSite = RS_DAYS_ORDER.filter(d =>
@@ -1989,7 +1972,6 @@ window.addEventListener('afterprint', () => {
 // ── VIEW SWITCHING ─────────────────────────────────────────────────────────────
 function setAppMode(mode) {
   state.appMode = mode;
-  localStorage.setItem(LS_LAST_VIEW, mode);
   document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === mode));
   document.getElementById('lf-view').classList.toggle('active', mode === 'lessonFinder');
   document.getElementById('rs-view').classList.toggle('active', mode === 'roomSchedule');
@@ -2191,14 +2173,6 @@ document.querySelector('.viewmode-group').addEventListener('click', e => {
   renderTable();
 });
 
-// LF sort group buttons
-document.querySelector('.sort-group').addEventListener('click', e => {
-  const btn = e.target.closest('.sort-btn');
-  if (!btn) return;
-  state.lf.sortBy = btn.dataset.sort;
-  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
-  renderTable();
-});
 
 // LF active filter chip removal
 document.getElementById('lf-active-filters').addEventListener('click', e => {
@@ -2339,7 +2313,6 @@ document.getElementById('rs-site-tabs').addEventListener('click', e => {
   const btn = e.target.closest('.rs-site-tab');
   if (!btn) return;
   state.rs.activeSite = btn.dataset.site;
-  localStorage.setItem(LS_LAST_SITE, state.rs.activeSite);
   // Keep activeWeek; reset activeDay to first available in current site+week
   const daysForSite = RS_DAYS_ORDER.filter(d =>
     state.rs.events.some(ev => ev.site === state.rs.activeSite && ev.day === d && ev.weekKey === state.rs.activeWeek)
@@ -2451,10 +2424,6 @@ document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 (function init() {
-  // Restore last-used view
-  const savedView = localStorage.getItem(LS_LAST_VIEW);
-  if (['lessonFinder','roomSchedule','assignments'].includes(savedView)) state.appMode = savedView;
-
   // URLs are hardcoded — clear any stale localStorage values from old sessions
   localStorage.removeItem('sfcmcLessonUrl');
   localStorage.removeItem('sfcmcRoomUrl');
