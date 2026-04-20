@@ -1156,7 +1156,7 @@ async function loadAllData(urls) {
     const { events, derivedBranches } = processRoomRows(roomRows);
     events.forEach(e => { e.weekKey = rsWeekKey(e.date); });
     state.rs.events = events;
-    events.slice(0,3).forEach((e,i) => console.log(`[RS weeks] event[${i}] date="${e.date}" weekKey="${e.weekKey}"`));
+    events.slice(0,5).forEach((e,i) => console.log(`[RS weeks] event[${i}]`, JSON.stringify(e.date), '→', JSON.stringify(e.weekKey)));
 
     // Build sorted weeks array from all event week keys
     const allWeekKeys = [...new Set(events.map(e => e.weekKey).filter(Boolean))].sort();
@@ -1640,17 +1640,24 @@ const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
 const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
 const RS_COLOR_AVAIL   = { bg: 'rgba(60,180,100,0.13)', border: '#38a870' };
 
-// Date string (M/D/YYYY or YYYY-MM-DD) → Monday of that ISO week as YYYY-MM-DD
+// Date string (M/D/YYYY, M/D/YY, YYYY-MM-DD, or any JS-parseable) → Monday of that ISO week as YYYY-MM-DD
 function rsWeekKey(dateStr) {
   if (!dateStr) return '';
-  const mdy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  const iso  = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
   let y, m, d;
-  if (mdy)      { m = +mdy[1]-1; d = +mdy[2]; y = +mdy[3]; }
-  else if (iso) { y = +iso[1]; m = +iso[2]-1; d = +iso[3]; }
-  else return '';
+  const mdy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  const iso  = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (mdy) {
+    m = +mdy[1]-1; d = +mdy[2];
+    y = mdy[3].length === 2 ? 2000 + +mdy[3] : +mdy[3];
+  } else if (iso) {
+    y = +iso[1]; m = +iso[2]-1; d = +iso[3];
+  } else {
+    const dt = new Date(dateStr);
+    if (isNaN(dt)) return '';
+    y = dt.getFullYear(); m = dt.getMonth(); d = dt.getDate();
+  }
   const dt = new Date(y, m, d);
-  const dow = dt.getDay(); // 0=Sun … 6=Sat
+  const dow = dt.getDay();
   dt.setDate(dt.getDate() + (dow === 0 ? -6 : 1 - dow));
   return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
 }
