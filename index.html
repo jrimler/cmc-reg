@@ -230,6 +230,10 @@ body {
 .age-filter-input:focus { border-color: var(--ink); }
 .age-clear-btn { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; display: none; text-decoration: underline; }
 .age-clear-btn.visible { display: block; }
+.time-range-row { display: flex; align-items: center; gap: 6px; }
+.time-filter-select { flex: 1; min-width: 0; padding: 4px 4px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; background: var(--paper); color: var(--ink); outline: none; cursor: pointer; transition: border-color 0.15s; }
+.time-filter-select:focus { border-color: var(--ink); }
+.time-range-sep { font-size: 12px; color: var(--muted); flex-shrink: 0; }
 
 /* Availability main area */
 .avail-main { flex: 1; overflow-y: auto; padding: 20px 28px; }
@@ -634,6 +638,14 @@ body.rs-measuring .rs-time-col { position: static !important; }
         </div>
         <div id="lf-chip-filters"></div>
         <div class="static-filter-section">
+          <span class="static-filter-label">Time Window</span>
+          <div class="time-range-row">
+            <select class="time-filter-select" id="lf-time-from"><option value="">Any start</option></select>
+            <span class="time-range-sep">–</span>
+            <select class="time-filter-select" id="lf-time-to"><option value="">Any end</option></select>
+          </div>
+        </div>
+        <div class="static-filter-section">
           <span class="static-filter-label">Student Age</span>
           <div class="age-filter-wrap">
             <span class="age-filter-label-text">Age</span>
@@ -798,6 +810,8 @@ const state = {
     filters: { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() },
     filterBranches:   new Set(),
     filterStudentAge: '',
+    filterTimeFrom: null,
+    filterTimeTo:   null,
     sortBy:    'instrument',
     activeTab: 'availability',
     chipShowAll: { instrument: false, day: false, duration: false },
@@ -857,6 +871,20 @@ function timeToSort(t) {
   if (ap === 'PM' && h !== 12) h += 12;
   if (ap === 'AM' && h === 12) h = 0;
   return String(h).padStart(2,'0') + ':' + m[2];
+}
+
+// minutes from midnight → "HH:MM" for sort comparison
+function minsToHHMM(m) {
+  return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+}
+
+// minutes from midnight → "H:MM AM/PM" for display
+function minsToTimeLabel(m) {
+  const h24 = Math.floor(m / 60);
+  const min  = m % 60;
+  const period = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 || 12;
+  return h12 + ':' + String(min).padStart(2, '0') + ' ' + period;
 }
 
 // "Garcia Plaza, Rosi" → "Rosi Garcia Plaza"   "Smith, John" → "John Smith"
@@ -1199,6 +1227,8 @@ async function loadAllData(urls) {
     state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
     state.lf.filterBranches   = new Set();
     state.lf.filterStudentAge = '';
+    state.lf.filterTimeFrom   = null;
+    state.lf.filterTimeTo     = null;
     Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
 
     state.sheetUrls = { ...urls };
@@ -1217,13 +1247,13 @@ function getLFProfile(name) {
 }
 
 function lfHasActiveFilters() {
-  const { filters, filterBranches, filterStudentAge } = state.lf;
-  return Object.values(filters).some(s => s.size > 0) || filterBranches.size > 0 || filterStudentAge !== '';
+  const { filters, filterBranches, filterStudentAge, filterTimeFrom, filterTimeTo } = state.lf;
+  return Object.values(filters).some(s => s.size > 0) || filterBranches.size > 0 || filterStudentAge !== '' || filterTimeFrom !== null || filterTimeTo !== null;
 }
 
 // ── LF FILTERING & SORTING ─────────────────────────────────────────────────────
 function lfGetFiltered() {
-  const { records, filters, filterBranches, filterStudentAge, sortBy } = state.lf;
+  const { records, filters, filterBranches, filterStudentAge, filterTimeFrom, filterTimeTo, sortBy } = state.lf;
   let r = records;
   if (filters.instructor.size) r = r.filter(x => filters.instructor.has(x.instructor));
   if (filters.instrument.size) r = r.filter(x => filters.instrument.has(x.instrument));
@@ -1243,6 +1273,14 @@ function lfGetFiltered() {
         return !p.ageMin || parseInt(p.ageMin) <= age;
       });
     }
+  }
+  if (filterTimeFrom !== null || filterTimeTo !== null) {
+    r = r.filter(x => {
+      const t = timeToSort(x.time);
+      if (filterTimeFrom !== null && t < minsToHHMM(filterTimeFrom)) return false;
+      if (filterTimeTo   !== null && t > minsToHHMM(filterTimeTo))   return false;
+      return true;
+    });
   }
   return [...r].sort((a, b) => {
     if (sortBy === 'instrument')
@@ -1471,7 +1509,7 @@ function selectSearchItem(key, value) {
 // ── LF RENDER TABLE ────────────────────────────────────────────────────────────
 function renderActiveFilterChips() {
   const af = document.getElementById('lf-active-filters');
-  const { filters, filterBranches, filterStudentAge } = state.lf;
+  const { filters, filterBranches, filterStudentAge, filterTimeFrom, filterTimeTo } = state.lf;
   let afHtml = '';
   ['instrument', 'day', 'instructor', 'duration'].forEach(key => {
     filters[key].forEach(val => {
@@ -1484,6 +1522,11 @@ function renderActiveFilterChips() {
   });
   if (filterStudentAge) {
     afHtml += `<span class="active-chip" data-key="studentAge" data-value="${escHtml(filterStudentAge)}">Age: ${escHtml(filterStudentAge)} <span class="active-chip-x">×</span></span>`;
+  }
+  if (filterTimeFrom !== null || filterTimeTo !== null) {
+    const fromLabel = filterTimeFrom !== null ? minsToTimeLabel(filterTimeFrom) : 'Any';
+    const toLabel   = filterTimeTo   !== null ? minsToTimeLabel(filterTimeTo)   : 'Any';
+    afHtml += `<span class="active-chip" data-key="timeWindow" data-value="">${escHtml(fromLabel)} – ${escHtml(toLabel)} <span class="active-chip-x">×</span></span>`;
   }
   af.innerHTML = afHtml;
   af.classList.toggle('visible', afHtml !== '');
@@ -2135,6 +2178,29 @@ document.querySelector('.branch-filter-chips').addEventListener('click', e => {
   updateChipSidebar();
 });
 
+// LF time window selects — populate options and wire up change handlers
+(function buildTimeOptions() {
+  [document.getElementById('lf-time-from'), document.getElementById('lf-time-to')].forEach(sel => {
+    for (let m = 7 * 60; m <= 21 * 60; m += 30) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = minsToTimeLabel(m);
+      sel.appendChild(opt);
+    }
+  });
+})();
+
+document.getElementById('lf-time-from').addEventListener('change', e => {
+  state.lf.filterTimeFrom = e.target.value === '' ? null : parseInt(e.target.value);
+  renderTable();
+  updateChipSidebar();
+});
+document.getElementById('lf-time-to').addEventListener('change', e => {
+  state.lf.filterTimeTo = e.target.value === '' ? null : parseInt(e.target.value);
+  renderTable();
+  updateChipSidebar();
+});
+
 // LF student age
 document.getElementById('lf-age-input').addEventListener('input', e => {
   state.lf.filterStudentAge = e.target.value;
@@ -2155,11 +2221,15 @@ document.getElementById('lf-reset-btn').addEventListener('click', () => {
   state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
   state.lf.filterBranches   = new Set();
   state.lf.filterStudentAge = '';
+  state.lf.filterTimeFrom   = null;
+  state.lf.filterTimeTo     = null;
   Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
   const instrSel = document.getElementById('lf-instructor-select');
   if (instrSel) instrSel.value = '';
   document.getElementById('lf-age-input').value = '';
   document.getElementById('lf-age-clear').classList.remove('visible');
+  document.getElementById('lf-time-from').value = '';
+  document.getElementById('lf-time-to').value = '';
   document.querySelectorAll('.branch-filter-chip').forEach(b => b.classList.remove('active'));
   renderTable();
   updateChipSidebar();
@@ -2187,6 +2257,11 @@ document.getElementById('lf-active-filters').addEventListener('click', e => {
     state.lf.filterStudentAge = '';
     document.getElementById('lf-age-input').value = '';
     document.getElementById('lf-age-clear').classList.remove('visible');
+  } else if (key === 'timeWindow') {
+    state.lf.filterTimeFrom = null;
+    state.lf.filterTimeTo   = null;
+    document.getElementById('lf-time-from').value = '';
+    document.getElementById('lf-time-to').value   = '';
   } else {
     const v = key === 'duration' ? parseInt(value) : value;
     state.lf.filters[key].delete(v);
