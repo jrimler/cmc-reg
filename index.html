@@ -789,9 +789,10 @@ const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT
 const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
 const DEFAULT_AVAIL_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=790798156&single=true&output=csv';
 
-const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
-const LS_ROOM_URL     = null;
-const LS_TEACHERS_URL = null;
+const LS_LESSON_URL      = null; // URLs now hardcoded — not stored in localStorage
+const LS_ROOM_URL        = null;
+const LS_TEACHERS_URL    = null;
+const LS_ROOM_NOTES_URL  = 'sfcmcRoomNotesUrl'; // user-specific, persisted
 
 const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
 
@@ -2411,6 +2412,8 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
   btn.disabled = false;
 
   if (result === true) {
+    if (roomNotesUrl) localStorage.setItem(LS_ROOM_NOTES_URL, roomNotesUrl);
+    else localStorage.removeItem(LS_ROOM_NOTES_URL);
     const now = new Date();
     showApp(`Connected ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
   } else {
@@ -2586,23 +2589,25 @@ document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
   localStorage.removeItem('sfcmcLessonUrl');
   localStorage.removeItem('sfcmcRoomUrl');
   localStorage.removeItem('sfcmcTeachersUrl');
-  const lessonUrl   = DEFAULT_LESSON_URL;
-  const roomUrl     = DEFAULT_ROOM_URL;
-  const teachersUrl = DEFAULT_TEACHERS_URL;
-  const availUrl    = DEFAULT_AVAIL_URL;
+  const lessonUrl    = DEFAULT_LESSON_URL;
+  const roomUrl      = DEFAULT_ROOM_URL;
+  const teachersUrl  = DEFAULT_TEACHERS_URL;
+  const availUrl     = DEFAULT_AVAIL_URL;
+  const roomNotesUrl = localStorage.getItem(LS_ROOM_NOTES_URL) || '';
 
   // Pre-fill setup form with whatever is saved
-  document.getElementById('lesson-url-input').value   = lessonUrl;
-  document.getElementById('room-url-input').value     = roomUrl;
-  document.getElementById('teachers-url-input').value = teachersUrl;
-  document.getElementById('avail-url-input').value    = availUrl || '';
+  document.getElementById('lesson-url-input').value    = lessonUrl;
+  document.getElementById('room-url-input').value      = roomUrl;
+  document.getElementById('teachers-url-input').value  = teachersUrl;
+  document.getElementById('avail-url-input').value     = availUrl || '';
+  document.getElementById('room-notes-url-input').value = roomNotesUrl;
 
   if (!lessonUrl) {
     showSetup();
     return;
   }
 
-  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, availUrl: availUrl || null })
+  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, availUrl: availUrl || null, roomNotesUrl: roomNotesUrl || null })
     .then(result => {
       if (result === true) {
         const now = new Date();
