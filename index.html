@@ -1134,7 +1134,14 @@ function processNoteRows(rows) {
 }
 
 function rsGetRoomNoteMap(site, day) {
-  return (state.rs.facilityNotes[site] || {})[day] || {};
+  const notes = state.rs.facilityNotes;
+  // Exact match first, then allow the sheet's site value to be a
+  // case-insensitive prefix of the event site (e.g. "Richmond" → "Richmond Branch")
+  const siteLower = site.toLowerCase();
+  const key = Object.keys(notes).find(s =>
+    s.toLowerCase() === siteLower || siteLower.startsWith(s.toLowerCase())
+  );
+  return (notes[key] || {})[day] || {};
 }
 
 // ── PROCESS TEACHER ROWS → raw map ────────────────────────────────────────────
