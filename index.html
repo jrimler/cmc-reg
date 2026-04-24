@@ -1109,14 +1109,17 @@ function processAvailRows(rows) {
 // ── PROCESS NOTE ROWS → { site → { shortDay → { facility → note } } } ─────────
 function processNoteRows(rows) {
   const out = {};
+  console.log('[RoomNotes] raw rows:', rows.length, rows[0]);
   if (rows.length < 2) return out;
   const header = rows[0].map(h => String(h || '').trim());
+  console.log('[RoomNotes] headers:', header);
   const col = {
     site: header.findIndex(h => /^site$/i.test(h)),
     day:  header.findIndex(h => /^day$/i.test(h)),
     room: header.findIndex(h => /^room$/i.test(h)),
     note: header.findIndex(h => /^note$/i.test(h)),
   };
+  console.log('[RoomNotes] col indices:', col);
   const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
   for (let i = 1; i < rows.length; i++) {
     const row    = rows[i];
@@ -1124,23 +1127,26 @@ function processNoteRows(rows) {
     const dayRaw = get(row, 'day');
     const room   = get(row, 'room');
     const note   = get(row, 'note');
+    console.log(`[RoomNotes] row ${i}:`, { site, dayRaw, room, note });
     if (!site || !dayRaw || !room || !note) continue;
     const day = LF_DAY_TO_SHORT[dayRaw] || dayRaw;
     if (!out[site])      out[site] = {};
     if (!out[site][day]) out[site][day] = {};
     out[site][day][room] = note;
   }
+  console.log('[RoomNotes] parsed result:', JSON.stringify(out));
   return out;
 }
 
+
+
 function rsGetRoomNoteMap(site, day) {
   const notes = state.rs.facilityNotes;
-  // Exact match first, then allow the sheet's site value to be a
-  // case-insensitive prefix of the event site (e.g. "Richmond" → "Richmond Branch")
   const siteLower = site.toLowerCase();
   const key = Object.keys(notes).find(s =>
     s.toLowerCase() === siteLower || siteLower.startsWith(s.toLowerCase())
   );
+  console.log('[RoomNotes] lookup site:', site, 'day:', day, '→ key:', key, 'result:', (notes[key] || {})[day]);
   return (notes[key] || {})[day] || {};
 }
 
