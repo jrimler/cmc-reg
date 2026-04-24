@@ -599,6 +599,13 @@ body.rs-measuring .rs-time-col { position: static !important; }
              placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
              autocomplete="off" spellcheck="false">
 
+      <label class="setup-url-label" for="avail-url-input">
+        Assignments — Published CSV URL <span class="opt">(optional)</span>
+      </label>
+      <input id="avail-url-input" class="setup-url-input" type="url"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
+             autocomplete="off" spellcheck="false">
+
       <label class="setup-url-label" for="room-notes-url-input">
         Room Setup Notes — Published CSV URL <span class="opt">(optional)</span>
       </label>
@@ -2363,6 +2370,7 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
   const lessonUrl    = document.getElementById('lesson-url-input').value.trim();
   const roomUrl      = document.getElementById('room-url-input').value.trim();
   const teachersUrl  = document.getElementById('teachers-url-input').value.trim();
+  const availUrl     = document.getElementById('avail-url-input').value.trim();
   const roomNotesUrl = document.getElementById('room-notes-url-input').value.trim();
   const errEl   = document.getElementById('url-error');
   const inputEl = document.getElementById('lesson-url-input');
@@ -2383,7 +2391,7 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
     return;
   }
 
-  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, roomNotesUrl: roomNotesUrl || null };
+  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, availUrl: availUrl || null, roomNotesUrl: roomNotesUrl || null };
   const btn  = document.getElementById('connect-btn');
   btn.disabled = true;
   const result = await loadAllData(urls);
@@ -2414,6 +2422,7 @@ document.getElementById('settings-btn').addEventListener('click', () => {
   if (state.sheetUrls.lessonUrl)    document.getElementById('lesson-url-input').value    = state.sheetUrls.lessonUrl;
   if (state.sheetUrls.roomUrl)      document.getElementById('room-url-input').value      = state.sheetUrls.roomUrl;
   if (state.sheetUrls.teachersUrl)  document.getElementById('teachers-url-input').value  = state.sheetUrls.teachersUrl;
+  if (state.sheetUrls.availUrl)     document.getElementById('avail-url-input').value     = state.sheetUrls.availUrl;
   if (state.sheetUrls.roomNotesUrl) document.getElementById('room-notes-url-input').value = state.sheetUrls.roomNotesUrl;
   document.getElementById('url-error').classList.remove('visible');
   document.getElementById('cancel-setup-btn').classList.toggle('hidden', !state.appReady);
@@ -2573,6 +2582,7 @@ document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
   document.getElementById('lesson-url-input').value   = lessonUrl;
   document.getElementById('room-url-input').value     = roomUrl;
   document.getElementById('teachers-url-input').value = teachersUrl;
+  document.getElementById('avail-url-input').value    = availUrl || '';
 
   if (!lessonUrl) {
     showSetup();
