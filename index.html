@@ -347,7 +347,8 @@ body {
 /* Room header row (sticky top) */
 .rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
 .rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
-.rs-room-col-head { flex-shrink: 0; padding: 5px 6px; font-family: 'DM Mono', monospace; font-size: 9px; text-align: center; border-right: 1px solid var(--rule); color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center; }
+.rs-room-col-head { flex-shrink: 0; padding: 5px 6px; font-family: 'DM Mono', monospace; font-size: 9px; text-align: center; border-right: 1px solid var(--rule); color: var(--muted); letter-spacing: 0.04em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.rs-room-note { margin-top: 4px; font-size: 7px; line-height: 1.3; white-space: normal; text-align: center; color: #92400e; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 2px; padding: 2px 4px; width: 100%; box-sizing: border-box; letter-spacing: 0; }
 
 /* Grid body */
 .rs-grid-body { display: flex; }
@@ -461,6 +462,12 @@ body.rs-measuring .rs-time-col { position: static !important; }
     border-right: 1px solid #999 !important;
     border-bottom: 1px solid #999 !important;
     font-weight: 600 !important;
+  }
+  .rs-room-note {
+    background: #fff !important;
+    border-color: #999 !important;
+    color: #000 !important;
+    font-weight: normal !important;
   }
   .rs-corner { border-right: 1px solid #999 !important; }
   .rs-room-col { border-right: 1px solid #ccc !important; }
@@ -589,6 +596,13 @@ body.rs-measuring .rs-time-col { position: static !important; }
         Instructor Notes — Published CSV URL <span class="opt">(optional)</span>
       </label>
       <input id="teachers-url-input" class="setup-url-input" type="url"
+             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
+             autocomplete="off" spellcheck="false">
+
+      <label class="setup-url-label" for="room-notes-url-input">
+        Room Setup Notes — Published CSV URL <span class="opt">(optional)</span>
+      </label>
+      <input id="room-notes-url-input" class="setup-url-input" type="url"
              placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
              autocomplete="off" spellcheck="false">
 
@@ -823,6 +837,7 @@ const state = {
     events:      [],
     availWindows: [], // { instructor, day, from, to, facility }
     facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
+    facilityNotes: {}, // { site → { shortDay → { facility → note } } }
     sites:       [],
     weeks:       [],   // sorted array of Monday date strings (ISO), e.g. ["2026-04-07"]
     activeSite:  'Richmond Branch',
@@ -1084,6 +1099,27 @@ function processAvailRows(rows) {
   return windows;
 }
 
+// ── PROCESS NOTE ROWS → { site → { shortDay → { facility → note } } } ─────────
+function processNoteRows(rows) {
+  const out = {};
+  rows.forEach(r => {
+    const site   = (r['Site'] || '').trim();
+    const dayRaw = (r['Day']  || '').trim();
+    const room   = (r['Room'] || '').trim();
+    const note   = (r['Note'] || '').trim();
+    if (!site || !dayRaw || !room || !note) return;
+    const day = LF_DAY_TO_SHORT[dayRaw] || dayRaw;
+    if (!out[site])      out[site] = {};
+    if (!out[site][day]) out[site][day] = {};
+    out[site][day][room] = note;
+  });
+  return out;
+}
+
+function rsGetRoomNoteMap(site, day) {
+  return (state.rs.facilityNotes[site] || {})[day] || {};
+}
+
 // ── PROCESS TEACHER ROWS → raw map ────────────────────────────────────────────
 // Returns { name → { branches[], ageMin, notes } }
 // Does not merge with derived branches — that happens in buildTeacherProfiles().
@@ -1153,8 +1189,8 @@ function hideLoading() {
 async function loadAllData(urls) {
   showLoading('Fetching data…');
   try {
-    // Fetch all four in parallel; non-critical sources resolve to [] on failure
-    const [lessonRows, roomRows, teacherRows, availRows] = await Promise.all([
+    // Fetch all sources in parallel; non-critical sources resolve to [] on failure
+    const [lessonRows, roomRows, teacherRows, availRows, noteRows] = await Promise.all([
       fetchCsvUrl(urls.lessonUrl).then(parseCsv),
       urls.roomUrl
         ? fetchCsvUrl(urls.roomUrl).then(parseCsv).catch(e => { console.warn('Room data failed:', e.message); return []; })
@@ -1164,6 +1200,9 @@ async function loadAllData(urls) {
         : Promise.resolve([]),
       urls.availUrl
         ? fetchCsvUrl(urls.availUrl).then(parseCsv).catch(e => { console.warn('Availability data failed:', e.message); return []; })
+        : Promise.resolve([]),
+      urls.roomNotesUrl
+        ? fetchCsvUrl(urls.roomNotesUrl).then(parseCsv).catch(e => { console.warn('Room notes failed:', e.message); return []; })
         : Promise.resolve([]),
     ]);
 
@@ -1222,6 +1261,9 @@ async function loadAllData(urls) {
 
     // Merge teacher data
     state.lf.teacherProfiles = buildTeacherProfiles(processTeacherRows(teacherRows), derivedBranches);
+
+    // Room setup notes
+    state.rs.facilityNotes = processNoteRows(noteRows);
 
     // Reset LF filter state on every fresh load
     state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
@@ -1754,7 +1796,7 @@ function rsDetectConflicts(evts) {
 // Build the time-grid HTML.
 // forPrint: use narrower columns (115px) and shorter rows (22px).
 // timeRange: optional {lo, hi} in minutes to override the auto-computed range.
-function rsBuildGrid(evts, availWins, rooms, forPrint, timeRange) {
+function rsBuildGrid(evts, availWins, rooms, forPrint, timeRange, roomNoteMap = {}) {
   if (!evts.length) return '';
   const ROOM_W = forPrint ? 115 : 140;
   const PX     = forPrint ? 22 : 28; // pixels per 15-min slot
@@ -1783,7 +1825,11 @@ function rsBuildGrid(evts, availWins, rooms, forPrint, timeRange) {
   html += '<div class="rs-room-header">';
   html += '<div class="rs-corner"></div>';
   rooms.forEach(r => {
-    html += `<div class="rs-room-col-head" data-facility="${escHtml(r)}" style="width:${ROOM_W}px">${escHtml(r.replace(/^\(\d+\)\s*/, ''))}</div>`;
+    const note = roomNoteMap[r];
+    html += `<div class="rs-room-col-head" data-facility="${escHtml(r)}" style="width:${ROOM_W}px">` +
+      escHtml(r.replace(/^\(\d+\)\s*/, '')) +
+      (note ? `<div class="rs-room-note">${escHtml(note)}</div>` : '') +
+      `</div>`;
   });
   html += '</div>';
 
@@ -1914,7 +1960,8 @@ function renderGrid() {
   }
   if (empty) empty.classList.remove('visible');
   const allRooms = rsGetRooms(evts);
-  grid.innerHTML = rsBuildGrid(evts, [], allRooms, false);
+  const roomNoteMap = rsGetRoomNoteMap(state.rs.activeSite, state.rs.activeDay);
+  grid.innerHTML = rsBuildGrid(evts, [], allRooms, false, undefined, roomNoteMap);
 }
 
 
@@ -1954,7 +2001,8 @@ function rsBuildPrintPage(day, evts) {
     `<span class="rs-pg-hdr-date">${escHtml(dateLabel)}</span>` +
     `</div>`;
 
-  return `<div class="rs-print-page">${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi })}</div>`;
+  const roomNoteMap = rsGetRoomNoteMap(state.rs.activeSite, day);
+  return `<div class="rs-print-page">${hdr}${rsBuildGrid(printEvts, [], rooms, true, { lo, hi }, roomNoteMap)}</div>`;
 }
 
 // Measure the natural rendered height of a .rs-print-page element and apply
@@ -2302,9 +2350,10 @@ document.addEventListener('click', e => {
 
 // Connect button (setup screen)
 document.getElementById('connect-btn').addEventListener('click', async () => {
-  const lessonUrl   = document.getElementById('lesson-url-input').value.trim();
-  const roomUrl     = document.getElementById('room-url-input').value.trim();
-  const teachersUrl = document.getElementById('teachers-url-input').value.trim();
+  const lessonUrl    = document.getElementById('lesson-url-input').value.trim();
+  const roomUrl      = document.getElementById('room-url-input').value.trim();
+  const teachersUrl  = document.getElementById('teachers-url-input').value.trim();
+  const roomNotesUrl = document.getElementById('room-notes-url-input').value.trim();
   const errEl   = document.getElementById('url-error');
   const inputEl = document.getElementById('lesson-url-input');
 
@@ -2324,7 +2373,7 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
     return;
   }
 
-  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null };
+  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, roomNotesUrl: roomNotesUrl || null };
   const btn  = document.getElementById('connect-btn');
   btn.disabled = true;
   const result = await loadAllData(urls);
@@ -2352,9 +2401,10 @@ document.getElementById('connect-btn').addEventListener('click', async () => {
 // Settings (gear) button
 document.getElementById('settings-btn').addEventListener('click', () => {
   // Pre-fill inputs from current loaded URLs, falling back to whatever's already in the fields
-  if (state.sheetUrls.lessonUrl)   document.getElementById('lesson-url-input').value   = state.sheetUrls.lessonUrl;
-  if (state.sheetUrls.roomUrl)     document.getElementById('room-url-input').value     = state.sheetUrls.roomUrl;
-  if (state.sheetUrls.teachersUrl) document.getElementById('teachers-url-input').value = state.sheetUrls.teachersUrl;
+  if (state.sheetUrls.lessonUrl)    document.getElementById('lesson-url-input').value    = state.sheetUrls.lessonUrl;
+  if (state.sheetUrls.roomUrl)      document.getElementById('room-url-input').value      = state.sheetUrls.roomUrl;
+  if (state.sheetUrls.teachersUrl)  document.getElementById('teachers-url-input').value  = state.sheetUrls.teachersUrl;
+  if (state.sheetUrls.roomNotesUrl) document.getElementById('room-notes-url-input').value = state.sheetUrls.roomNotesUrl;
   document.getElementById('url-error').classList.remove('visible');
   document.getElementById('cancel-setup-btn').classList.toggle('hidden', !state.appReady);
   document.getElementById('setup-screen').classList.remove('hidden');
