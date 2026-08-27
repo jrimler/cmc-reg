@@ -965,15 +965,35 @@ async function afterLogin() {
 }
 
 // ── DATA LOADING ─────────────────────────────────────────────────────────────────
+// PostgREST caps any single response at its configured max-rows (1000 by
+// default on Supabase) — a `select('*')` on a table past that size silently
+// truncates, in whatever order Postgres happens to return without an
+// ORDER BY. A week's Master Scheduler upload across two branches comfortably
+// exceeds 1000 rows, so this must page through by primary key to get
+// everything (that's what was causing Room Schedule to show only a sliver
+// of Saturday and nothing at all for Sunday).
+async function fetchAllRows(table) {
+  const PAGE = 1000;
+  let rows = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await state.sb.from(table).select('*').order('id', { ascending: true }).range(from, from + PAGE - 1);
+    if (error) return { data: null, error };
+    rows = rows.concat(data || []);
+    if (!data || data.length < PAGE) break;
+    from += PAGE;
+  }
+  return { data: rows, error: null };
+}
+
 async function fetchAllData() {
-  const sb = state.sb;
   const [openSlotsRes, eventsRes, availRes, overridesRes, roomsRes, uploadsRes] = await Promise.all([
-    sb.from('open_slots').select('*'),
-    sb.from('master_schedule_events').select('*'),
-    sb.from('instructor_availability').select('*'),
-    sb.from('availability_overrides').select('*'),
-    sb.from('rooms').select('*'),
-    sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
+    fetchAllRows('open_slots'),
+    fetchAllRows('master_schedule_events'),
+    fetchAllRows('instructor_availability'),
+    fetchAllRows('availability_overrides'),
+    fetchAllRows('rooms'),
+    state.sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
   ]);
   state.data.openSlots = openSlotsRes.data || [];
   state.data.events = eventsRes.data || [];
