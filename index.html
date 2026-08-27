@@ -1669,14 +1669,32 @@ function initRoomScheduleState() {
   state.rs.activeDay = days[0] || '';
 }
 
+const APP_MODE_STORAGE_KEY = 'sfcmc_lastAppMode';
+
 function setAppMode(mode) {
   state.appMode = mode;
+  try { localStorage.setItem(APP_MODE_STORAGE_KEY, mode); } catch {}
   document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   if (mode === 'lessonFinder') { document.getElementById('lf-view').classList.add('active'); renderLessonFinder(); }
   if (mode === 'roomSchedule') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
   if (mode === 'upload') { document.getElementById('upload-view').classList.add('active'); renderAdminUpload(); }
   if (mode === 'admin') { document.getElementById('admin-view').classList.add('active'); renderAdmin(); }
+}
+
+// Picks up where the user left off after a refresh — falls back to Lesson
+// Finder if nothing was saved, the saved view no longer exists, or it's an
+// admin-only view and this user isn't an admin.
+const APP_MODES = new Set(['lessonFinder', 'roomSchedule', 'upload', 'admin']);
+const ADMIN_ONLY_MODES = new Set(['upload', 'admin']);
+
+function lastAppMode() {
+  let saved = null;
+  try { saved = localStorage.getItem(APP_MODE_STORAGE_KEY); } catch {}
+  if (saved && APP_MODES.has(saved) && (!ADMIN_ONLY_MODES.has(saved) || state.profile.role === 'admin')) {
+    return saved;
+  }
+  return 'lessonFinder';
 }
 
 function showLoading(msg) {
@@ -1694,7 +1712,7 @@ function showApp() {
   hideLoading();
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('main-content').style.visibility = 'visible';
-  setAppMode('lessonFinder');
+  setAppMode(lastAppMode());
 }
 
 // ── EVENT LISTENERS ──────────────────────────────────────────────────────────────
