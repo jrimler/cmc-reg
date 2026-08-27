@@ -1442,7 +1442,15 @@ function rsBuildGrid(evts, rooms, printMode) {
         `data-type="${escHtml(ev.type)}"`, `data-conflict="${hasConflict}"`,
       ].join(' ');
 
-      html += `<div class="rs-event${isClass ? ' is-class' : ''}${hasConflict ? ' rs-conflict' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;background:${col.bg};border-left-color:${col.border}">${inner}</div>`;
+      // Print skips the color fill entirely (that's most of the ink on a
+      // page with dozens of events) and uses a plain grayscale outline
+      // instead — the existing border-left-width difference (3px vs 5px
+      // for .is-class) still distinguishes lesson vs class without color.
+      const boxStyle = printMode
+        ? `background:#fff;border:1px solid #999;border-left-color:#333`
+        : `background:${col.bg};border-left-color:${col.border}`;
+
+      html += `<div class="rs-event${isClass ? ' is-class' : ''}${hasConflict ? ' rs-conflict' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;${boxStyle}">${inner}</div>`;
     });
     html += '</div>';
   });
