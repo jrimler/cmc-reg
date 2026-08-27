@@ -3,3 +3,7 @@
 *.xlsx
 
 .DS_Store
+
+# Personal/machine-specific Claude Code settings — .claude/settings.json is
+# the project-wide, committed config (hooks, etc); this one isn't.
+.claude/settings.local.json

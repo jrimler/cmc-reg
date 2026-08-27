@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/jesserimler/Projects/cmc-reg/.claude/hooks/session-summary-check.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
