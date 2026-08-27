@@ -285,6 +285,8 @@ body {
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .upload-card { border: 1.5px solid var(--rule); border-radius: 6px; padding: 16px; background: #fff; }
 .upload-card h3 { font-size: 13px; margin-bottom: 4px; }
+.upload-card .asap-link { display: inline-block; font-size: 11px; color: var(--teal); text-decoration: none; margin-bottom: 10px; }
+.upload-card .asap-link:hover { text-decoration: underline; }
 .upload-card .last-upload { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 12px; }
 .upload-card input[type=file] { width: 100%; font-size: 11px; margin-bottom: 10px; }
 .upload-card .upload-status { font-size: 11px; margin-top: 8px; color: var(--muted); min-height: 14px; }
@@ -496,6 +498,7 @@ body {
       <div class="upload-grid">
         <div class="upload-card" data-report="open_slots">
           <h3>Open Slots Report</h3>
+          <a class="asap-link" href="https://app.asapconnected.com/reports/OpenSlotsReport.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
           <div class="last-upload" data-lastupload>No uploads yet</div>
           <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
@@ -503,6 +506,7 @@ body {
         </div>
         <div class="upload-card" data-report="master_schedule">
           <h3>Master Scheduler Report</h3>
+          <a class="asap-link" href="https://app.asapconnected.com/reports/masterschedule.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
           <div class="last-upload" data-lastupload>No uploads yet</div>
           <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
@@ -510,6 +514,7 @@ body {
         </div>
         <div class="upload-card" data-report="instructor_availability">
           <h3>Instructor Availability</h3>
+          <a class="asap-link" href="https://app.asapconnected.com/reports/CustomQuery.aspx?ReportID=29319" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
           <div class="last-upload" data-lastupload>No uploads yet</div>
           <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
