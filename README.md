@@ -126,3 +126,5 @@ The Instructor Availability report has no room/facility column, so (unlike the o
 - Verified against a fake capped Supabase client (1720 synthetic rows, mirroring a real two-branch weekly upload) that all rows now load and every day Mon–Sun appears for both branches.
 
 **2026-08-27 (5)** — A page refresh no longer drops the user back to Lesson Finder. The last-active view (Lesson Finder / Room Schedule / Upload / Admin) is saved to `localStorage` on every switch and restored on load, falling back to Lesson Finder if nothing's saved, the saved view no longer exists, or it's an admin-only view and the signed-in user isn't an admin.
+
+**2026-08-27 (6)** — Room Schedule now also remembers the last-viewed branch and day (e.g. Mission / Saturday) across a refresh, not just that you were on the Room Schedule tab. Falls back to the usual default (Richmond, first day with data) if the saved site/day no longer applies to what's currently loaded.
