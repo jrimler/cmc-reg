@@ -232,6 +232,7 @@ body {
 .rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
+.rs-day-tab-date { opacity: 0.6; margin-left: 3px; }
 
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
 .rs-site-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
@@ -482,7 +483,7 @@ body {
     <div id="rs-site-tabs"></div>
     <div id="rs-day-tabs"></div>
     <div id="rs-action-bar">
-      <button class="rs-btn" id="rs-print-11x17-btn">Print 11×17 (Richmond)</button>
+      <button class="rs-btn" id="rs-print-11x17-btn">Print 11×17 (All Branches)</button>
     </div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
@@ -714,6 +715,16 @@ function usDateToIso(str) {
   const m = String(str).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
   return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+}
+
+// "2026-09-23" → "Sep 23" — parsed from the ISO parts directly (not `new Date`)
+// so the displayed date can't drift a day from local-timezone UTC parsing.
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDateShort(iso) {
+  if (!iso) return '';
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  return `${MONTH_ABBR[Number(m[2]) - 1]} ${Number(m[3])}`;
 }
 
 // "Garcia Plaza, Rosi" → "Rosi Garcia Plaza"
@@ -1270,6 +1281,13 @@ function rsForSiteDay(site, day) {
   return state.data.events.filter(e => siteToBranch(e.site) === site && e.day === day);
 }
 
+// The uploaded week's calendar date for this site+day, read off whichever
+// matching event happens to carry one (all events for a given day share it).
+function rsDateForSiteDay(site, day) {
+  const evt = state.data.events.find(e => siteToBranch(e.site) === site && e.day === day && e.event_date);
+  return evt ? evt.event_date : null;
+}
+
 function rsRoomsForSite(site, physicalOnly) {
   return state.data.rooms
     .filter(r => siteToBranch(r.site) === site)
@@ -1368,9 +1386,11 @@ function renderSiteTabs() {
 function renderDayTabs() {
   const bar = document.getElementById('rs-day-tabs');
   const days = RS_DAYS_ORDER.filter(d => state.data.events.some(e => siteToBranch(e.site) === state.rs.activeSite && e.day === d));
-  bar.innerHTML = days.map(d =>
-    `<button class="rs-day-tab${d === state.rs.activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d].slice(0, 3)}</button>`
-  ).join('');
+  bar.innerHTML = days.map(d => {
+    const date = rsDateForSiteDay(state.rs.activeSite, d);
+    const dateLabel = date ? ` <span class="rs-day-tab-date">${escHtml(fmtDateShort(date))}</span>` : '';
+    return `<button class="rs-day-tab${d === state.rs.activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d].slice(0, 3)}${dateLabel}</button>`;
+  }).join('');
 }
 
 function renderRSGrid() {
@@ -1401,10 +1421,10 @@ function roomsForEvents(evts, site) {
   return rooms;
 }
 
-// Richmond's on-screen columns: the curated "physical" room set always shows
-// (even with nothing booked that day), plus any other room actually booked
-// that day (e.g. a virtual studio) so a real lesson is never hidden — those
-// extras just don't carry over to print, which stays to the pinned set only.
+// Richmond's columns (on screen and in print): the curated "physical" room
+// set always shows (even with nothing booked that day), plus any other room
+// actually booked that day (e.g. a virtual studio) so a real lesson is never
+// hidden or cut off.
 function richmondColumns(evts) {
   const pinned = rsRoomsForSite('Richmond', true);
   const pinnedLabels = new Set(pinned.map(r => r.raw_facility_label));
@@ -1423,33 +1443,30 @@ function renderRoomSchedule() {
   renderRSGrid();
 }
 
-// Prints the pinned Richmond room set (Admin -> Rooms, tagged "physical")
-// on 11x17 tabloid paper — the same columns every day regardless of what
-// happens to be booked, only rooms/times differ.
+// Prints every day (Mon-Sun) that has bookings, for every branch, on 11x17
+// tabloid paper. Room columns match what's shown on screen for that branch
+// (Richmond's pinned "physical" set plus anything extra actually booked, or
+// just whatever's booked for any other branch) so nothing gets cut off.
 function rsPrint() {
   const section = document.getElementById('rs-print-section');
-  const PRINT_SITE = 'Richmond';
-  const rooms = rsRoomsForSite(PRINT_SITE, true);
-  if (!rooms.length) {
-    toast('No Richmond rooms are tagged "physical" yet — tag them in Admin → Rooms.', true);
-    return;
-  }
-  const roomLabels = new Set(rooms.map(r => r.raw_facility_label));
   const pages = [];
-  RS_DAYS_ORDER.forEach(day => {
-    const allEvts = rsForSiteDay(PRINT_SITE, day);
-    if (!allEvts.length) return;
-    const evts = allEvts.filter(e => roomLabels.has(e.facility_raw));
-    pages.push({ day, html: rsBuildGrid(evts, rooms, true) });
+  state.rs.sites.forEach(site => {
+    RS_DAYS_ORDER.forEach(day => {
+      const evts = rsForSiteDay(site, day);
+      if (!evts.length) return;
+      const rooms = site === 'Richmond' ? richmondColumns(evts) : roomsForEvents(evts, site);
+      const date = rsDateForSiteDay(site, day);
+      pages.push({ site, day, date, html: rsBuildGrid(evts, rooms, true) });
+    });
   });
 
-  if (!pages.length) { toast('Nothing to print for Richmond.', true); return; }
+  if (!pages.length) { toast('Nothing to print.', true); return; }
 
   section.innerHTML = pages.map(p => `
     <div class="rs-print-page">
       <div class="rs-print-header">
-        <span class="rs-print-site">${PRINT_SITE}</span>
-        <span class="rs-print-day">${RS_DAYS_FULL[p.day]}</span>
+        <span class="rs-print-site">${escHtml(p.site)}</span>
+        <span class="rs-print-day">${RS_DAYS_FULL[p.day]}${p.date ? ' · ' + escHtml(fmtDateShort(p.date)) : ''}</span>
       </div>
       <div id="rs-grid">${p.html}</div>
     </div>

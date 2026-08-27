@@ -15,7 +15,7 @@ Filters open lesson slots by instrument, day, lesson length, instructor, and bra
 Per-instructor roster — instruments taught, branches, and weekly availability — computed entirely from the latest uploaded reports. No manually-maintained fields (age minimums, notes) exist in this version.
 
 ### Room Schedule
-Visualizes booked studio time by site and day, driven by the Master Scheduler report. Richmond always sorts first and is the default site. Richmond's columns are a curated, stable set — every room tagged `physical` in Admin → Rooms always shows, even with nothing booked there that day — plus any extra room actually booked that day (e.g. a virtual studio) so a real lesson is never hidden. Prints as 11×17 (tabloid), scoped to Richmond's `physical`-tagged rooms only, with the same fixed columns every time regardless of what's booked.
+Visualizes booked studio time by site and day, driven by the Master Scheduler report. Richmond always sorts first and is the default site. Richmond's columns are a curated, stable set — every room tagged `physical` in Admin → Rooms always shows, even with nothing booked there that day — plus any extra room actually booked that day (e.g. a virtual studio) so a real lesson is never hidden. Day tabs show every day present in the uploaded week (Monday through Sunday) with that day's actual calendar date. Prints as 11×17 (tabloid), one page per day per branch, covering both branches and all rooms actually booked — nothing is scoped out or cut off.
 
 ### Upload (admin role only)
 Upload the three ASAP exports (Open Slots, Master Scheduler, Instructor Availability). Each upload fully replaces the current data for that report type.
@@ -115,3 +115,8 @@ The Instructor Availability report has no room/facility column, so (unlike the o
 - Set up this session's own automation (this Stop hook) for keeping this README current going forward.
 
 **2026-08-27 (2)** — Upload screen: added an "Open in ASAP →" link on each of the three upload cards (Open Slots, Master Scheduler, Instructor Availability), linking directly to the corresponding ASAP Connected report page so staff can pull the source export without hunting for the URL.
+
+**2026-08-27 (3)** — Room Schedule: fixed Saturday (and Sunday) rendering/printing.
+- Print no longer scopes to Richmond only or to `physical`-tagged rooms only — it now generates a page per day per branch (both Richmond and Mission), including any room actually booked that day (e.g. home studios, virtual studios). Previously these non-pinned-room bookings were silently dropped from the printed page, which is what made Saturday specifically look cut off (Saturdays have the most home/virtual-studio bookings).
+- Day tabs and the print header now show the uploaded week's actual calendar date next to each day (e.g. "Sat Sep 26"), not just the weekday name — added `fmtDateShort()` / `rsDateForSiteDay()` reading the `event_date` already parsed from the Master Scheduler upload.
+- The 7-day (Mon–Sun) data plumbing itself was already correct; verified by loading the app in a headless browser with synthetic data shaped like a real upload and confirming both branches, all 7 days, and previously-dropped rooms all render/print correctly with no console errors.
