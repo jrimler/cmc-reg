@@ -1,6 +1,6 @@
-# SFCMC Reg Tool
+# SFCMC Reg Tool (v2)
 
-Internal registrar tool for the San Francisco Community Music Center. A single-page web app combining two workflows: finding open lesson slots for student enrollment, and visualizing studio room usage by site and day.
+Internal registrar tool for the San Francisco Community Music Center. A single-page web app combining two workflows: finding open lesson slots for student enrollment, and visualizing studio room usage by branch and day.
 
 **Staff use only — not public-facing.**
 
@@ -9,52 +9,55 @@ Internal registrar tool for the San Francisco Community Music Center. A single-p
 ## What it does
 
 ### Lesson Finder
-Helps registrars look up available lesson slots when enrolling students. Filters by instrument, day, lesson length, instructor, branch, and student age. Results are shown in a sortable table with slot-length badges, branch pills, and age minimums. Includes a full-text search/autocomplete in the header.
+Filters open lesson slots by instrument, day, lesson length, instructor, and branch. Each result row shows a best-guess room (derived from the instructor's booked schedule that day — see "Room-linking" below). Rows can be multi-selected and copied as plain text for enrollment emails.
+
+### Teachers (tab within Lesson Finder)
+Per-instructor roster — instruments taught, branches, and weekly availability — computed entirely from the latest uploaded reports. No manually-maintained fields (age minimums, notes) exist in this version.
 
 ### Room Schedule
-Visualizes how studio rooms are booked across the week for each branch. Displays a pixel-accurate time grid organized by site and day, color-coded by instrument family (Piano, Strings, Guitar, Voice & Choir, Winds & Brass, Percussion, Ensemble & Jazz). Hover tooltips show instructor, student, and time details.
+Visualizes booked studio time by site and day, driven by the Master Scheduler report. Room columns come from the curated `rooms` registry. Includes a standard letter-size print and an 11×17 (tabloid) print scoped to Richmond's physical rooms only.
 
-### Teachers
-A roster panel (tab within Lesson Finder) listing all instructors with their instruments, branches, age minimums, and notes — built from the Teachers sheet merged with data derived from the Room Schedule.
-
----
-
-## File structure
-
-```
-index.html     — the entire app (HTML + CSS + JS, ~2,600 lines)
-package.json   — defines `npm start`
-README.md      — this file
-```
-
-No build step. No framework. No dependencies beyond CDN-loaded XLSX.js.
-
----
-
-## Tech stack
-
-- Vanilla JavaScript
-- XLSX.js v0.18.5 (CDN) for CSV parsing
-- Google Sheets published CSV as live data source
-- Google Fonts: DM Serif Display, DM Mono, DM Sans
-- `localStorage` for persisting last-used view and teacher schedule blocks (URLs are now hardcoded)
+### Admin (admin role only)
+- **Upload Reports**: upload the three ASAP exports (Open Slots, Master Scheduler, Instructor Availability). Each upload fully replaces the current data for that report type.
+- **Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from the 11×17 print. Tags persist across future uploads.
+- **Availability Overrides**: mark specific instructor/day availability rows to ignore (e.g. an unedited generic 9–5 block from ASAP). Persists across future uploads.
 
 ---
 
 ## Data sources
 
-Four Google Sheets tabs, each published as CSV and hardcoded as URL constants:
+Three ASAP report exports, uploaded through the Admin screen. They arrive as HTML tables saved with an `.xls`/`.xlsx` extension (an ASAP/RadGrid export quirk) — the app sniffs the file type and parses either a real XLSX or an HTML table. Columns are matched by name, not position.
 
-| Constant | Sheet | Format | Used by |
-|---|---|---|---|
-| `DEFAULT_LESSON_URL` | Open Slots Report | `Department, Subject, Instructor, Day, Time, Duration, Date` | Lesson Finder, Teacher Schedules |
-| `DEFAULT_ROOM_URL` | Room Schedule | `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type` | Room Schedule, Teacher Schedules |
-| `DEFAULT_TEACHERS_URL` | Instructor Notes | `Name, Branches, AgeMin, Notes` | Lesson Finder → Teachers tab |
-| `DEFAULT_AVAIL_URL` | Teacher Availability | `Instructor, Day, From, To, Room` | Room Schedule (green availability blocks) |
-
-Room Schedule, Instructor Notes, and Teacher Availability URLs are optional — Lesson Finder works without them. `DEFAULT_AVAIL_URL` is currently empty pending sheet creation.
+| Report | Columns | Feeds |
+|---|---|---|
+| Open Slots Report | `Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod` | Lesson Finder |
+| Master Scheduler Report | `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type, Start Date, End Date` | Room Schedule, room registry, room-linking |
+| Instructor Availability | `Employee ID, Employee Type, First Name, Last Name, Day of Week, Is Available, Start Time, End Time, Break 1/2 Start/End, Exception Date, Exception Note` | Teachers tab |
 
 ---
+
+## Tech stack
+
+- Vanilla JavaScript, single HTML file — no build step.
+- [Supabase](https://supabase.com) (Postgres + Auth) as the backend — see `supabase/migrations/0001_init.sql` for the full schema, RLS policies, and replace-on-upload functions.
+- XLSX.js (CDN) for real `.xlsx` parsing; native `DOMParser` for the HTML-table export format.
+- Hosted on Netlify (`netlify.toml` included), deployed from this GitHub repo.
+- Google Fonts: DM Serif Display, DM Mono, DM Sans.
+
+---
+
+## First-time setup
+
+1. Create a Supabase project.
+2. In its SQL editor, run `supabase/migrations/0001_init.sql`.
+3. Sign up through the app's login screen (first account defaults to `viewer` role), then in the Supabase SQL editor promote yourself:
+   ```sql
+   update profiles set role = 'admin' where id =
+     (select id from auth.users where email = 'you@example.com');
+   ```
+4. Reload the app, sign in — the Admin tab should now be visible.
+5. On first load, the app asks for your Supabase project URL and anon public key (Project Settings → API in the Supabase dashboard). These are saved in `localStorage`.
+6. Upload the three ASAP reports from the Admin → Upload Reports screen.
 
 ## Running locally
 
@@ -62,137 +65,28 @@ Room Schedule, Instructor Notes, and Teacher Availability URLs are optional — 
 npm start
 ```
 
-Serves `index.html` at `http://localhost:3000` via `npx serve`. No install required.
-
-Opening `index.html` directly also works, but Google Sheets CORS blocks fetches from `file://` — use `npm start` or serve over HTTPS for live data.
-
----
-
-## First-time setup
-
-1. In Google Sheets: **File → Share → Publish to web → select tab → CSV → Publish**
-2. Copy the published CSV URL
-3. Open the app — the setup screen prompts for URLs
-4. Paste URLs and click **Connect & Load**
-5. URLs are saved in `localStorage` and auto-loaded on return visits
-
-The gear icon in the header reopens setup to update URLs at any time.
+Serves `index.html` at `http://localhost:3000` via `npx serve`.
 
 ---
 
 ## Architecture
 
-### `index.html` layout
+### Auth & roles
+Supabase Auth (email/password). A `profiles` row (role: `admin` | `viewer`) is auto-created on signup via a Postgres trigger, defaulting to `viewer`. RLS policies: viewers can read all data tables; only admins can write to report data, `rooms`, and `availability_overrides`.
 
-| Section | Role |
-|---|---|
-| CSS variables & reset | Shared design tokens |
-| Shared header styles | Nav bar, search box, view switcher, refresh/settings buttons |
-| Lesson Finder styles | Sidebar chips, branch/age filters, results table, teacher panel |
-| Room Schedule styles | Site/day tabs, time grid, event blocks, tooltip |
-| HTML shell | Header, setup screen, LF view, RS view, tooltip, print section |
-| Shared JS utilities | `escHtml`, `parseMins`, `timeToSort`, `normalizeInstructorName` |
-| Data pipeline | `fetchCsvUrl`, `parseCsv`, three parsers, `loadAllData` |
-| Lesson Finder JS | Filtering, chip sidebar, search autocomplete, table render, teacher render |
-| Room Schedule JS | FAM_MAP/colors, grid builder, site/day tabs, tooltip, print-all export |
-| Event listeners | All UI interactions |
-| Init | Restores saved URLs and last view, auto-loads on startup |
+### Upload flow
+Admin picks a file → client parses and column-maps it in-browser → a Postgres RPC function (`replace_open_slots` / `replace_master_schedule` / `replace_instructor_availability`) deletes the existing rows for that report type and bulk-inserts the new ones inside one transaction, logging the upload to `report_uploads`. A Master Scheduler upload also seeds any newly-seen rooms into the `rooms` registry as `needs_review`.
 
-### State
+### Room-linking heuristic
+Open Slots rows don't carry a room. To show where a proposed lesson would likely happen, the app looks at the instructor's booked events that day (from Master Scheduler) and infers the room from whichever booking is adjacent (immediately before/after) the open slot. If adjacent bookings use different rooms, both are shown as an ambiguous guess rather than picking one. With no bookings that day at all, it falls back to the instructor's most-frequently-used room, labeled "Usually …". This is recomputed live — not stored.
 
-```js
-state = {
-  appMode:   'lessonFinder' | 'roomSchedule' | 'teacherSchedules',
-  sheetUrls: { lessonUrl, roomUrl, teachersUrl, availUrl },
-
-  lf: {
-    records,              // processed open slot rows (one per CSV row)
-    availabilityWindows,  // raw windows for Teacher Schedules view
-    teacherProfiles,      // merged from Teachers sheet + RS-derived branches
-    filters,              // active chip filters (Sets: instrument, day, instructor, duration)
-    filterBranches,       filterStudentAge,
-    sortBy,               activeTab,
-    chipShowAll,          viewMode,
-  },
-
-  rs: {
-    events,          // all booked room schedule events
-    availWindows,    // manual teacher availability windows
-    facilityToSite,  // { 'Studio A': 'Richmond', … } derived from events
-    sites,           // sorted unique site names
-    activeSite,      activeDay,
-  },
-
-  ts: {
-    activeTeacher,
-    blocks,  // manual blocks in localStorage { teacherName: [{ id, day, from, to, type, note }] }
-  },
-}
-```
-
-### Data flow
-
-```
-Hardcoded URL constants (DEFAULT_*_URL)
-    ↓
-fetchCsvUrl() × 4  (parallel, cache-busted)
-    ↓
-parseCsv() × 4
-    ↓
-processLessonRows()  → state.lf.records + state.lf.availabilityWindows
-processRoomRows()    → state.rs.events + derivedBranches + state.rs.facilityToSite
-processTeacherRows() + buildTeacherProfiles() → state.lf.teacherProfiles
-processAvailRows()   → state.rs.availWindows
-    ↓
-Lesson Finder:      updateChipSidebar / renderTable / renderTeachers
-Room Schedule:      renderSiteTabs / renderDayTabs / rsBuildGrid (events + availWindows)
-Teacher Schedules:  renderTsSidebar / renderTsWeekGrid (events + availabilityWindows + manual blocks)
-```
-
----
-
-## Session progress (2026-04-07)
-
-### Done
-
-**URL persistence overhaul**
-- Removed localStorage for sheet URLs — stale saved values were silently overriding correct ones
-- All four sheet URLs now hardcoded as constants; old localStorage keys auto-cleared on every load
-- Migrated to new verified Google Spreadsheet
-
-**Setup screen**
-- Simplified — removed verbose step-by-step instructions
-- Better error messages distinguishing network failures from HTTP errors
-
-**Lesson Finder — availability window display**
-- Each row in the Open Slots Report is an availability window (e.g. Monday, 5:00 PM, 3 hrs 30 mins = available 5:00–8:30 PM)
-- Time column now shows the full range ("5:00 PM – 8:30 PM") instead of just the start time
-- Slot badges (30/45/60 min) correctly reflect what lesson lengths fit within the window
-- `endTime` field added to each record; `state.lf.availabilityWindows` stores raw windows for Teacher Schedules view
-
-**Teacher Schedules view — availability layer**
-- Availability windows from the Open Slots Report render as gold/amber background blocks on the week grid
-- Sit behind booked lessons (blue); deduplicated by day/from/to to avoid multi-instrument stacking
-
-**Room Schedule — manual teacher availability**
-- Added `processAvailRows()` parser for a manually-maintained sheet tab (`Instructor | Day | From | To | Room`)
-- `state.rs.availWindows` and `state.rs.facilityToSite` (derived from booked events — no Site column needed)
-- Availability windows render as green blocks in the correct room column, behind booked lessons
-- Room columns expand to include rooms from availability data even if no lessons are booked there
-
----
-
-### Still to do
-
-1. **Create the Teacher Availability tab** in Google Sheets (`Instructor | Day | From | To | Room`), publish as CSV, provide URL → hardcode as `DEFAULT_AVAIL_URL`
-2. **Test Room Schedule green blocks** once availability data is live — verify room names match exactly
-3. **Verify Teacher Schedules gold blocks** are rendering correctly with live Open Slots data
-4. **Decide**: Teacher Schedules view shows open-slot windows from the Lessons sheet. Once the manual availability tab exists, consider whether TS should use that instead (more stable — not dependent on weekly report upload)
+### Why Room Schedule has no room-specific availability blocks
+The Instructor Availability report has no room/facility column, so (unlike the old app's manually-maintained availability sheet) there's no reliable way to place a green "available" block in a specific room column. Availability instead powers the Teachers tab's weekly-availability view, which doesn't need a room.
 
 ---
 
 ## Known limitations
 
-- **Google Sheets CSV cache**: Updates take 5–10 min to propagate after editing. Google CDN limitation — cannot be bypassed client-side.
-- **No backend**: All data is read-only; nothing writes back to the sheet.
-- **HTTPS / localhost required**: Google Sheets CORS blocks `file://` origin requests.
+- No manual overlay for instructor age minimums or notes — deliberately dropped to avoid stale, hand-maintained data. May be revisited later.
+- The room-linking guess is a heuristic, not ground truth — verify before communicating a specific room to a family for a lesson that hasn't been booked yet.
+- Report uploads fully replace prior data for that type; there's no partial/incremental upload.

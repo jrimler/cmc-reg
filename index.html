@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SFCMC Reg Tool</title>
+<title>SFCMC Scheduler</title>
 <meta name="description" content="San Francisco Community Music Center — Registrar Tool">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -25,6 +25,8 @@
   --gold-soft:   #fdf3d0;
   --muted:       #5a7a96;
   --red:         #c0392b;
+  --green:       #2f8a5a;
+  --green-soft:  #dff3e8;
   --header-h:    57px;
   --tabbar-h:    38px;
 }
@@ -60,113 +62,63 @@ body {
 .header-brand { display: flex; align-items: baseline; gap: 14px; flex-shrink: 0; }
 #app-header h1 { font-family: 'DM Serif Display', serif; font-size: 21px; letter-spacing: -0.3px; color: #fff; white-space: nowrap; }
 #app-header h1 span { font-style: italic; color: #f5c518; }
-#status-line { font-family: 'DM Mono', monospace; font-size: 11px; color: #a0c0e0; white-space: nowrap; }
-
-/* In-content search box (Lesson Finder) */
-#lf-search-wrap { position: relative; margin-bottom: 12px; }
-#lf-search {
-  width: 100%; padding: 8px 12px 8px 34px;
-  border: 1.5px solid var(--rule); border-radius: 4px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px;
-  background: #fff; color: var(--ink); outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+#status-stack {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  justify-content: center; gap: 1px; padding: 2px 0;
 }
-#lf-search::placeholder { color: var(--muted); }
-#lf-search:focus { border-color: var(--teal); box-shadow: 0 0 0 2px rgba(42,100,150,0.15); }
-#lf-search:disabled { opacity: 0.45; cursor: default; }
-.lf-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-
-/* Autocomplete dropdown */
-#search-dropdown {
-  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-  background: #fff; border: 1.5px solid var(--rule); border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 200;
-  max-height: 320px; overflow-y: auto;
+.status-row {
+  font-family: 'DM Mono', monospace; font-size: 9.5px; line-height: 1.35; color: #a0c0e0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-#search-dropdown.open { display: block; }
-.sd-group-label { padding: 6px 12px 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: var(--paper-dark); border-bottom: 1px solid var(--rule); }
-.sd-item { padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--rule); transition: background 0.1s; }
-.sd-item:last-child { border-bottom: none; }
-.sd-item:hover, .sd-item.highlighted { background: var(--accent-soft); }
-.sd-item-name { flex: 1; }
-.sd-item-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-left: 10px; }
-.sd-item.already-active { opacity: 0.45; pointer-events: none; }
-.sd-empty { padding: 12px 14px; font-size: 12px; color: var(--muted); font-style: italic; }
+.status-row b { color: #cfe2f5; font-weight: 500; }
 
-/* View switcher */
 .view-switcher { display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 3px; flex-shrink: 0; }
 .view-btn { padding: 5px 14px; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer; background: transparent; color: rgba(255,255,255,0.6); transition: background 0.15s, color 0.15s; white-space: nowrap; }
 .view-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 .view-btn.active { background: #fff; color: #2060a0; }
+.view-btn.hidden { display: none; }
 
-/* Refresh button */
-#refresh-btn { display: flex; align-items: center; gap: 6px; padding: 6px 13px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; cursor: pointer; transition: background 0.15s, opacity 0.15s; flex-shrink: 0; }
-#refresh-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
-#refresh-btn:disabled { opacity: 0.4; cursor: default; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
-
-/* Settings button */
-#settings-btn { display: flex; align-items: center; justify-content: center; padding: 6px 9px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
-#settings-btn:hover { background: rgba(255,255,255,0.22); }
-
-/* Cancel button in setup card */
-#cancel-setup-btn { width: 100%; margin-top: 10px; padding: 9px; background: transparent; color: var(--muted); border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: background 0.15s, color 0.15s; }
-#cancel-setup-btn:hover { background: var(--paper-dark); color: var(--ink); }
-#cancel-setup-btn.hidden { display: none; }
-
-/* Teachers collapsible in setup card */
-#teachers-toggle-btn { width: 100%; padding: 8px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; color: var(--muted); text-align: left; display: flex; align-items: center; justify-content: space-between; transition: background 0.15s, color 0.15s; margin-bottom: 12px; }
-#teachers-toggle-btn:hover { background: var(--paper-dark); color: var(--ink); }
-#teachers-section-body { border: 1.5px solid var(--rule); border-radius: 4px; overflow: hidden; margin-bottom: 12px; max-height: 320px; overflow-y: auto; }
+#header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+#whoami { font-family: 'DM Mono', monospace; font-size: 11px; color: #cfe2f5; white-space: nowrap; }
+#whoami .role-badge { background: rgba(255,255,255,0.18); border-radius: 3px; padding: 1px 6px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
+#signout-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.3); border-radius: 4px; color: #fff; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
+#signout-btn:hover { background: rgba(255,255,255,0.22); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    MAIN CONTENT AREA
    ═══════════════════════════════════════════════════════════════════════════════ */
 #main-content { flex: 1; position: relative; overflow: hidden; display: flex; min-height: 0; }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   VIEWS
-   ═══════════════════════════════════════════════════════════════════════════════ */
 .view { display: none; flex: 1; flex-direction: column; min-height: 0; min-width: 0; }
 .view.active { display: flex; }
 
-/* LF tab bar */
-#lf-tab-bar { height: var(--tabbar-h); flex-shrink: 0; border-bottom: 1.5px solid var(--rule); display: none; align-items: center; padding: 0 24px; gap: 4px; background: #fff; }
-#lf-tab-bar.visible { display: flex; }
+#lf-tab-bar, #admin-tab-bar { height: var(--tabbar-h); flex-shrink: 0; border-bottom: 1.5px solid var(--rule); display: flex; align-items: center; padding: 0 24px; gap: 4px; background: #fff; }
 .tab-btn { height: calc(var(--tabbar-h) - 2px); padding: 0 14px; border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; }
 .tab-btn:hover { color: var(--ink); }
 .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-/* Panels */
-.lf-panel { flex: 1; min-height: 0; }
-.rs-panel { flex: 1; min-height: 0; overflow: auto; }
+.lf-panel, .admin-panel { flex: 1; min-height: 0; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SETUP SCREEN
+   CONNECT / LOGIN SCREENS
    ═══════════════════════════════════════════════════════════════════════════════ */
-#setup-screen { position: absolute; inset: 0; background: var(--paper); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; overflow-y: auto; }
-#setup-screen.hidden { display: none; }
-.setup-card { background: #fff; border: 1.5px solid var(--rule); border-radius: 8px; padding: 36px 40px; max-width: 600px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+#login-screen { position: absolute; inset: 0; background: var(--paper); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; overflow-y: auto; }
+#login-screen.hidden { display: none; }
+.setup-card { background: #fff; border: 1.5px solid var(--rule); border-radius: 8px; padding: 36px 40px; max-width: 460px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
 .setup-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 6px; }
-.setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; line-height: 1.55; }
-.setup-steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
-.setup-step { display: flex; gap: 14px; align-items: flex-start; }
-.step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--teal); color: #fff; font-family: 'DM Mono', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-.step-text { font-size: 13px; line-height: 1.55; color: var(--ink); }
-.step-text strong { font-weight: 500; }
-.step-text code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--paper-dark); padding: 1px 5px; border-radius: 3px; color: var(--teal); }
-.setup-divider { border: none; border-top: 1.5px solid var(--rule); margin: 24px 0; }
+.setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.55; }
 .setup-url-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 7px; }
-.setup-url-label .opt { font-size: 10px; color: var(--muted); text-transform: none; letter-spacing: 0; }
-.setup-url-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; margin-bottom: 12px; }
+.setup-url-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; margin-bottom: 14px; }
 .setup-url-input:focus { border-color: var(--teal); }
 .setup-url-input.error { border-color: var(--red); }
-#url-error { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
-#url-error.visible { display: block; }
-#connect-btn { width: 100%; padding: 10px; background: var(--teal); color: #fff; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-#connect-btn:hover { opacity: 0.85; }
-#connect-btn:disabled { opacity: 0.4; cursor: default; }
+#login-error { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
+#login-error.visible { display: block; }
+#login-info { font-size: 12px; color: var(--green); margin-bottom: 10px; display: none; }
+#login-info.visible { display: block; }
+.primary-btn { width: 100%; padding: 10px; background: var(--teal); color: #fff; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.primary-btn:hover { opacity: 0.85; }
+.primary-btn:disabled { opacity: 0.4; cursor: default; }
+.link-btn { width: 100%; margin-top: 10px; padding: 8px; background: transparent; color: var(--muted); border: none; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; text-decoration: underline; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LOADING OVERLAY
@@ -174,93 +126,69 @@ body {
 #loading-overlay { display: none; position: absolute; inset: 0; background: rgba(244,248,252,0.88); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 #loading-overlay.visible { display: flex; }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--rule); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+/* Toast */
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 5px; font-size: 12.5px; z-index: 500; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+#toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LESSON FINDER STYLES
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Panel layout */
 #lf-panel-availability { display: flex; flex-direction: row; overflow: hidden; }
 
-/* Sidebar */
 #lf-sidebar { width: 224px; flex-shrink: 0; border-right: 1.5px solid var(--rule); overflow-y: auto; display: flex; flex-direction: column; background: #fff; }
-#lf-sidebar::-webkit-scrollbar { width: 3px; }
-#lf-sidebar::-webkit-scrollbar-thumb { background: var(--rule); }
 
-/* Reset button */
 .reset-wrap { padding: 12px 12px 10px; border-bottom: 1px solid var(--rule); }
 .lf-reset-btn { width: 100%; padding: 7px; background: var(--accent); color: #fff; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .lf-reset-btn:hover { opacity: 0.72; }
 .lf-reset-btn:disabled { opacity: 0.22; cursor: default; }
 
-/* Chip filter sections */
 .chip-section { border-bottom: 1px solid var(--rule); }
 .chip-section-head { padding: 10px 14px 9px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
 .chip-section-head:hover { background: rgba(0,0,0,0.02); }
-.chip-section-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); transition: color 0.1s; }
-.chip-section.has-selection .chip-section-title { color: var(--ink); }
-.chip-section-right { display: flex; align-items: center; gap: 6px; }
-.chip-sel-badge { font-family: 'DM Mono', monospace; font-size: 9px; background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 6px; display: none; }
-.chip-sel-badge.visible { display: inline-block; }
-.cs-arrow { width: 10px; height: 10px; opacity: 0.4; transition: transform 0.18s; flex-shrink: 0; }
-.chip-section.collapsed .cs-arrow { transform: rotate(-90deg); }
+.chip-section-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 .chip-section-body { padding: 0 10px 10px; display: flex; flex-wrap: wrap; gap: 5px; }
-.chip-section.collapsed .chip-section-body { display: none; }
 .filter-chip { padding: 4px 9px; border: 1.5px solid var(--rule); border-radius: 3px; font-size: 12px; cursor: pointer; background: #fff; transition: all 0.1s; white-space: nowrap; user-select: none; line-height: 1.4; }
 .filter-chip:hover { border-color: var(--ink); }
 .filter-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
 .chip-section[data-key="instrument"] .filter-chip.active { background: var(--teal); border-color: var(--teal); }
 .chip-section[data-key="day"]        .filter-chip.active { background: var(--gold); border-color: var(--gold); }
 .chip-section[data-key="duration"]   .filter-chip.active { background: var(--accent); border-color: var(--accent); }
-.filter-chip.dimmed { opacity: 0.35; }
-.chip-show-more { padding: 3px 9px; border: 1.5px dashed var(--rule); border-radius: 3px; font-size: 11px; color: var(--muted); cursor: pointer; background: transparent; font-family: 'DM Mono', monospace; transition: all 0.1s; white-space: nowrap; }
-.chip-show-more:hover { border-color: var(--ink); color: var(--ink); }
 
-/* Branch / Age static filters */
 .static-filter-section { border-bottom: 1px solid var(--rule); padding: 10px 12px; }
 .static-filter-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); display: block; margin-bottom: 7px; }
 .branch-filter-chips { display: flex; gap: 4px; flex-wrap: wrap; }
 .branch-filter-chip { padding: 4px 8px; text-align: center; border-radius: 3px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink); border: 1.5px solid var(--rule); background: transparent; transition: all 0.1s; user-select: none; }
 .branch-filter-chip:hover { border-color: var(--ink); }
 .branch-filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.age-filter-wrap { display: flex; align-items: center; gap: 8px; }
-.age-filter-label-text { font-size: 12px; color: var(--muted); white-space: nowrap; }
-.age-filter-input { width: 52px; padding: 4px 6px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 13px; background: var(--paper); color: var(--ink); outline: none; text-align: center; transition: border-color 0.15s; }
-.age-filter-input:focus { border-color: var(--ink); }
-.age-clear-btn { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; display: none; text-decoration: underline; }
-.age-clear-btn.visible { display: block; }
 
-/* Availability main area */
-.avail-main { flex: 1; overflow-y: auto; padding: 20px 28px; }
-.results-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule); }
+.avail-main { flex: 1; min-width: 0; overflow-y: auto; padding: 20px 28px; }
+.lf-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.sidebar-toggle-btn {
+  display: none; align-items: center; gap: 6px;
+  padding: 6px 12px; background: var(--paper-dark);
+  border: 1.5px solid var(--rule); border-radius: 4px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  cursor: pointer; color: var(--ink); margin-bottom: 10px;
+}
+.sidebar-toggle-btn.sidebar-open { border-color: var(--accent); color: var(--accent); }
+#lf-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
+#lf-sidebar-scrim.visible { display: block; }
+.results-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1.5px solid var(--rule); gap: 10px; flex-wrap: wrap; }
 #lf-result-count { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-.sort-group { display: flex; gap: 4px; align-items: center; }
+.sort-group, .copy-group { display: flex; gap: 4px; align-items: center; }
 .sort-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
 .sort-btn { padding: 3px 8px; border-radius: 3px; border: 1.5px solid var(--rule); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; color: var(--muted); transition: all 0.1s; text-transform: uppercase; letter-spacing: 0.08em; }
 .sort-btn:hover { border-color: var(--ink); color: var(--ink); }
 .sort-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* View mode toggle (By Instrument / By Instructor) */
-.viewmode-group { display: flex; gap: 3px; align-items: center; }
-.viewmode-btn { padding: 3px 10px; border-radius: 3px; border: 1.5px solid var(--rule); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; color: var(--muted); transition: all 0.1s; text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
-.viewmode-btn:hover { border-color: var(--ink); color: var(--ink); }
-.viewmode-btn.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+#lf-copy-btn { padding: 5px 12px; border-radius: 3px; border: 1.5px solid var(--teal); background: var(--teal); color: #fff; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; }
+#lf-copy-btn:disabled { opacity: 0.35; cursor: default; background: transparent; color: var(--muted); border-color: var(--rule); }
 
-/* Active filter summary chips */
-#lf-active-filters { display: none; flex-wrap: wrap; gap: 5px; padding: 0 0 12px; }
-#lf-active-filters.visible { display: flex; }
-.active-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 10px; border-radius: 20px; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; }
-.active-chip:hover { opacity: 0.75; }
-.active-chip-x { font-size: 12px; line-height: 1; opacity: 0.7; }
-.active-chip[data-key="instrument"] { background: var(--teal);   color: #fff; }
-.active-chip[data-key="day"]        { background: var(--gold);   color: #fff; }
-.active-chip[data-key="instructor"] { background: var(--accent); color: #fff; }
-.active-chip[data-key="duration"]   { background: var(--ink);    color: #fff; }
-.active-chip[data-key="branch"]     { background: var(--muted);  color: #fff; }
-.active-chip[data-key="studentAge"] { background: var(--muted);  color: #fff; }
-
-/* Results table */
 #lf-results-table { width: 100%; border-collapse: collapse; }
 #lf-results-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
 #lf-results-table tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
@@ -268,29 +196,20 @@ body {
 #lf-results-table tbody td { padding: 9px 10px; vertical-align: middle; }
 .td-instrument { font-family: 'DM Serif Display', serif; font-size: 15px; }
 .td-instructor { font-weight: 500; }
-.td-dept { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 .td-day { font-weight: 500; white-space: nowrap; }
 .td-time { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; }
-.slot-badges { display: flex; gap: 4px; flex-wrap: wrap; }
-.slot-badge { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 2px; white-space: nowrap; }
-.badge-30 { background: var(--gold-soft);   color: var(--gold);   }
-.badge-45 { background: var(--teal-soft);   color: var(--teal);   }
-.badge-60 { background: var(--accent-soft); color: var(--accent); }
-.branch-pills { display: flex; gap: 3px; flex-wrap: wrap; }
-.branch-pill { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 5px; border-radius: 2px; background: var(--paper-dark); color: var(--muted); border: 1px solid var(--rule); }
-.age-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
-.group-header td { padding: 14px 10px 4px; font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); border-bottom: none !important; }
-.group-header td span { font-style: italic; font-size: 13px; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-left: 8px; font-weight: 300; }
+.room-pill { font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 2px; background: var(--paper-dark); color: var(--muted); border: 1px solid var(--rule); white-space: nowrap; }
+.room-pill.guess { font-style: italic; border-style: dashed; }
+.room-pill.ambiguous { color: var(--gold); border-color: var(--gold); }
 #lf-empty-state { display: none; text-align: center; padding: 80px 20px; }
 #lf-empty-state.visible { display: block; }
 #lf-empty-state p { color: var(--muted); font-size: 15px; margin-bottom: 6px; }
-#lf-empty-state small { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--rule); }
 
 /* Teachers panel */
-.lf-teachers-header { margin-bottom: 20px; }
+.lf-teachers-header { margin-bottom: 16px; }
 .lf-teachers-header h2 { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 4px; }
-.lf-teachers-header p { font-size: 12px; color: var(--muted); font-style: italic; }
-#lf-teacher-table { width: 100%; border-collapse: collapse; max-width: 1000px; }
+.lf-teachers-header p { font-size: 12px; color: var(--muted); }
+#lf-teacher-table { width: 100%; border-collapse: collapse; }
 #lf-teacher-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
 #lf-teacher-table tbody tr { border-bottom: 1px solid var(--rule); }
 #lf-teacher-table tbody tr:hover { background: var(--paper-dark); }
@@ -298,58 +217,43 @@ body {
 .td-tname { font-weight: 500; font-size: 13px; white-space: nowrap; }
 .instr-tags { display: flex; gap: 3px; flex-wrap: wrap; }
 .instr-tag { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 2px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; white-space: nowrap; }
+.avail-line { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink); white-space: nowrap; }
+.avail-line + .avail-line { margin-top: 2px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ROOM SCHEDULE STYLES
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Site tabs */
 #rs-site-tabs { height: 40px; flex-shrink: 0; display: flex; align-items: center; overflow-x: auto; background: #fff; border-bottom: 1.5px solid var(--rule); padding: 0 16px; gap: 2px; }
-#rs-site-tabs::-webkit-scrollbar { height: 0; }
 .rs-site-tab { height: calc(40px - 2px); padding: 0 16px; border: none; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s, border-color 0.15s; }
 .rs-site-tab:hover { color: var(--ink); }
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-/* Day tabs */
 #rs-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
 .rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
 
-/* Tab count badge (site tabs only) */
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
 .rs-site-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
 
-/* Action bar */
-#rs-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 16px; }
+#rs-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
+.rs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
+.rs-btn:hover { border-color: var(--ink); color: var(--ink); }
 
-/* Print button */
-#rs-print-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
-#rs-print-btn:hover { border-color: var(--ink); color: var(--ink); }
-
-/* Grid wrapper */
 #rs-grid-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
-#rs-grid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
-#rs-grid-wrap::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
-
-/* Grid inner container */
 #rs-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
 
-/* Room header row (sticky top) */
 .rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
 .rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
 .rs-room-col-head { flex-shrink: 0; padding: 5px 6px; font-family: 'DM Mono', monospace; font-size: 9px; text-align: center; border-right: 1px solid var(--rule); color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: center; }
 
-/* Grid body */
 .rs-grid-body { display: flex; }
 
-/* Time column (sticky left) */
 .rs-time-col { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 10; background: #fff; border-right: 2px solid var(--rule); }
 .rs-time-tick { height: 28px; display: flex; align-items: flex-start; justify-content: flex-end; padding: 2px 5px 0 0; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); border-top: 1px solid rgba(200,216,232,0.25); box-sizing: border-box; }
 .rs-time-tick:first-child { border-top: none; }
 .rs-time-tick.on-hour { color: var(--ink); font-size: 10px; }
 
-/* Room columns */
 .rs-rooms-area { display: flex; }
 .rs-room-col { flex-shrink: 0; border-right: 1px solid var(--rule); position: relative; }
 .rs-slot-row { width: 100%; height: 28px; box-sizing: border-box; border-top: 1px solid rgba(200,216,232,0.2); }
@@ -357,114 +261,99 @@ body {
 .rs-slot-row.half-hour { border-top-color: var(--rule); }
 .rs-slot-row.on-hour { border-top-color: #b0c4d8; border-top-width: 1.5px; }
 
-/* Event blocks */
 .rs-event { position: absolute; left: 2px; right: 2px; border-radius: 3px; overflow: hidden; padding: 2px 4px; cursor: default; border-left: 3px solid transparent; box-sizing: border-box; }
 .rs-event:hover { filter: brightness(0.92); z-index: 5; }
 .rs-event.is-class { border-left-width: 5px; }
 .rs-event.rs-conflict { outline: 2px solid var(--red); outline-offset: -1px; z-index: 6; }
 .rs-event.rs-conflict::after { content: '!'; position: absolute; top: 2px; right: 3px; font-size: 9px; font-weight: 700; color: var(--red); font-family: 'DM Mono', monospace; }
-.rs-event.rs-avail { z-index: 1; cursor: default; }
 .rs-event-item { font-family: 'DM Serif Display', serif; font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .rs-event-info { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(0,0,0,0.52); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
 
-/* Tooltip */
 #rs-tooltip { display: none; position: fixed; z-index: 400; background: var(--ink); color: #fff; border-radius: 4px; padding: 9px 12px; font-size: 12px; pointer-events: none; max-width: 240px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 #rs-tt-title { font-weight: 500; margin-bottom: 5px; font-size: 13px; }
 #rs-tt-body { font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; opacity: 0.82; }
 
-/* Empty state */
 #rs-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
 #rs-empty.visible { display: flex; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   ASSIGNMENTS VIEW STYLES
+   ADMIN STYLES
    ═══════════════════════════════════════════════════════════════════════════════ */
+.admin-body { flex: 1; overflow: auto; padding: 20px 28px; }
+.admin-section-title { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 4px; }
+.admin-section-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+.upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.upload-card { border: 1.5px solid var(--rule); border-radius: 6px; padding: 16px; background: #fff; }
+.upload-card h3 { font-size: 13px; margin-bottom: 4px; }
+.upload-card .last-upload { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 12px; }
+.upload-card input[type=file] { width: 100%; font-size: 11px; margin-bottom: 10px; }
+.upload-card .upload-status { font-size: 11px; margin-top: 8px; color: var(--muted); min-height: 14px; }
+.upload-card .upload-status.error { color: var(--red); }
+.upload-card .upload-status.ok { color: var(--green); }
+.upload-btn { width: 100%; padding: 7px; background: var(--teal); color: #fff; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+.upload-btn:disabled { opacity: 0.4; cursor: default; }
 
-.as-toolbar { flex-shrink: 0; background: #fff; border-bottom: 1.5px solid var(--rule); padding: 10px 20px; display: flex; align-items: center; gap: 14px; }
-#as-search { flex: 1; max-width: 320px; padding: 6px 10px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; }
-#as-search:focus { border-color: var(--teal); }
-.as-site-filter { display: flex; gap: 4px; }
-.as-site-chip { padding: 4px 10px; border-radius: 3px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink); border: 1.5px solid var(--rule); background: transparent; transition: all 0.1s; user-select: none; }
-.as-site-chip:hover { border-color: var(--ink); }
-.as-site-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.as-table-wrap { flex: 1; overflow: auto; padding: 20px 28px; }
-.as-table-wrap::-webkit-scrollbar { width: 6px; }
-.as-table-wrap::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
-#as-table { width: 100%; border-collapse: collapse; }
-#as-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
-#as-table tbody tr { border-bottom: 1px solid var(--rule); transition: background 0.1s; }
-#as-table tbody tr:hover { background: var(--paper-dark); }
-#as-table tbody td { padding: 9px 10px; vertical-align: middle; font-size: 13px; }
-#as-table .td-instructor { font-weight: 500; }
-#as-table .td-mono { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; }
-#as-empty { display: none; text-align: center; padding: 80px 20px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-#as-empty.visible { display: block; }
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; position: sticky; top: 0; background: var(--paper); }
+.admin-table tbody tr { border-bottom: 1px solid var(--rule); }
+.admin-table tbody tr.needs-review { background: var(--accent-soft); }
+.admin-table tbody tr.ignored-row { opacity: 0.5; }
+.admin-table tbody td { padding: 7px 10px; vertical-align: middle; font-size: 12.5px; }
+.admin-table input[type=text], .admin-table input[type=number], .admin-table select {
+  padding: 4px 6px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Sans', sans-serif; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; width: 100%;
+}
+.admin-table select { font-family: 'DM Mono', monospace; }
+.small-btn { padding: 3px 9px; border-radius: 3px; border: 1.5px solid var(--rule); background: transparent; font-family: 'DM Mono', monospace; font-size: 10px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+.small-btn:hover { border-color: var(--ink); color: var(--ink); }
+.small-btn.danger:hover { border-color: var(--red); color: var(--red); }
+.badge-review { font-family: 'DM Mono', monospace; font-size: 9px; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 8px; }
+.admin-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.admin-toolbar select, .admin-toolbar input { padding: 5px 8px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; background: #fff; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    PRINT
    ═══════════════════════════════════════════════════════════════════════════════ */
+@page tabloid-page { size: 11in 17in landscape; margin: 0.35in; }
 @media print {
-  @page { size: landscape; margin: 0.3in 0.4in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   #app-header, #main-content { display: none !important; }
   #rs-print-section { display: block !important; }
-  .rs-print-page { page-break-after: always; }
+  .rs-print-page { page: tabloid-page; page-break-after: always; }
   .rs-print-page:last-child { page-break-after: avoid; }
   .rs-print-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1.5px solid #333; }
   .rs-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
   .rs-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
   .rs-room-header { position: static !important; }
   .rs-corner, .rs-time-col { position: static !important; }
-  .rs-time-tick { height: 22px; font-size: 8px; }
-  .rs-slot-row { height: 22px; }
-  .rs-event-item { font-size: 9px; }
-  .rs-event-info { font-size: 8px; }
+  .rs-time-tick { height: 26px; font-size: 10px; }
+  .rs-slot-row { height: 26px; }
+  .rs-event-item { font-size: 11px; }
+  .rs-event-info { font-size: 9.5px; }
 }
 #rs-print-section { display: none; }
 
-.sidebar-toggle-btn { display: none; }
-
 @media (max-width: 768px) {
-  #app-header { padding: 0 10px 0 12px; gap: 8px; }
-  #status-line { display: none; }
-  #app-header h1 { font-size: 16px; }
-  .view-btn { padding: 5px 8px; font-size: 10px; }
-  #refresh-btn { padding: 6px 9px; font-size: 0; gap: 0; }
+  #app-header { padding: 0 8px 0 10px; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #status-stack, #whoami { display: none; }
+  #app-header h1 { font-size: 15px; white-space: nowrap; }
+  #app-header h1 span { display: none; }
+  .view-switcher { flex-shrink: 0; }
+  .view-btn { padding: 5px 7px; font-size: 9.5px; }
+  #header-right { flex-shrink: 0; gap: 6px; }
+  #signout-btn { padding: 6px 8px; font-size: 10px; }
 
-  .sidebar-toggle-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; background: var(--paper-dark);
-    border: 1.5px solid var(--rule); border-radius: 4px;
-    font-family: 'DM Mono', monospace; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 0.07em;
-    cursor: pointer; color: var(--ink); margin-bottom: 10px;
-  }
-  .sidebar-toggle-btn.sidebar-open { border-color: var(--accent); color: var(--accent); }
+  .avail-main { padding: 12px 14px; }
+  #lf-results-table { width: max-content; max-width: none; }
 
+  .sidebar-toggle-btn { display: inline-flex; }
   #lf-sidebar {
     position: fixed; top: var(--header-h); left: 0; bottom: 0;
-    width: 280px; z-index: 150;
+    width: 260px; z-index: 150; background: #fff;
     transform: translateX(-100%); transition: transform 0.22s ease;
-    border-right: 1.5px solid var(--rule);
     box-shadow: 4px 0 16px rgba(0,0,0,0.12);
   }
   #lf-sidebar.sidebar-open { transform: translateX(0); }
-  #lf-sidebar-scrim { display: none; position: fixed; inset: 0; top: var(--header-h); background: rgba(0,0,0,0.3); z-index: 140; }
-  #lf-sidebar-scrim.visible { display: block; }
-
-  .avail-main { padding: 12px 14px; }
-  #lf-results-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: max-content; max-width: none; }
-  #lf-results-table thead th, #lf-results-table tbody td { padding: 7px 7px; }
-
-  .results-bar { flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
-  #lf-result-count { width: 100%; }
-  .sort-label { display: none; }
-  .viewmode-btn, .sort-btn { padding: 3px 6px; font-size: 9px; }
-
-  #rs-day-tabs { overflow-x: auto; }
-  #rs-day-tabs::-webkit-scrollbar { height: 0; }
 }
-
 </style>
 </head>
 <body>
@@ -472,120 +361,67 @@ body {
 <!-- ══ SHARED HEADER ══════════════════════════════════════════════════════════ -->
 <div id="app-header">
   <div class="header-brand">
-    <h1>SFCMC <span>Reg Tool</span></h1>
-    <span id="status-line">Loading…</span>
+    <h1>SFCMC <span>Scheduler</span></h1>
   </div>
+  <div id="status-stack"></div>
 
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
     <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
-    <button class="view-btn" data-view="assignments">Assignments</button>
+    <button class="view-btn admin-only-view-btn hidden" data-view="upload" id="upload-view-btn">Upload</button>
+    <button class="view-btn admin-only-view-btn hidden" data-view="admin" id="admin-view-btn">Admin</button>
   </div>
 
-  <button id="refresh-btn" disabled title="Refresh data from Google Sheets">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-    Refresh
-  </button>
-  <button id="settings-btn" title="Update sheet URLs">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-  </button>
+  <div id="header-right">
+    <span id="whoami"></span>
+    <button id="signout-btn" class="hidden">Sign Out</button>
+  </div>
 </div>
 
 <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════════ -->
 <div id="main-content">
 
-  <!-- Shared loading overlay -->
   <div id="loading-overlay">
     <div class="loading-spinner"></div>
-    <span class="loading-text" id="loading-text">Loading from Google Sheets…</span>
+    <span class="loading-text" id="loading-text">Loading…</span>
   </div>
 
-  <!-- Shared setup screen -->
-  <div id="setup-screen">
+  <!-- ══ LOGIN ══ -->
+  <div id="login-screen" class="hidden">
     <div class="setup-card">
-      <h2>Connect to Google Sheets</h2>
-      <p class="setup-sub">Paste published CSV URLs below. They'll be saved and auto-loaded every time.</p>
+      <h2 id="login-title">Sign In</h2>
+      <p class="setup-sub">Staff access to the SFCMC Scheduler.</p>
 
-      <label class="setup-url-label" for="lesson-url-input">Open Slots (Lessons) — Published CSV URL</label>
-      <input id="lesson-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
-             autocomplete="off" spellcheck="false">
+      <label class="setup-url-label" for="login-email">Email</label>
+      <input id="login-email" class="setup-url-input" type="email" autocomplete="username">
 
-      <label class="setup-url-label" for="room-url-input">
-        Room Schedule — Published CSV URL <span class="opt">(optional)</span>
-      </label>
-      <input id="room-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
-             autocomplete="off" spellcheck="false">
+      <label class="setup-url-label" for="login-password">Password</label>
+      <input id="login-password" class="setup-url-input" type="password" autocomplete="current-password">
 
-      <label class="setup-url-label" for="teachers-url-input">
-        Instructor Notes — Published CSV URL <span class="opt">(optional)</span>
-      </label>
-      <input id="teachers-url-input" class="setup-url-input" type="url"
-             placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"
-             autocomplete="off" spellcheck="false">
-
-      <div id="url-error"></div>
-
-      <button id="teachers-toggle-btn" type="button">
-        View instructor list
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3L5 7L9 3"/></svg>
-      </button>
-      <div id="teachers-section-body" style="display:none">
-        <table id="lf-teacher-table">
-          <thead><tr>
-            <th style="width:170px">Instructor</th>
-            <th>Instruments</th>
-            <th>Branch(es)</th>
-            <th>Age Min</th>
-            <th>Notes</th>
-          </tr></thead>
-          <tbody id="lf-teacher-body"></tbody>
-        </table>
-      </div>
-
-      <button id="connect-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        Connect &amp; Load
-      </button>
-      <button id="cancel-setup-btn" class="hidden">Cancel</button>
+      <div id="login-error"></div>
+      <div id="login-info"></div>
+      <button id="login-submit-btn" class="primary-btn">Sign In</button>
+      <button id="login-toggle-btn" class="link-btn">Need an account? Create one</button>
     </div>
   </div>
 
   <!-- ══ LESSON FINDER VIEW ════════════════════════════════════════════════ -->
   <div id="lf-view" class="view">
-
     <div id="lf-tab-bar">
       <button class="tab-btn active" data-tab="availability">Availability</button>
+      <button class="tab-btn" data-tab="teachers">Teachers</button>
     </div>
 
-    <!-- Availability panel -->
     <div id="lf-panel-availability" class="lf-panel">
       <div id="lf-sidebar-scrim"></div>
       <aside id="lf-sidebar">
         <div class="reset-wrap">
-          <button class="lf-reset-btn" id="lf-reset-btn" disabled>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Reset all filters
-          </button>
+          <button class="lf-reset-btn" id="lf-reset-btn" disabled>Reset all filters</button>
         </div>
         <div id="lf-chip-filters"></div>
         <div class="static-filter-section">
-          <span class="static-filter-label">Student Age</span>
-          <div class="age-filter-wrap">
-            <span class="age-filter-label-text">Age</span>
-            <input class="age-filter-input" id="lf-age-input" type="number" min="1" max="99" placeholder="—">
-            <button class="age-clear-btn" id="lf-age-clear">Clear</button>
-          </div>
-        </div>
-        <div class="static-filter-section">
           <span class="static-filter-label">Branch</span>
-          <div class="branch-filter-chips">
-            <button class="branch-filter-chip" data-branch="Richmond">Richmond</button>
-            <button class="branch-filter-chip" data-branch="Mission">Mission</button>
-            <button class="branch-filter-chip" data-branch="Online">Online</button>
-            <button class="branch-filter-chip" data-branch="Home Studio">Home</button>
-          </div>
+          <div class="branch-filter-chips" id="lf-branch-chips"></div>
         </div>
       </aside>
 
@@ -594,50 +430,57 @@ body {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           Filters
         </button>
-        <div id="lf-search-wrap">
-          <svg class="lf-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input id="lf-search" type="text" placeholder="Instrument, day, or teacher name…" autocomplete="off" disabled>
-          <div id="search-dropdown"></div>
-        </div>
         <div class="results-bar">
           <span id="lf-result-count"></span>
-          <div class="viewmode-group">
-            <button class="viewmode-btn active" data-viewmode="byInstrument">By Instrument</button>
-            <button class="viewmode-btn" data-viewmode="byInstructor">By Instructor</button>
-          </div>
           <div class="sort-group">
             <span class="sort-label">Group by</span>
             <button class="sort-btn active" data-sort="instrument">Instrument</button>
             <button class="sort-btn" data-sort="day">Day</button>
             <button class="sort-btn" data-sort="instructor">Instructor</button>
           </div>
+          <div class="copy-group">
+            <button id="lf-copy-btn" disabled>Copy 0 selected for email</button>
+          </div>
         </div>
-        <div id="lf-active-filters"></div>
-        <table id="lf-results-table">
-          <thead><tr>
-            <th>Instrument</th><th>Instructor</th><th>Dept</th>
-            <th>Day</th><th>Time</th><th>Available Slots</th><th>Branch</th><th>Age Min</th>
-          </tr></thead>
-          <tbody id="lf-table-body"></tbody>
-        </table>
+        <div class="lf-table-scroll">
+          <table id="lf-results-table">
+            <thead><tr>
+              <th style="width:24px"><input type="checkbox" id="lf-select-all"></th>
+              <th>Instrument</th><th>Instructor</th><th>Dept</th>
+              <th>Day</th><th>Time</th><th>Room</th><th>Branch</th>
+            </tr></thead>
+            <tbody id="lf-table-body"></tbody>
+          </table>
+        </div>
         <div id="lf-empty-state">
           <p>No slots match these filters.</p>
-          <small>Try resetting filters or loading a new export.</small>
         </div>
       </div>
-    </div><!-- #lf-panel-availability -->
+    </div>
 
-  </div><!-- #lf-view -->
+    <div id="lf-panel-teachers" class="lf-panel" style="display:none; overflow:auto; padding:20px 28px;">
+      <div class="lf-teachers-header">
+        <h2>Teachers</h2>
+        <p>Instruments, branches, and weekly availability — derived from the latest uploads.</p>
+      </div>
+      <table id="lf-teacher-table">
+        <thead><tr>
+          <th style="width:170px">Instructor</th>
+          <th>Instruments</th>
+          <th>Branch(es)</th>
+          <th>Weekly availability</th>
+        </tr></thead>
+        <tbody id="lf-teacher-body"></tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- ══ ROOM SCHEDULE VIEW ════════════════════════════════════════════════ -->
   <div id="rs-view" class="view">
     <div id="rs-site-tabs"></div>
     <div id="rs-day-tabs"></div>
     <div id="rs-action-bar">
-      <button id="rs-print-btn">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        Print Richmond Schedule
-      </button>
+      <button class="rs-btn" id="rs-print-11x17-btn">Print 11×17 (Richmond)</button>
     </div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
@@ -645,31 +488,67 @@ body {
     </div>
   </div>
 
-  <!-- ══ ASSIGNMENTS VIEW ═════════════════════════════════════════════════════ -->
-  <div id="as-view" class="view">
-    <div class="as-toolbar">
-      <input id="as-search" type="search" placeholder="Filter by instructor…" autocomplete="off">
-      <div class="as-site-filter">
-        <span class="as-site-chip active" data-site="">All</span>
-        <span class="as-site-chip" data-site="Richmond">Richmond</span>
-        <span class="as-site-chip" data-site="Mission">Mission</span>
+  <!-- ══ UPLOAD VIEW ══════════════════════════════════════════════════════ -->
+  <div id="upload-view" class="view">
+    <div class="admin-body">
+      <div class="admin-section-title">Upload Reports</div>
+      <div class="admin-section-sub">Each upload fully replaces the current data for that report type. Column order/names must match the ASAP export exactly; the parser matches by header name.</div>
+      <div class="upload-grid">
+        <div class="upload-card" data-report="open_slots">
+          <h3>Open Slots Report</h3>
+          <div class="last-upload" data-lastupload>No uploads yet</div>
+          <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
+          <button class="upload-btn" data-uploadbtn disabled>Upload</button>
+          <div class="upload-status" data-status></div>
+        </div>
+        <div class="upload-card" data-report="master_schedule">
+          <h3>Master Scheduler Report</h3>
+          <div class="last-upload" data-lastupload>No uploads yet</div>
+          <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
+          <button class="upload-btn" data-uploadbtn disabled>Upload</button>
+          <div class="upload-status" data-status></div>
+        </div>
+        <div class="upload-card" data-report="instructor_availability">
+          <h3>Instructor Availability</h3>
+          <div class="last-upload" data-lastupload>No uploads yet</div>
+          <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
+          <button class="upload-btn" data-uploadbtn disabled>Upload</button>
+          <div class="upload-status" data-status></div>
+        </div>
       </div>
     </div>
-    <div class="as-table-wrap">
-      <table id="as-table">
-        <thead>
-          <tr>
-            <th>Instructor</th>
-            <th>Day</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Room</th>
-            <th>Site</th>
-          </tr>
-        </thead>
-        <tbody id="as-tbody"></tbody>
+  </div>
+
+  <!-- ══ ADMIN VIEW ═══════════════════════════════════════════════════════ -->
+  <div id="admin-view" class="view">
+    <div id="admin-tab-bar">
+      <button class="tab-btn active" data-admintab="rooms">Rooms</button>
+      <button class="tab-btn" data-admintab="overrides">Availability Overrides</button>
+    </div>
+
+    <div class="admin-panel admin-body" id="admin-panel-rooms">
+      <div class="admin-section-title">Rooms</div>
+      <div class="admin-section-sub">New rooms from a Master Scheduler upload appear as "needs review" and are excluded from the 11×17 print until tagged. Tags persist across future uploads.</div>
+      <table class="admin-table">
+        <thead><tr><th>Site</th><th>Raw label</th><th style="width:220px">Display name</th><th style="width:150px">Type</th><th style="width:70px">Order</th><th style="width:60px"></th></tr></thead>
+        <tbody id="admin-rooms-body"></tbody>
       </table>
-      <div id="as-empty">No assignments match your filters.</div>
+    </div>
+
+    <div class="admin-panel admin-body" id="admin-panel-overrides" style="display:none">
+      <div class="admin-section-title">Availability Overrides</div>
+      <div class="admin-section-sub">Mark specific instructor/day availability rows to ignore (e.g. an unedited generic 9–5 default). Sorted by window span so unusually wide blocks are easy to spot. Overrides persist across future uploads.</div>
+      <div class="admin-toolbar">
+        <label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;">Sort</label>
+        <select id="ov-sort-select">
+          <option value="span">Window span (widest first)</option>
+          <option value="name">Instructor name</option>
+        </select>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>Instructor</th><th>Day</th><th>Window</th><th style="width:80px">Span</th><th style="width:100px"></th></tr></thead>
+        <tbody id="admin-overrides-body"></tbody>
+      </table>
     </div>
   </div>
 
@@ -677,30 +556,27 @@ body {
 
 <div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
 <div id="rs-print-section"></div>
+<div id="toast"></div>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════════════════════ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 'use strict';
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────────
+// The anon key is meant to be public — row-level security in Postgres is what
+// actually protects the data, not keeping this secret.
+const SUPABASE_URL = 'https://avleipfdmdgtzrhyioih.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bGVpcGZkbWRndHpyaHlpb2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODY0NDEsImV4cCI6MjEwMzM2MjQ0MX0.tvGjghODMH_V4YAnOwbNGELYg1FHaY5i2U7pVnmKFyI';
 
-// Hardcoded fallback URLs — replace when sheets are re-published
-// File → Share → Publish to web → select tab → CSV → Publish
-const DEFAULT_LESSON_URL   = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=0&single=true&output=csv';
-const DEFAULT_ROOM_URL     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=850131709&single=true&output=csv';
-const DEFAULT_TEACHERS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=967666928&single=true&output=csv';
-const DEFAULT_AVAIL_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT6IZdwLFKA7diyFJAmU2CpPSlk_PxCo1wRm3uO9NnavibtEHaEAkLuCtgkKjC-4CxYuU0MuiIzE7AD/pub?gid=790798156&single=true&output=csv';
+const RS_DAYS_ORDER = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+const RS_DAYS_FULL  = { Su:'Sunday', Mo:'Monday', Tu:'Tuesday', We:'Wednesday', Th:'Thursday', Fr:'Friday', Sa:'Saturday' };
+const DAY_FULL_TO_SHORT = { Monday:'Mo', Tuesday:'Tu', Wednesday:'We', Thursday:'Th', Friday:'Fr', Saturday:'Sa', Sunday:'Su' };
 
-const LS_LESSON_URL   = null; // URLs now hardcoded — not stored in localStorage
-const LS_ROOM_URL     = null;
-const LS_TEACHERS_URL = null;
-const LS_LAST_VIEW    = 'sfcmcLastView';
-const LS_LAST_SITE    = 'sfcmcLastSite';
+const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
+const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
 
-const BRANCHES = ['Richmond', 'Mission', 'Online', 'Home Studio'];
-
-// Subjects skipped in Lesson Finder (still appear in Room Schedule)
 const LF_SKIP_SUBJECTS = new Set([
   'Group Class','Group Classes','Room Reservation','Hold','No Subject',
   'This instrument is already added.','Accompanist','Collegium Musicum',
@@ -708,69 +584,82 @@ const LF_SKIP_SUBJECTS = new Set([
   'Ear Training','Eartraining','Sight Singing',
 ]);
 
-// Full names for LF sort; short codes + lookup for RS tab labels
-const LF_DAY_ORDER  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const RS_DAYS_ORDER = ['Mo','Tu','We','Th','Fr','Sa','Su'];
-const RS_DAYS_FULL  = { Su:'Sun', Mo:'Mon', Tu:'Tue', We:'Wed', Th:'Thu', Fr:'Fri', Sa:'Sat' };
-const AS_DAY_FULL   = { Mo:'Monday', Tu:'Tuesday', We:'Wednesday', Th:'Thursday', Fr:'Friday', Sa:'Saturday', Su:'Sunday' };
-const LF_DAY_TO_SHORT = { Monday:'Mo', Tuesday:'Tu', Wednesday:'We', Thursday:'Th', Friday:'Fr', Saturday:'Sa', Sunday:'Su' };
+const TEACHER_EMPLOYEE_TYPES = new Set(['TCHR', 'TCHR+']);
 
-// Instruments shown first in the Subject chip section
-const INSTRUMENT_PRIORITY = ['Piano','Voice','Violin','Guitar'];
-
-// Chip sidebar show-limits per section key
 const LF_CHIP_LIMITS = { instrument: 10, day: 7, duration: 4 };
+
+const REPORT_LABELS = {
+  open_slots: 'Open Slots Report',
+  master_schedule: 'Master Scheduler Report',
+  instructor_availability: 'Instructor Availability',
+};
+const REPORT_LABELS_SHORT = {
+  open_slots: 'Open Slots',
+  master_schedule: 'Scheduler',
+  instructor_availability: 'Availability',
+};
 
 // ── GLOBAL STATE ───────────────────────────────────────────────────────────────
 const state = {
-  appMode:   'lessonFinder',
-  appReady:  false,
-  sheetUrls: { lessonUrl: '', roomUrl: '', teachersUrl: '' },
+  sb: null,
+  session: null,
+  profile: null,     // { id, role, display_name }
+  appMode: 'lessonFinder',
+
+  data: {
+    openSlots: [],              // [{ id, department, instrument, instructor_name, day, start_time, end_time, duration_mins, ... }]
+    events: [],                 // master_schedule_events
+    availability: [],           // instructor_availability (Yes rows only, already filtered/deduped by import)
+    overrides: [],              // availability_overrides
+    rooms: [],                  // rooms registry
+    uploads: [],                // report_uploads (most recent per type)
+  },
 
   lf: {
-    records:         [],
-    teacherProfiles: {},
     filters: { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() },
-    filterBranches:   new Set(),
-    filterStudentAge: '',
-    sortBy:    'instrument',
+    filterBranches: new Set(),
+    sortBy: 'instrument',
     activeTab: 'availability',
     chipShowAll: { instrument: false, day: false, duration: false },
-    viewMode: 'byInstrument',
-    availabilityWindows: [],
+    selected: new Set(), // keys into current filtered rows
   },
 
   rs: {
-    events:      [],
-    availWindows: [], // { instructor, day, from, to, facility }
-    facilityToSite: {}, // derived from events: { 'Studio A': 'Richmond', ... }
-    sites:       [],
-    activeSite:  'Richmond',
-    activeDay:   '',
+    sites: [],
+    activeSite: '',
+    activeDay: '',
   },
 
-  as: {
-    search:     '',
-    siteFilter: '',
+  admin: {
+    activeTab: 'rooms',
+    ovSort: 'span',
   },
-
 };
 
 // ── SHARED UTILITIES ───────────────────────────────────────────────────────────
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// "30 mins" / "1 hr" / "45 min" → minutes integer
-function parseMins(d) {
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'var(--red)' : 'var(--ink)';
+  el.classList.add('visible');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('visible'), 3200);
+}
+
+// "30 mins" / "1 hr" / "45 min" / "120" → minutes integer
+function parseDurationMins(d) {
   if (!d) return 0;
-  const s   = String(d);
+  const s = String(d).trim();
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
   const hrs  = s.match(/(\d+)\s*hr/);
   const mins = s.match(/(\d+)\s*min/);
   return (hrs ? parseInt(hrs[1]) * 60 : 0) + (mins ? parseInt(mins[1]) : 0);
 }
 
-// Which lesson-length buckets does this duration qualify for?
 function getSlots(mins) {
   const out = [];
   if (mins >= 30) out.push(30);
@@ -779,19 +668,50 @@ function getSlots(mins) {
   return out;
 }
 
-// "9:00 AM" → sortable "09:00" string
-function timeToSort(t) {
-  if (!t) return '99:99';
-  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return '99:99';
-  let h = parseInt(m[1]);
+// "9:00 AM" → "09:00:00" (24h, for Postgres time)
+function to24h(str) {
+  if (!str) return null;
+  const m = String(str).trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
   const ap = m[3].toUpperCase();
   if (ap === 'PM' && h !== 12) h += 12;
   if (ap === 'AM' && h === 12) h = 0;
-  return String(h).padStart(2,'0') + ':' + m[2];
+  return String(h).padStart(2, '0') + ':' + min + ':00';
 }
 
-// "Garcia Plaza, Rosi" → "Rosi Garcia Plaza"   "Smith, John" → "John Smith"
+// "HH:MM:SS" → minutes since midnight
+function timeToMins(t) {
+  if (!t) return 0;
+  const [h, m] = String(t).split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minsToTime24(mins) {
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':00';
+}
+
+// "HH:MM:SS" 24h → "9:00 AM" for display
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, m] = String(t).split(':').map(Number);
+  const ap = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12; if (h12 === 0) h12 = 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
+}
+
+// "9/23/2026" → "2026-09-23"
+function usDateToIso(str) {
+  if (!str) return null;
+  const m = String(str).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+}
+
+// "Garcia Plaza, Rosi" → "Rosi Garcia Plaza"
 function normalizeInstructorName(s) {
   if (!s) return s;
   const comma = s.indexOf(',');
@@ -801,764 +721,555 @@ function normalizeInstructorName(s) {
   return first ? `${first} ${last}` : last;
 }
 
-// ── GOOGLE SHEETS HELPERS ──────────────────────────────────────────────────────
-function isGoogleSheetUrl(url) {
-  return Boolean(url && url.includes('docs.google.com/spreadsheets'));
+function roomDisplayName(room) {
+  if (!room) return '';
+  return (room.canonical_name && room.canonical_name.trim()) || room.raw_facility_label.replace(/^\([^)]*\)\s*/, '');
 }
 
-async function fetchCsvUrl(url) {
-  const bust = (url.includes('?') ? '&' : '?') + '_=' + Date.now();
-  const resp = await fetch(url + bust, { cache: 'no-store' });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return resp.text();
+function findRoom(site, rawLabel) {
+  return state.data.rooms.find(r => r.site === site && r.raw_facility_label === rawLabel) || null;
 }
 
-function parseCsv(csvText) {
-  const wb = XLSX.read(csvText, { type: 'string' });
-  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+// ── FILE PARSING (handles both real XLSX and HTML-table-disguised-as-xls) ──────
+async function parseReportFile(file) {
+  const buf = await file.arrayBuffer();
+  const head = new Uint8Array(buf.slice(0, 4));
+  const isZip = head[0] === 0x50 && head[1] === 0x4B; // 'PK'
+  if (isZip) {
+    const wb = XLSX.read(buf, { type: 'array' });
+    return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+  }
+  const text = new TextDecoder('utf-8').decode(buf);
+  return parseHtmlTableRows(text);
 }
 
-// ── PROCESS LESSON ROWS (OpenSlotsReport format) ───────────────────────────────
+function parseHtmlTableRows(text) {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  const table = doc.querySelector('table');
+  if (!table) return [];
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    const cells = Array.from(tr.children).filter(c => c.tagName === 'TD' || c.tagName === 'TH');
+    if (cells.length) rows.push(cells.map(c => c.textContent.replace(/ /g, ' ').trim()));
+  });
+  return rows;
+}
+
+function headerIndex(header, pattern) {
+  return header.findIndex(h => pattern.test(String(h || '').trim()));
+}
+
+// ── MAP OPEN SLOTS ROWS ─────────────────────────────────────────────────────────
 // Columns: Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod
-// Day: full names ("Tuesday"). Duration: "30 mins", "45 mins", "1 hr".
-// Instructor: "First Last" — no normalization needed.
-// Each row is one specific available start time — no expansion.
-// Returns { records, availabilityWindows }.
-function processLessonRows(rows) {
-  const records = [];
-  const availabilityWindows = [];
-  if (rows.length < 2) return { records, availabilityWindows };
-
+function mapOpenSlotsRows(rows) {
+  const out = [];
+  if (rows.length < 2) return out;
   const header = rows[0].map(h => String(h || '').trim());
   const col = {
-    dept:       header.findIndex(h => /department/i.test(h)),
-    subject:    header.findIndex(h => /subject/i.test(h)),
-    instructor: header.findIndex(h => /instructor/i.test(h)),
-    day:        header.findIndex(h => /^day$/i.test(h)),
-    time:       header.findIndex(h => /^time$/i.test(h)),
-    duration:   header.findIndex(h => /duration/i.test(h)),
-    date:       header.findIndex(h => /^date$/i.test(h)),
+    dept:       headerIndex(header, /department/i),
+    subject:    headerIndex(header, /subject/i),
+    instructor: headerIndex(header, /instructor/i),
+    day:        headerIndex(header, /^day$/i),
+    time:       headerIndex(header, /^time$/i),
+    duration:   headerIndex(header, /duration/i),
+    date:       headerIndex(header, /^date$/i),
+    term:       headerIndex(header, /timeperiod/i),
   };
   const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
 
   for (let i = 1; i < rows.length; i++) {
-    const row        = rows[i];
+    const row = rows[i];
     const instructor = get(row, 'instructor');
     if (!instructor || instructor === 'Reserved Room' || instructor === 'SCHEDULE UNAVAILABLE') continue;
     const subjectRaw = get(row, 'subject');
     if (!subjectRaw || subjectRaw.includes('Room Reservation')) continue;
-    const mins = parseMins(get(row, 'duration'));
+
+    const mins = parseDurationMins(get(row, 'duration'));
     if (mins < 30) continue;
 
-    const subjects = subjectRaw.split(';')
-      .map(s => s.trim())
-      .filter(s => s && !LF_SKIP_SUBJECTS.has(s));
+    const dayShort = DAY_FULL_TO_SHORT[get(row, 'day')] || '';
+    if (!dayShort) continue;
+    const startTime = to24h(get(row, 'time'));
+    if (!startTime) continue;
+    const endTime = minsToTime24(timeToMins(startTime) + mins);
 
-    const dayFull  = get(row, 'day');
-    const dayShort = LF_DAY_TO_SHORT[dayFull] || '';
-    const startMins = rsParseTime(get(row, 'time'));
-    const endMins   = startMins + mins;
-
+    const subjects = subjectRaw.split(';').map(s => s.trim()).filter(s => s && !LF_SKIP_SUBJECTS.has(s));
     for (const instrument of (subjects.length ? subjects : [subjectRaw])) {
       if (LF_SKIP_SUBJECTS.has(instrument)) continue;
-
-      availabilityWindows.push({
-        instructor, instrument,
+      out.push({
         department: get(row, 'dept'),
-        day: dayFull, dayShort,
-        from: rsFmtTime(startMins),
-        to:   rsFmtTime(endMins),
-      });
-
-      // One record per row — the report already specifies exact start times
-      records.push({
-        department: get(row, 'dept'),
-        instrument, instructor,
-        day:     dayFull,
-        time:    get(row, 'time'),
-        endTime: rsFmtTime(endMins),
-        minutes: mins,
-        date:    get(row, 'date'),
-        slots:   getSlots(mins),
+        instrument,
+        instructor_name: instructor,
+        day: dayShort,
+        start_time: startTime,
+        end_time: endTime,
+        duration_mins: mins,
+        lesson_date: usDateToIso(get(row, 'date')),
+        term: get(row, 'term'),
       });
     }
   }
-
-  return { records, availabilityWindows };
+  return out;
 }
 
-// ── PROCESS ROOM ROWS (RadGridExport format) ───────────────────────────────────
-// Columns: Date, Item, From, To, Day, Duration, Facility, Site,
-//          Instructor, PL Student, Type, Start Date, End Date
-// Day: short codes ("Mo", "Tu"). Duration: numeric string ("30", "60").
-// Instructor: "Last, First" → normalized to "First Last".
-// Returns { events[], derivedBranches{instructorName → Set<site>} }
-function processRoomRows(rows) {
-  const events = [];
-  const derivedBranches = {};
-
-  if (rows.length < 2) return { events, derivedBranches };
-
+// ── MAP MASTER SCHEDULE ROWS ────────────────────────────────────────────────────
+// Columns: Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type, Start Date, End Date
+function mapMasterScheduleRows(rows) {
+  const out = [];
+  if (rows.length < 2) return out;
   const header = rows[0].map(h => String(h || '').trim());
   const col = {
-    date:       header.findIndex(h => /^date$/i.test(h)),
-    item:       header.findIndex(h => /^item$/i.test(h)),
-    from:       header.findIndex(h => /^from$/i.test(h)),
-    to:         header.findIndex(h => /^to$/i.test(h)),
-    day:        header.findIndex(h => /^day$/i.test(h)),
-    duration:   header.findIndex(h => /^duration$/i.test(h)),
-    facility:   header.findIndex(h => /^facility$/i.test(h)),
-    site:       header.findIndex(h => /^site$/i.test(h)),
-    instructor: header.findIndex(h => /^instructor$/i.test(h)),
-    student:    header.findIndex(h => /student/i.test(h)),
-    type:       header.findIndex(h => /^type$/i.test(h)),
+    date:       headerIndex(header, /^date$/i),
+    item:       headerIndex(header, /^item$/i),
+    from:       headerIndex(header, /^from$/i),
+    to:         headerIndex(header, /^to$/i),
+    day:        headerIndex(header, /^day$/i),
+    duration:   headerIndex(header, /^duration$/i),
+    facility:   headerIndex(header, /^facility$/i),
+    site:       headerIndex(header, /^site$/i),
+    instructor: headerIndex(header, /^instructor$/i),
+    student:    headerIndex(header, /student/i),
+    type:       headerIndex(header, /^type$/i),
+    startDate:  headerIndex(header, /start date/i),
+    endDate:    headerIndex(header, /end date/i),
   };
   const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
 
   for (let i = 1; i < rows.length; i++) {
-    const row          = rows[i];
+    const row = rows[i];
     const instructorRaw = get(row, 'instructor');
-    if (!instructorRaw) continue;
-    const instructor = normalizeInstructorName(instructorRaw);
     const item = get(row, 'item');
     const site = get(row, 'site');
-    if (!item || !site) continue;
+    if (!instructorRaw || !item || !site) continue;
+    const fromTime = to24h(get(row, 'from'));
+    const toTime = to24h(get(row, 'to'));
+    if (!fromTime || !toTime) continue;
 
-    // Accumulate derived branch data from the room export
-    if (!derivedBranches[instructor]) derivedBranches[instructor] = new Set();
-    derivedBranches[instructor].add(site);
-
-    events.push({
-      date:     get(row, 'date'),
+    out.push({
+      event_date: usDateToIso(get(row, 'date')),
       item,
-      from:     get(row, 'from'),
-      to:       get(row, 'to'),
-      day:      get(row, 'day'),
-      duration: get(row, 'duration'),
-      facility: get(row, 'facility'),
+      from_time: fromTime,
+      to_time: toTime,
+      day: get(row, 'day'),
+      duration_mins: parseDurationMins(get(row, 'duration')),
+      facility_raw: get(row, 'facility'),
       site,
-      instructor,
-      student:  get(row, 'student'),
-      type:     get(row, 'type') || 'LESSON',
+      instructor_name: normalizeInstructorName(instructorRaw),
+      student: get(row, 'student'),
+      type: get(row, 'type') || 'LESSON',
+      start_date: usDateToIso(get(row, 'startDate')),
+      end_date: usDateToIso(get(row, 'endDate')),
     });
   }
-  return { events, derivedBranches };
+  return out;
 }
 
-// ── PROCESS AVAILABILITY ROWS → windows[] ─────────────────────────────────────
-// Tab columns: Instructor | Day | From | To | Room | Site
-// Day uses short codes (Mo, Tu…). From/To in "9:00 AM" format.
-function processAvailRows(rows) {
-  const windows = [];
-  if (rows.length < 2) return windows;
+// ── MAP INSTRUCTOR AVAILABILITY ROWS ────────────────────────────────────────────
+// Columns: Employee ID, Employee Type, First Name, Last Name, Day of Week, Is Available,
+//          Start Time, End Time, Break 1 Start, Break 1 End, Break 2 Start, Break 2 End,
+//          Exception Date, Exception Note
+// "No" rows carry stale times and are dropped. A few instructors have duplicate rows
+// under two Employee IDs — deduped by (first, last, day, start, end).
+function mapInstructorAvailabilityRows(rows) {
+  const out = [];
+  if (rows.length < 2) return out;
   const header = rows[0].map(h => String(h || '').trim());
   const col = {
-    instructor: header.findIndex(h => /instructor/i.test(h)),
-    day:        header.findIndex(h => /^day$/i.test(h)),
-    from:       header.findIndex(h => /^from$/i.test(h)),
-    to:         header.findIndex(h => /^to$/i.test(h)),
-    facility:   header.findIndex(h => /^room$|^facility$/i.test(h)),
-    site:       header.findIndex(h => /^site$/i.test(h)),
+    empType:   headerIndex(header, /employee type/i),
+    first:     headerIndex(header, /first name/i),
+    last:      headerIndex(header, /last name/i),
+    day:       headerIndex(header, /day of week/i),
+    available: headerIndex(header, /is available/i),
+    start:     headerIndex(header, /^start time$/i),
+    end:       headerIndex(header, /^end time$/i),
   };
   const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
-  for (let i = 1; i < rows.length; i++) {
-    const row        = rows[i];
-    const instructor = get(row, 'instructor');
-    const facility   = get(row, 'facility');
-    const day        = get(row, 'day');
-    const from       = get(row, 'from');
-    const to         = get(row, 'to');
-    const site       = get(row, 'site');
-    if (!instructor || !facility || !day || !from || !to) continue;
-    windows.push({ instructor, day, from, to, facility, site });
-  }
-  return windows;
-}
-
-// ── PROCESS TEACHER ROWS → raw map ────────────────────────────────────────────
-// Returns { name → { branches[], ageMin, notes } }
-// Does not merge with derived branches — that happens in buildTeacherProfiles().
-function processTeacherRows(rows) {
-  const data = {};
-  if (rows.length < 2) return data;
-
-  const header    = rows[0].map(h => String(h || '').trim());
-  const iName     = header.findIndex(h => /^name$/i.test(h));
-  const iBranches = header.findIndex(h => /branch/i.test(h));
-  const iAge      = header.findIndex(h => /age/i.test(h));
-  const iNotes    = header.findIndex(h => /notes?/i.test(h));
+  const seen = new Set();
 
   for (let i = 1; i < rows.length; i++) {
-    const row  = rows[i];
-    const name = iName >= 0 ? String(row[iName] || '').trim() : '';
-    if (!name) continue;
-    const branchRaw = iBranches >= 0 ? String(row[iBranches] || '').trim() : '';
-    data[name] = {
-      branches: branchRaw ? branchRaw.split(/[,;]+/).map(b => b.trim()).filter(Boolean) : [],
-      ageMin:   iAge   >= 0 ? String(row[iAge]   || '').trim() : '',
-      notes:    iNotes >= 0 ? String(row[iNotes] || '').trim() : '',
-    };
+    const row = rows[i];
+    if (!TEACHER_EMPLOYEE_TYPES.has(get(row, 'empType'))) continue;
+    if (get(row, 'available') !== 'Yes') continue;
+    const first = get(row, 'first');
+    const last = get(row, 'last');
+    const day = get(row, 'day');
+    const startTime = to24h(get(row, 'start'));
+    const endTime = to24h(get(row, 'end'));
+    if (!first || !last || !day || !startTime || !endTime) continue;
+
+    const key = `${first}|${last}|${day}|${startTime}|${endTime}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    out.push({ first_name: first, last_name: last, day, start_time: startTime, end_time: endTime });
   }
-  return data;
+  return out;
 }
 
-// ── BUILD TEACHER PROFILES ────────────────────────────────────────────────────
-// Merges Teachers sheet data with branches derived from Room Schedule.
-// Rule: use sheet Branches if non-empty, otherwise fall back to derivedBranches.
-function buildTeacherProfiles(teacherData, derivedBranches) {
-  const profiles = {};
+// ── SUPABASE CONNECT / AUTH ─────────────────────────────────────────────────────
+async function connectAndLoad() {
+  state.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Union of all instructor names across all three sources
-  const allNames = new Set([
-    ...Object.keys(teacherData),
-    ...Object.keys(derivedBranches),
-    ...state.lf.records.map(r => r.instructor),
-  ]);
+  const { data: { session } } = await state.sb.auth.getSession();
+  state.session = session;
 
-  allNames.forEach(name => {
-    if (!name) return;
-    const fromSheet = teacherData[name];
-    const derived   = derivedBranches[name] ? [...derivedBranches[name]].sort() : [];
-    profiles[name]  = {
-      branches: fromSheet && fromSheet.branches.length > 0 ? fromSheet.branches : derived,
-      ageMin:   fromSheet ? fromSheet.ageMin : '',
-      notes:    fromSheet ? fromSheet.notes  : '',
-    };
+  state.sb.auth.onAuthStateChange((_event, newSession) => {
+    state.session = newSession;
   });
 
-  return profiles;
+  if (!session) { showLoginScreen(); return; }
+
+  await afterLogin();
 }
 
-// ── LOADING UI ─────────────────────────────────────────────────────────────────
-function showLoading(msg) {
-  document.getElementById('loading-text').textContent = msg || 'Loading from Google Sheets…';
-  document.getElementById('loading-overlay').classList.add('visible');
-}
-function hideLoading() {
-  document.getElementById('loading-overlay').classList.remove('visible');
-}
+async function afterLogin() {
+  showLoading('Loading your profile…');
+  const { data: profile, error } = await state.sb
+    .from('profiles')
+    .select('*')
+    .eq('id', state.session.user.id)
+    .maybeSingle();
 
-// ── MAIN DATA LOAD ─────────────────────────────────────────────────────────────
-// Fetches all three sheets (lesson, room, teachers) and populates both
-// state.lf.* and state.rs.* in one call. Room and teachers URLs are optional.
-async function loadAllData(urls) {
-  showLoading('Fetching data…');
-  try {
-    // Fetch all four in parallel; non-critical sources resolve to [] on failure
-    const [lessonRows, roomRows, teacherRows, availRows] = await Promise.all([
-      fetchCsvUrl(urls.lessonUrl).then(parseCsv),
-      urls.roomUrl
-        ? fetchCsvUrl(urls.roomUrl).then(parseCsv).catch(e => { console.warn('Room data failed:', e.message); return []; })
-        : Promise.resolve([]),
-      urls.teachersUrl
-        ? fetchCsvUrl(urls.teachersUrl).then(parseCsv).catch(e => { console.warn('Teachers data failed:', e.message); return []; })
-        : Promise.resolve([]),
-      urls.availUrl
-        ? fetchCsvUrl(urls.availUrl).then(parseCsv).catch(e => { console.warn('Availability data failed:', e.message); return []; })
-        : Promise.resolve([]),
-    ]);
-
-    // Populate LF records first (buildTeacherProfiles needs them for name union)
-    const { records, availabilityWindows } = processLessonRows(lessonRows);
-    state.lf.records             = records;
-    state.lf.availabilityWindows = availabilityWindows;
-
-    // Process room data → events + derivedBranches
-    const { events, derivedBranches } = processRoomRows(roomRows);
-    state.rs.events = events;
-
-    // Build facility→site lookup from booked events
-    const facilityToSite = {};
-    events.forEach(e => { if (e.facility && e.site) facilityToSite[e.facility] = e.site; });
-
-    // Process manual availability windows, then fill in any facility→site gaps
-    const availWindows = processAvailRows(availRows);
-    availWindows.forEach(w => {
-      if (w.facility && w.site && !facilityToSite[w.facility]) facilityToSite[w.facility] = w.site;
-    });
-    state.rs.facilityToSite = facilityToSite;
-    state.rs.availWindows = availWindows;
-
-    state.rs.sites  = [...new Set(events.map(e => e.site))].sort();
-    if (state.rs.sites.length > 0) {
-      if (!state.rs.sites.includes(state.rs.activeSite)) {
-        const savedSite = localStorage.getItem(LS_LAST_SITE);
-        state.rs.activeSite = state.rs.sites.includes(savedSite) ? savedSite
-          : state.rs.sites.includes('Richmond') ? 'Richmond'
-          : state.rs.sites[0];
-      }
-      const daysForSite = RS_DAYS_ORDER.filter(d => events.some(e => e.site === state.rs.activeSite && e.day === d));
-      if (!daysForSite.includes(state.rs.activeDay)) state.rs.activeDay = daysForSite[0] || '';
-    }
-
-    // Merge teacher data
-    state.lf.teacherProfiles = buildTeacherProfiles(processTeacherRows(teacherRows), derivedBranches);
-
-    // Reset LF filter state on every fresh load
-    state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
-    state.lf.filterBranches   = new Set();
-    state.lf.filterStudentAge = '';
-    Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
-
-    state.sheetUrls = { ...urls };
+  if (error || !profile) {
     hideLoading();
-    return true;
-  } catch (err) {
-    console.error('loadAllData failed:', err);
-    hideLoading();
-    return err;
+    toast('Could not load your profile — try signing in again.', true);
+    await state.sb.auth.signOut();
+    showLoginScreen();
+    return;
   }
+  state.profile = profile;
+
+  document.querySelectorAll('.admin-only-view-btn').forEach(b => b.classList.toggle('hidden', profile.role !== 'admin'));
+  document.getElementById('signout-btn').classList.remove('hidden');
+  document.getElementById('whoami').innerHTML =
+    `${escHtml(profile.display_name || state.session.user.email)}<span class="role-badge">${escHtml(profile.role)}</span>`;
+
+  await loadAllData();
+  showApp();
 }
 
-// ── LF HELPERS ─────────────────────────────────────────────────────────────────
-function getLFProfile(name) {
-  return state.lf.teacherProfiles[name] || { branches: [], ageMin: '', notes: '' };
+// ── DATA LOADING ─────────────────────────────────────────────────────────────────
+async function fetchAllData() {
+  const sb = state.sb;
+  const [openSlotsRes, eventsRes, availRes, overridesRes, roomsRes, uploadsRes] = await Promise.all([
+    sb.from('open_slots').select('*'),
+    sb.from('master_schedule_events').select('*'),
+    sb.from('instructor_availability').select('*'),
+    sb.from('availability_overrides').select('*'),
+    sb.from('rooms').select('*'),
+    sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
+  ]);
+  state.data.openSlots = openSlotsRes.data || [];
+  state.data.events = eventsRes.data || [];
+  state.data.availability = availRes.data || [];
+  state.data.overrides = overridesRes.data || [];
+  state.data.rooms = roomsRes.data || [];
+  state.data.uploads = uploadsRes.data || [];
 }
 
-function lfHasActiveFilters() {
-  const { filters, filterBranches, filterStudentAge } = state.lf;
-  return Object.values(filters).some(s => s.size > 0) || filterBranches.size > 0 || filterStudentAge !== '';
+// "today 5:47 PM" if uploaded today, else "8/26 5:47 PM"
+function formatLastUpdated(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return `today ${timeStr}`;
+  return `${d.toLocaleDateString([], { month: 'numeric', day: 'numeric' })} ${timeStr}`;
 }
 
-// ── LF FILTERING & SORTING ─────────────────────────────────────────────────────
+function updateStatusLine() {
+  const latestFor = (type) => state.data.uploads.find(u => u.report_type === type);
+  const rows = ['open_slots', 'master_schedule', 'instructor_availability'].map(t => {
+    const u = latestFor(t);
+    const when = u ? formatLastUpdated(u.uploaded_at) : 'not uploaded';
+    return { label: REPORT_LABELS_SHORT[t], when, title: `${REPORT_LABELS[t]}: ${u ? 'updated ' + when : 'not uploaded'}` };
+  });
+  document.getElementById('status-stack').innerHTML = rows.map(r =>
+    `<div class="status-row" title="${escHtml(r.title)}"><b>${escHtml(r.label)}</b> ${escHtml(r.when)}</div>`
+  ).join('');
+}
+
+async function loadAllData() {
+  showLoading('Loading data…');
+  await fetchAllData();
+  hideLoading();
+  updateStatusLine();
+}
+
+async function refreshDataQuiet() {
+  await fetchAllData();
+  updateStatusLine();
+}
+
+// ── ROOM-LINKING HEURISTIC ───────────────────────────────────────────────────────
+// For a given instructor/day/start-time open slot, guess which room it would
+// occupy by looking at the instructor's booked events that day. If bookings
+// immediately before/after use different rooms, surface both as ambiguous.
+function instructorTimelineForDay(instructorName, day) {
+  return state.data.events
+    .filter(e => e.instructor_name === instructorName && e.day === day)
+    .sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
+}
+
+function mostCommonRoomForInstructor(instructorName) {
+  const counts = {};
+  state.data.events.filter(e => e.instructor_name === instructorName).forEach(e => {
+    const key = e.site + '|' + e.facility_raw;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const keys = Object.keys(counts);
+  if (!keys.length) return null;
+  keys.sort((a, b) => counts[b] - counts[a]);
+  const [site, facility_raw] = keys[0].split('|');
+  return { site, facility_raw };
+}
+
+function guessRoomForSlot(instructorName, day, startTime) {
+  const timeline = instructorTimelineForDay(instructorName, day);
+  const t = timeToMins(startTime);
+  let before = null, after = null;
+  for (const e of timeline) {
+    const es = timeToMins(e.from_time), ee = timeToMins(e.to_time);
+    if (ee <= t && (!before || ee > timeToMins(before.to_time))) before = e;
+    if (es >= t && (!after || es < timeToMins(after.from_time))) after = e;
+  }
+  const candidateKeys = new Set([before, after].filter(Boolean).map(e => e.site + '|' + e.facility_raw));
+  if (candidateKeys.size === 0) {
+    const fallback = mostCommonRoomForInstructor(instructorName);
+    if (!fallback) return { label: '—', guess: false, ambiguous: false };
+    const room = findRoom(fallback.site, fallback.facility_raw);
+    return { label: 'Usually ' + roomDisplayName(room || { raw_facility_label: fallback.facility_raw }), guess: true, ambiguous: false };
+  }
+  const labels = [...candidateKeys].map(k => {
+    const [site, facility_raw] = k.split('|');
+    const room = findRoom(site, facility_raw);
+    return roomDisplayName(room || { raw_facility_label: facility_raw });
+  });
+  if (labels.length === 1) return { label: labels[0], guess: false, ambiguous: false };
+  return { label: labels.join(' or '), guess: false, ambiguous: true };
+}
+
+// ── LESSON FINDER ────────────────────────────────────────────────────────────────
+function siteToBranch(site) {
+  if (!site) return '';
+  if (/richmond/i.test(site)) return 'Richmond';
+  if (/mission/i.test(site)) return 'Mission';
+  return site;
+}
+
+function branchesForInstructor(instructorName) {
+  const set = new Set();
+  state.data.events.filter(e => e.instructor_name === instructorName).forEach(e => set.add(siteToBranch(e.site)));
+  return [...set].sort();
+}
+
 function lfGetFiltered() {
-  const { records, filters, filterBranches, filterStudentAge, sortBy } = state.lf;
-  let r = records;
-  if (filters.instructor.size) r = r.filter(x => filters.instructor.has(x.instructor));
-  if (filters.instrument.size) r = r.filter(x => filters.instrument.has(x.instrument));
-  if (filters.day.size)        r = r.filter(x => filters.day.has(x.day));
-  if (filters.duration.size)   r = r.filter(x => x.slots.some(s => filters.duration.has(s)));
-  if (filterBranches.size > 0) {
-    r = r.filter(x => {
-      const p = getLFProfile(x.instructor);
-      return p.branches.some(b => filterBranches.has(b));
-    });
-  }
-  if (filterStudentAge !== '') {
-    const age = parseInt(filterStudentAge);
-    if (!isNaN(age)) {
-      r = r.filter(x => {
-        const p = getLFProfile(x.instructor);
-        return !p.ageMin || parseInt(p.ageMin) <= age;
-      });
+  const { filters, filterBranches } = state.lf;
+  return state.data.openSlots.filter(r => {
+    if (filters.instrument.size && !filters.instrument.has(r.instrument)) return false;
+    if (filters.day.size && !filters.day.has(r.day)) return false;
+    if (filters.instructor.size && !filters.instructor.has(r.instructor_name)) return false;
+    if (filters.duration.size) {
+      const slots = getSlots(r.duration_mins);
+      if (![...filters.duration].some(d => slots.includes(Number(d)))) return false;
     }
-  }
-  return [...r].sort((a, b) => {
-    if (sortBy === 'instrument')
-      return a.instrument.localeCompare(b.instrument)
-        || LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
-        || timeToSort(a.time).localeCompare(timeToSort(b.time));
-    if (sortBy === 'day')
-      return LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
-        || timeToSort(a.time).localeCompare(timeToSort(b.time))
-        || a.instructor.localeCompare(b.instructor);
-    return a.instructor.localeCompare(b.instructor)
-      || LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day)
-      || timeToSort(a.time).localeCompare(timeToSort(b.time));
+    if (filterBranches.size) {
+      const branches = branchesForInstructor(r.instructor_name);
+      if (!branches.some(b => filterBranches.has(b))) return false;
+    }
+    return true;
   });
 }
 
 function lfGetAvailableValues(field) {
-  const { records, filters } = state.lf;
-  const base = records.filter(x => {
-    if (field !== 'instructor' && filters.instructor.size && !filters.instructor.has(x.instructor)) return false;
-    if (field !== 'instrument' && filters.instrument.size && !filters.instrument.has(x.instrument)) return false;
-    if (field !== 'day'        && filters.day.size        && !filters.day.has(x.day)) return false;
-    if (field !== 'duration'   && filters.duration.size   && !x.slots.some(s => filters.duration.has(s))) return false;
-    return true;
+  const counts = {};
+  const base = state.data.openSlots;
+  base.forEach(r => {
+    let v;
+    if (field === 'instrument') v = r.instrument;
+    else if (field === 'day') v = r.day;
+    else if (field === 'instructor') v = r.instructor_name;
+    if (v) counts[v] = (counts[v] || 0) + 1;
   });
-  if (field === 'duration') {
-    const s = new Set();
-    base.forEach(x => x.slots.forEach(d => s.add(d)));
-    return s;
-  }
-  const s = new Set();
-  base.forEach(x => {
-    const v = field === 'instructor' ? x.instructor : field === 'instrument' ? x.instrument : x.day;
-    if (v) s.add(v);
-  });
-  return s;
+  return counts;
 }
 
-// ── LF CHIP SIDEBAR ────────────────────────────────────────────────────────────
+function lfHasActiveFilters() {
+  const { filters, filterBranches } = state.lf;
+  return filters.instrument.size || filters.day.size || filters.instructor.size ||
+    filters.duration.size || filterBranches.size;
+}
+
 function buildChipSidebar() {
-  const container = document.getElementById('lf-chip-filters');
-  container.innerHTML = '';
-
+  const wrap = document.getElementById('lf-chip-filters');
   const sections = [
-    { key: 'instrument', label: 'Subject' },
-    { key: 'day',        label: 'Day' },
-    { key: 'duration',   label: 'Lesson Length' },
+    { key: 'instrument', title: 'Instrument', order: null },
+    { key: 'day', title: 'Day', order: RS_DAYS_ORDER },
+    { key: 'duration', title: 'Lesson Length', order: ['30', '45', '60'] },
   ];
-
-  sections.forEach(({ key, label }) => {
-    const section = document.createElement('div');
-    section.className = 'chip-section';
-    section.dataset.key = key;
-    const selCount = state.lf.filters[key].size;
-    if (selCount) section.classList.add('has-selection');
-
-    section.innerHTML = `
-      <div class="chip-section-head">
-        <span class="chip-section-title">${label}</span>
-        <span class="chip-section-right">
-          <span class="chip-sel-badge ${selCount ? 'visible' : ''}">${selCount || ''}</span>
-          <svg class="cs-arrow" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 3L5 7L9 3"/></svg>
-        </span>
-      </div>
-      <div class="chip-section-body" id="lf-chips-${key}"></div>
-    `;
-    section.querySelector('.chip-section-head').addEventListener('click', () => {
-      section.classList.toggle('collapsed');
-    });
-    container.appendChild(section);
-  });
-
-  // Instructor select section
-  const instrSel = state.lf.filters.instructor.size ? [...state.lf.filters.instructor][0] : '';
-  const instrSection = document.createElement('div');
-  instrSection.className = 'chip-section' + (instrSel ? ' has-selection' : '');
-  instrSection.dataset.key = 'instructor-select';
-  instrSection.innerHTML = `
-    <div class="chip-section-head" style="cursor:default">
-      <span class="chip-section-title">Instructor</span>
-      <span class="chip-sel-badge ${instrSel ? 'visible' : ''}">1</span>
-    </div>
-    <div style="padding:0 10px 10px">
-      <select id="lf-instructor-select" style="width:100%;padding:5px 7px;border:1.5px solid var(--rule);border-radius:3px;font-family:'DM Sans',sans-serif;font-size:12px;background:#fff;color:var(--ink);outline:none;cursor:pointer">
-        <option value="">All instructors</option>
-      </select>
-    </div>
-  `;
-  container.appendChild(instrSection);
-
-  updateChipSidebar();
-}
-
-function updateChipSidebar() {
-  const { records, filters, chipShowAll } = state.lf;
-  const sections = [
-    { key: 'instrument', sorter: (a, b) => {
-        const ai = INSTRUMENT_PRIORITY.indexOf(a), bi = INSTRUMENT_PRIORITY.indexOf(b);
-        if (ai >= 0 && bi >= 0) return ai - bi;
-        if (ai >= 0) return -1;
-        if (bi >= 0) return 1;
-        return a.localeCompare(b);
-      }
-    },
-    { key: 'day',        sorter: (a, b) => LF_DAY_ORDER.indexOf(a) - LF_DAY_ORDER.indexOf(b) },
-    { key: 'duration',   sorter: (a, b) => a - b },
-  ];
-
-  sections.forEach(({ key, sorter }) => {
-    const container = document.getElementById('lf-chips-' + key);
-    if (!container) return;
-
-    const allVals = key === 'duration'
-      ? [30, 45, 60].filter(d => records.some(x => x.slots.includes(d)))
-      : [...new Set(records.map(x => key === 'instructor' ? x.instructor : key === 'instrument' ? x.instrument : x.day))].sort(sorter);
-
-    const available  = lfGetAvailableValues(key);
-    const limit      = chipShowAll[key] ? Infinity : LF_CHIP_LIMITS[key];
-    const showValues = allVals.slice(0, limit);
-    const remaining  = allVals.length - showValues.length;
-
-    let html = '';
-    showValues.forEach(val => {
-      const sv        = String(val);
-      const isActive  = filters[key].has(val);
-      const isDimmed  = !isActive && !available.has(val) && lfHasActiveFilters();
-      const labelText = key === 'duration' ? val + ' min' : escHtml(sv);
-      html += `<span class="filter-chip ${isActive ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}" data-key="${key}" data-value="${escHtml(sv)}">${labelText}</span>`;
-    });
-    if (remaining > 0) {
-      html += `<span class="chip-show-more" data-key="${key}">+${remaining} more</span>`;
+  wrap.innerHTML = sections.map(sec => {
+    let counts;
+    if (sec.key === 'duration') {
+      counts = {};
+      state.data.openSlots.forEach(r => getSlots(r.duration_mins).forEach(d => { counts[d] = (counts[d] || 0) + 1; }));
+    } else {
+      counts = lfGetAvailableValues(sec.key);
     }
-    container.innerHTML = html;
+    let keys = Object.keys(counts);
+    if (sec.order) keys = sec.order.filter(k => counts[k]);
+    else keys.sort((a, b) => counts[b] - counts[a]);
 
-    const section  = container.closest('.chip-section');
-    const selCount = filters[key].size;
-    const badge    = section.querySelector('.chip-sel-badge');
-    badge.textContent = selCount || '';
-    badge.classList.toggle('visible', selCount > 0);
-    section.classList.toggle('has-selection', selCount > 0);
-  });
+    const limit = LF_CHIP_LIMITS[sec.key] || keys.length;
+    const showAll = state.lf.chipShowAll[sec.key];
+    const shown = showAll ? keys : keys.slice(0, limit);
 
-  // Populate instructor select
-  const sel = document.getElementById('lf-instructor-select');
-  if (sel) {
-    const instructors = [...new Set(records.map(x => x.instructor))].sort();
-    const current = filters.instructor.size ? [...filters.instructor][0] : '';
-    sel.innerHTML = '<option value="">All instructors</option>' +
-      instructors.map(n => `<option value="${escHtml(n)}"${n === current ? ' selected' : ''}>${escHtml(n)}</option>`).join('');
-    const instrSection = sel.closest('.chip-section');
-    if (instrSection) {
-      const badge = instrSection.querySelector('.chip-sel-badge');
-      badge.textContent = current ? '1' : '';
-      badge.classList.toggle('visible', !!current);
-      instrSection.classList.toggle('has-selection', !!current);
-    }
-  }
+    const chipHtml = shown.map(k => {
+      const active = state.lf.filters[sec.key].has(sec.key === 'duration' ? k : k);
+      const label = sec.key === 'duration' ? `${k} min` : (sec.key === 'day' ? RS_DAYS_FULL[k] : k);
+      return `<button class="filter-chip${active ? ' active' : ''}" data-key="${sec.key}" data-val="${escHtml(k)}">${escHtml(label)} <span style="opacity:0.5">${counts[k]}</span></button>`;
+    }).join('');
+    const moreBtn = keys.length > limit
+      ? `<button class="filter-chip chip-show-more" data-showmore="${sec.key}" style="border-style:dashed">${showAll ? 'Show less' : `+${keys.length - limit} more`}</button>`
+      : '';
 
-  document.getElementById('lf-reset-btn').disabled = !lfHasActiveFilters();
+    return `<div class="chip-section" data-key="${sec.key}">
+      <div class="chip-section-head"><span class="chip-section-title">${sec.title}</span></div>
+      <div class="chip-section-body">${chipHtml}${moreBtn}</div>
+    </div>`;
+  }).join('');
 }
 
-// ── LF SEARCH AUTOCOMPLETE ─────────────────────────────────────────────────────
-let lfDdHighlight = -1;
-
-function buildSearchDropdown(query) {
-  const dd = document.getElementById('search-dropdown');
-  const q  = query.trim().toLowerCase();
-  if (!q || state.lf.records.length === 0) { dd.classList.remove('open'); return; }
-
-  const { records, filters } = state.lf;
-  const instruments  = [...new Set(records.map(r => r.instrument))].sort();
-  const days         = [...new Set(records.map(r => r.day))].sort((a, b) => LF_DAY_ORDER.indexOf(a) - LF_DAY_ORDER.indexOf(b));
-  const instructors  = [...new Set(records.map(r => r.instructor))].sort();
-
-  const mInstr = instruments.filter(v => v.toLowerCase().includes(q));
-  const mDays  = days.filter(v => v.toLowerCase().includes(q));
-  const mInst  = instructors.filter(v => v.toLowerCase().includes(q));
-
-  if (!mInstr.length && !mDays.length && !mInst.length) {
-    dd.innerHTML = '<div class="sd-empty">No matches found</div>';
-    dd.classList.add('open');
-    return;
-  }
-
-  let html = '';
-  if (mInstr.length) {
-    html += `<div class="sd-group-label">Subject</div>`;
-    mInstr.slice(0, 5).forEach(v => {
-      const active = filters.instrument.has(v);
-      const count  = records.filter(r => r.instrument === v).length;
-      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="instrument" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
-    });
-  }
-  if (mDays.length) {
-    html += `<div class="sd-group-label">Day</div>`;
-    mDays.forEach(v => {
-      const active = filters.day.has(v);
-      const count  = records.filter(r => r.day === v).length;
-      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="day" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
-    });
-  }
-  if (mInst.length) {
-    html += `<div class="sd-group-label">Instructor</div>`;
-    mInst.slice(0, 6).forEach(v => {
-      const active = filters.instructor.has(v);
-      const count  = records.filter(r => r.instructor === v).length;
-      html += `<div class="sd-item ${active ? 'already-active' : ''}" data-key="instructor" data-value="${escHtml(v)}"><span class="sd-item-name">${escHtml(v)}</span><span class="sd-item-meta">${count} slot${count !== 1 ? 's' : ''}</span></div>`;
-    });
-  }
-
-  dd.innerHTML = html;
-  dd.classList.add('open');
-  lfDdHighlight = -1;
+function renderBranchChips() {
+  const wrap = document.getElementById('lf-branch-chips');
+  const branches = new Set();
+  state.data.events.forEach(e => branches.add(siteToBranch(e.site)));
+  wrap.innerHTML = [...branches].sort().map(b =>
+    `<button class="branch-filter-chip${state.lf.filterBranches.has(b) ? ' active' : ''}" data-branch="${escHtml(b)}">${escHtml(b)}</button>`
+  ).join('');
 }
 
-function selectSearchItem(key, value) {
-  const val = key === 'duration' ? parseInt(value) : value;
-  state.lf.filters[key].add(val);
-  document.getElementById('lf-search').value = '';
-  document.getElementById('search-dropdown').classList.remove('open');
-  lfDdHighlight = -1;
-  renderTable();
-  updateChipSidebar();
-}
-
-// ── LF RENDER TABLE ────────────────────────────────────────────────────────────
-function renderActiveFilterChips() {
-  const af = document.getElementById('lf-active-filters');
-  const { filters, filterBranches, filterStudentAge } = state.lf;
-  let afHtml = '';
-  ['instrument', 'day', 'instructor', 'duration'].forEach(key => {
-    filters[key].forEach(val => {
-      const label = key === 'duration' ? val + ' min' : escHtml(String(val));
-      afHtml += `<span class="active-chip" data-key="${key}" data-value="${escHtml(String(val))}">${label} <span class="active-chip-x">×</span></span>`;
-    });
-  });
-  filterBranches.forEach(b => {
-    afHtml += `<span class="active-chip" data-key="branch" data-value="${escHtml(b)}">${escHtml(b)} <span class="active-chip-x">×</span></span>`;
-  });
-  if (filterStudentAge) {
-    afHtml += `<span class="active-chip" data-key="studentAge" data-value="${escHtml(filterStudentAge)}">Age: ${escHtml(filterStudentAge)} <span class="active-chip-x">×</span></span>`;
-  }
-  af.innerHTML = afHtml;
-  af.classList.toggle('visible', afHtml !== '');
-}
-
-function renderTable() {
-  if (state.lf.viewMode === 'byInstructor') { renderTableByInstructor(); return; }
-  const rows  = lfGetFiltered();
+function renderLFTable() {
+  const rows = lfGetFiltered();
   const tbody = document.getElementById('lf-table-body');
-  const empty = document.getElementById('lf-empty-state');
-  const { sortBy } = state.lf;
+  const emptyEl = document.getElementById('lf-empty-state');
+  document.getElementById('lf-result-count').textContent = `${rows.length} slot${rows.length === 1 ? '' : 's'}`;
 
-  renderActiveFilterChips();
-  document.getElementById('lf-result-count').textContent = `${rows.length} slot${rows.length !== 1 ? 's' : ''}`;
-
-  if (rows.length === 0) {
+  if (!rows.length) {
     tbody.innerHTML = '';
-    empty.classList.add('visible');
+    emptyEl.classList.add('visible');
+    updateCopyButton(rows);
     return;
   }
-  empty.classList.remove('visible');
+  emptyEl.classList.remove('visible');
 
-  let html = '';
-  let lastGroup = null;
-  rows.forEach(r => {
-    const groupVal = sortBy === 'instrument' ? r.instrument : sortBy === 'day' ? r.day : r.instructor;
-    if (groupVal !== lastGroup) {
-      const cnt = rows.filter(x => (sortBy === 'instrument' ? x.instrument : sortBy === 'day' ? x.day : x.instructor) === groupVal).length;
-      html += `<tr class="group-header"><td colspan="8">${escHtml(groupVal)} <span>${cnt} slot${cnt !== 1 ? 's' : ''}</span></td></tr>`;
-      lastGroup = groupVal;
-    }
-    const prof        = getLFProfile(r.instructor);
-    const branchPills = prof.branches.length
-      ? prof.branches.map(b => `<span class="branch-pill">${escHtml(b)}</span>`).join('')
-      : '<span style="color:var(--rule);font-size:11px">—</span>';
-    const ageBadge   = prof.ageMin ? `<span class="age-badge">${escHtml(prof.ageMin)}+</span>` : '';
-    const slotBadges = r.slots.map(s => `<span class="slot-badge badge-${s}">${s} min</span>`).join('');
-    html += `<tr>
+  const sortBy = state.lf.sortBy;
+  const sorted = [...rows].sort((a, b) => {
+    if (sortBy === 'day') return RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day) || timeToMins(a.start_time) - timeToMins(b.start_time);
+    if (sortBy === 'instructor') return a.instructor_name.localeCompare(b.instructor_name);
+    return a.instrument.localeCompare(b.instrument) || a.instructor_name.localeCompare(b.instructor_name);
+  });
+
+  tbody.innerHTML = sorted.map(r => {
+    const key = rowKey(r);
+    const branches = branchesForInstructor(r.instructor_name);
+    const room = guessRoomForSlot(r.instructor_name, r.day, r.start_time);
+    const roomCls = room.ambiguous ? 'ambiguous' : (room.guess ? 'guess' : '');
+    return `<tr data-rowkey="${escHtml(key)}">
+      <td><input type="checkbox" class="lf-row-check" data-rowkey="${escHtml(key)}" ${state.lf.selected.has(key) ? 'checked' : ''}></td>
       <td class="td-instrument">${escHtml(r.instrument)}</td>
-      <td class="td-instructor">${escHtml(r.instructor)}</td>
-      <td class="td-dept">${escHtml(r.department)}</td>
-      <td class="td-day">${escHtml(r.day)}</td>
-      <td class="td-time">${escHtml(r.time)}${r.endTime ? ` – ${escHtml(r.endTime)}` : ''}</td>
-      <td><div class="slot-badges">${slotBadges}</div></td>
-      <td><div class="branch-pills">${branchPills}</div></td>
-      <td>${ageBadge}</td>
-    </tr>`;
-  });
-  tbody.innerHTML = html;
-}
-
-function renderTableByInstructor() {
-  const rows  = lfGetFiltered();
-  const tbody = document.getElementById('lf-table-body');
-  const empty = document.getElementById('lf-empty-state');
-
-  renderActiveFilterChips();
-  document.getElementById('lf-result-count').textContent = `${rows.length} slot${rows.length !== 1 ? 's' : ''}`;
-
-  if (!rows.length) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
-  empty.classList.remove('visible');
-
-  // Group by instructor, then by instrument within each instructor
-  const byInstructor = {};
-  rows.forEach(r => {
-    if (!byInstructor[r.instructor]) byInstructor[r.instructor] = {};
-    if (!byInstructor[r.instructor][r.instrument]) byInstructor[r.instructor][r.instrument] = [];
-    byInstructor[r.instructor][r.instrument].push(r);
-  });
-
-  let html = '';
-  Object.keys(byInstructor).sort().forEach(instructor => {
-    const instrRows  = byInstructor[instructor];
-    const totalSlots = Object.values(instrRows).flat().length;
-    html += `<tr class="group-header"><td colspan="8">${escHtml(instructor)} <span>${totalSlots} slot${totalSlots !== 1 ? 's' : ''}</span></td></tr>`;
-    Object.keys(instrRows).sort().forEach(instrument => {
-      instrRows[instrument]
-        .sort((a, b) => LF_DAY_ORDER.indexOf(a.day) - LF_DAY_ORDER.indexOf(b.day) || timeToSort(a.time).localeCompare(timeToSort(b.time)))
-        .forEach(r => {
-          const prof       = getLFProfile(r.instructor);
-          const branchPills = prof.branches.length
-            ? prof.branches.map(b => `<span class="branch-pill">${escHtml(b)}</span>`).join('')
-            : '<span style="color:var(--rule);font-size:11px">—</span>';
-          const ageBadge  = prof.ageMin ? `<span class="age-badge">${escHtml(prof.ageMin)}+</span>` : '';
-          const slotBadges = r.slots.map(s => `<span class="slot-badge badge-${s}">${s} min</span>`).join('');
-          html += `<tr>
-            <td class="td-instrument">${escHtml(r.instrument)}</td>
-            <td class="td-instructor">${escHtml(r.instructor)}</td>
-            <td class="td-dept">${escHtml(r.department)}</td>
-            <td class="td-day">${escHtml(r.day)}</td>
-            <td class="td-time">${escHtml(r.time)}${r.endTime ? ` – ${escHtml(r.endTime)}` : ''}</td>
-            <td><div class="slot-badges">${slotBadges}</div></td>
-            <td><div class="branch-pills">${branchPills}</div></td>
-            <td>${ageBadge}</td>
-          </tr>`;
-        });
-    });
-  });
-  tbody.innerHTML = html;
-}
-
-// ── LF RENDER TEACHERS ─────────────────────────────────────────────────────────
-function renderTeachers() {
-  const { records, teacherProfiles } = state.lf;
-
-  // Derive instruments per instructor from LF records
-  const instrMap = {};
-  records.forEach(r => {
-    if (!instrMap[r.instructor]) instrMap[r.instructor] = new Set();
-    instrMap[r.instructor].add(r.instrument);
-  });
-
-  const names = [...new Set(records.map(r => r.instructor))].sort();
-  if (!names.length) {
-    document.getElementById('lf-teacher-body').innerHTML =
-      '<tr><td colspan="5" style="padding:20px;color:var(--muted);font-style:italic">No data loaded yet.</td></tr>';
-    return;
-  }
-
-  const rows = names.map(name => {
-    const p           = getLFProfile(name);
-    const instruments = instrMap[name] ? [...instrMap[name]].sort() : [];
-    const instrTags   = instruments.length
-      ? instruments.map(i => `<span class="instr-tag">${escHtml(i)}</span>`).join('')
-      : '<span style="color:var(--rule)">—</span>';
-    const branchList = p.branches.length
-      ? escHtml(p.branches.join(', '))
-      : '<span style="color:var(--rule)">—</span>';
-    const ageCell  = p.ageMin ? `<span class="age-badge">${escHtml(p.ageMin)}+</span>` : '<span style="color:var(--rule)">—</span>';
-    const noteCell = p.notes  ? escHtml(p.notes) : '<span style="color:var(--rule);font-style:italic">—</span>';
-    return `<tr>
-      <td class="td-tname">${escHtml(name)}</td>
-      <td><div class="instr-tags">${instrTags}</div></td>
-      <td>${branchList}</td>
-      <td>${ageCell}</td>
-      <td style="font-size:12px">${noteCell}</td>
+      <td class="td-instructor">${escHtml(r.instructor_name)}</td>
+      <td>${escHtml(r.department || '')}</td>
+      <td class="td-day">${escHtml(RS_DAYS_FULL[r.day] || r.day)}</td>
+      <td class="td-time">${fmtTime(r.start_time)}–${fmtTime(r.end_time)}</td>
+      <td><span class="room-pill ${roomCls}">${escHtml(room.label)}</span></td>
+      <td>${branches.map(b => escHtml(b)).join(', ')}</td>
     </tr>`;
   }).join('');
 
-  document.getElementById('lf-teacher-body').innerHTML = rows;
+  updateCopyButton(sorted);
 }
 
-
-// ── ROOM SCHEDULE DATA & RENDERING ────────────────────────────────────────────
-// Two-color scheme: private lessons vs group/class
-const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
-const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
-const RS_COLOR_AVAIL   = { bg: 'rgba(60,180,100,0.13)', border: '#38a870' };
-
-// "9:00 AM" → minutes from midnight
-function rsParseTime(str) {
-  if (!str) return 0;
-  const m = String(str).match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return 0;
-  let h = parseInt(m[1]);
-  const ap = m[3].toUpperCase();
-  if (ap === 'PM' && h !== 12) h += 12;
-  if (ap === 'AM' && h === 12) h = 0;
-  return h * 60 + parseInt(m[2]);
+function rowKey(r) {
+  return `${r.id}`;
 }
 
-// minutes from midnight → "9:00 AM"
-function rsFmtTime(mins) {
-  const h24 = Math.floor(mins / 60);
-  const mm  = mins % 60;
-  const ap  = h24 < 12 ? 'AM' : 'PM';
-  const h   = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
-  return `${h}:${String(mm).padStart(2,'0')} ${ap}`;
+function updateCopyButton(visibleRows) {
+  // prune selections no longer in the visible set's universe (rows persist by id though, so keep across filters)
+  const btn = document.getElementById('lf-copy-btn');
+  const n = state.lf.selected.size;
+  btn.textContent = `Copy ${n} selected for email`;
+  btn.disabled = n === 0;
+  document.getElementById('lf-select-all').checked = visibleRows.length > 0 && visibleRows.every(r => state.lf.selected.has(rowKey(r)));
 }
 
+function copySelectedForEmail() {
+  const rows = state.data.openSlots.filter(r => state.lf.selected.has(rowKey(r)));
+  if (!rows.length) return;
+  const text = rows.map(r => {
+    const branches = branchesForInstructor(r.instructor_name).join('/');
+    const room = guessRoomForSlot(r.instructor_name, r.day, r.start_time);
+    return `${r.instrument} — ${r.instructor_name}\n${RS_DAYS_FULL[r.day]} ${fmtTime(r.start_time)}–${fmtTime(r.end_time)}${branches ? ' • ' + branches : ''}${room.label && room.label !== '—' ? ' • Room ' + room.label : ''}`;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(
+    () => toast(`Copied ${rows.length} slot${rows.length === 1 ? '' : 's'} to clipboard.`),
+    () => toast('Could not copy to clipboard.', true)
+  );
+}
+
+function renderTeachers() {
+  const tbody = document.getElementById('lf-teacher-body');
+  const names = new Map(); // "First Last" -> { first, last }
+  state.data.availability.forEach(a => {
+    names.set(`${a.first_name} ${a.last_name}`, { first: a.first_name, last: a.last_name });
+  });
+  state.data.events.forEach(e => { if (!names.has(e.instructor_name)) names.set(e.instructor_name, null); });
+  state.data.openSlots.forEach(r => { if (!names.has(r.instructor_name)) names.set(r.instructor_name, null); });
+
+  const ignoredKeys = new Set(state.data.overrides.map(o => `${o.first_name}|${o.last_name}|${o.day}`));
+
+  const sortedNames = [...names.keys()].sort();
+  tbody.innerHTML = sortedNames.map(name => {
+    const instruments = new Set();
+    state.data.openSlots.filter(r => r.instructor_name === name).forEach(r => instruments.add(r.instrument));
+    const branches = branchesForInstructor(name);
+    const parts = name.split(' ');
+    const first = names.get(name) ? names.get(name).first : parts[0];
+    const last = names.get(name) ? names.get(name).last : parts.slice(1).join(' ');
+
+    const availRows = state.data.availability
+      .filter(a => a.first_name === first && a.last_name === last && !ignoredKeys.has(`${a.first_name}|${a.last_name}|${a.day}`))
+      .sort((a, b) => RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day));
+
+    const availHtml = availRows.length
+      ? availRows.map(a => `<span class="avail-line">${RS_DAYS_FULL[a.day]} ${fmtTime(a.start_time)}–${fmtTime(a.end_time)}</span>`).join('')
+      : '<span style="color:var(--muted);font-size:11px">No availability on file</span>';
+
+    return `<tr>
+      <td class="td-tname">${escHtml(name)}</td>
+      <td><div class="instr-tags">${[...instruments].map(i => `<span class="instr-tag">${escHtml(i)}</span>`).join('') || '—'}</div></td>
+      <td>${branches.join(', ') || '—'}</td>
+      <td>${availHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderLessonFinder() {
+  buildChipSidebar();
+  renderBranchChips();
+  renderLFTable();
+  document.getElementById('lf-reset-btn').disabled = !lfHasActiveFilters();
+  if (state.lf.activeTab === 'teachers') renderTeachers();
+}
+
+// ── ROOM SCHEDULE ────────────────────────────────────────────────────────────────
 function rsForSiteDay(site, day) {
-  return state.rs.events.filter(e => e.site === site && e.day === day);
+  return state.data.events.filter(e => siteToBranch(e.site) === site && e.day === day);
 }
 
-function rsGetRooms(evts) {
-  return [...new Set(evts.map(e => e.facility))].sort();
+function rsRoomsForSite(site, physicalOnly) {
+  return state.data.rooms
+    .filter(r => siteToBranch(r.site) === site)
+    .filter(r => !physicalOnly || r.room_type === 'physical')
+    .sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999) || roomDisplayName(a).localeCompare(roomDisplayName(b)));
 }
 
 function rsDetectConflicts(evts) {
@@ -1566,664 +1277,593 @@ function rsDetectConflicts(evts) {
   for (let i = 0; i < evts.length; i++) {
     for (let j = i + 1; j < evts.length; j++) {
       const a = evts[i], b = evts[j];
-      const overlaps = rsParseTime(a.from) < rsParseTime(b.to) && rsParseTime(b.from) < rsParseTime(a.to);
-      if (!overlaps) continue;
-      const sameInstructor = a.instructor && b.instructor && a.instructor === b.instructor && a.facility !== b.facility;
-      const sameRoom = a.facility === b.facility;
-      if (sameInstructor || sameRoom) { conflicts.add(i); conflicts.add(j); }
+      if (a.facility_raw !== b.facility_raw) continue;
+      const as = timeToMins(a.from_time), ae = timeToMins(a.to_time);
+      const bs = timeToMins(b.from_time), be = timeToMins(b.to_time);
+      if (as < be && bs < ae) { conflicts.add(i); conflicts.add(j); }
     }
   }
   return conflicts;
 }
 
-// Build the time-grid HTML. forPrint: omit data-* attrs, use narrower columns.
-function rsBuildGrid(evts, availWins, rooms, forPrint) {
-  if (!evts.length && !availWins.length) return '';
+function rsBuildGrid(evts, rooms, forPrint) {
+  if (!evts.length && !rooms.length) return '';
   const ROOM_W = forPrint ? 115 : 140;
-  const PX     = forPrint ? 22 : 28; // pixels per 15-min slot
+  const PX = forPrint ? 28 : 28;
 
-  // Compute time range from both booked events and availability windows
   let lo = Infinity, hi = -Infinity;
-  [...evts, ...availWins].forEach(e => {
-    const s = rsParseTime(e.from), n = rsParseTime(e.to);
+  evts.forEach(e => {
+    const s = timeToMins(e.from_time), n = timeToMins(e.to_time);
     if (s < lo) lo = s;
     if (n > hi) hi = n;
   });
   if (!isFinite(lo)) { lo = 9 * 60; hi = 18 * 60; }
   lo = Math.floor(lo / 30) * 30;
-  hi = Math.ceil(hi  / 30) * 30;
+  hi = Math.ceil(hi / 30) * 30;
   const totalSlots = (hi - lo) / 15;
 
-  let html = '';
-
-  // Room header row
-  html += '<div class="rs-room-header">';
-  html += '<div class="rs-corner"></div>';
+  let html = '<div class="rs-room-header"><div class="rs-corner"></div>';
   rooms.forEach(r => {
-    html += `<div class="rs-room-col-head" style="width:${ROOM_W}px">${escHtml(r.replace(/^\(\d+\)\s*/, ''))}</div>`;
+    html += `<div class="rs-room-col-head" style="width:${ROOM_W}px">${escHtml(roomDisplayName(r))}</div>`;
   });
-  html += '</div>';
-
-  // Grid body
-  html += '<div class="rs-grid-body">';
-
-  // Time column
-  html += '<div class="rs-time-col">';
+  html += '</div><div class="rs-grid-body"><div class="rs-time-col">';
   for (let i = 0; i < totalSlots; i++) {
-    const mins   = lo + i * 15;
+    const mins = lo + i * 15;
     const onHour = mins % 60 === 0;
-    html += `<div class="rs-time-tick${onHour ? ' on-hour' : ''}">${onHour ? escHtml(rsFmtTime(mins)) : ''}</div>`;
+    html += `<div class="rs-time-tick${onHour ? ' on-hour' : ''}">${onHour ? escHtml(fmtTime(minsToTime24(mins))) : ''}</div>`;
   }
-  html += '</div>';
+  html += '</div><div class="rs-rooms-area">';
 
-  // Detect double-bookings once for the whole day
   const conflicts = forPrint ? new Set() : rsDetectConflicts(evts);
 
-  // Room columns
-  html += '<div class="rs-rooms-area">';
   rooms.forEach(room => {
     const colH = totalSlots * PX;
     html += `<div class="rs-room-col" style="width:${ROOM_W}px;height:${colH}px">`;
-
-    // Background slot rows
     for (let i = 0; i < totalSlots; i++) {
       const mins = lo + i * 15;
-      const cls  = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
+      const cls = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
       html += `<div class="rs-slot-row${cls}"></div>`;
     }
-
-    // Availability windows in this room (rendered behind booked events)
-    availWins.filter(w => w.facility === room).forEach(w => {
-      const startM = rsParseTime(w.from);
-      const endM   = rsParseTime(w.to);
-      const top    = (startM - lo) / 15 * PX;
+    evts.filter(e => e.facility_raw === room.raw_facility_label).forEach(ev => {
+      const evIdx = evts.indexOf(ev);
+      const startM = timeToMins(ev.from_time), endM = timeToMins(ev.to_time);
+      const top = (startM - lo) / 15 * PX;
       const height = Math.max((endM - startM) / 15 * PX - 2, 16);
-      let inner = `<span class="rs-event-item" style="opacity:0.8">Available — ${escHtml(w.instructor)}</span>`;
-      if (height >= 36) inner += `<span class="rs-event-info" style="opacity:0.6">${escHtml(w.from)}–${escHtml(w.to)}</span>`;
-      html += `<div class="rs-event rs-avail" style="top:${top}px;height:${height}px;background:${RS_COLOR_AVAIL.bg};border-left-color:${RS_COLOR_AVAIL.border}">${inner}</div>`;
-    });
-
-    // Events in this room
-    evts.filter(e => e.facility === room).forEach(ev => {
-      const evIdx   = evts.indexOf(ev);
-      const startM  = rsParseTime(ev.from);
-      const endM    = rsParseTime(ev.to);
-      const top     = (startM - lo) / 15 * PX;
-      const height  = Math.max((endM - startM) / 15 * PX - 2, 16);
-      const isClass = ev.type === 'CLASS' || ev.type === 'GROUP';
-      const col     = isClass ? RS_COLOR_GROUP : RS_COLOR_PRIVATE;
+      const isClass = ev.type === 'CLASS';
+      const col = isClass ? RS_COLOR_GROUP : RS_COLOR_PRIVATE;
       const hasConflict = conflicts.has(evIdx);
 
       let inner = `<span class="rs-event-item">${escHtml(ev.item)}</span>`;
-      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor)}</span>`;
-      if (height >= 52) inner += `<span class="rs-event-info">${escHtml(ev.from)}–${escHtml(ev.to)}</span>`;
+      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor_name)}</span>`;
+      if (height >= 52) inner += `<span class="rs-event-info">${fmtTime(ev.from_time)}–${fmtTime(ev.to_time)}</span>`;
 
       const dataAttrs = forPrint ? '' : [
-        `data-item="${escHtml(ev.item)}"`,
-        `data-instructor="${escHtml(ev.instructor)}"`,
-        `data-student="${escHtml(ev.student)}"`,
-        `data-from="${escHtml(ev.from)}"`,
-        `data-to="${escHtml(ev.to)}"`,
-        `data-facility="${escHtml(ev.facility)}"`,
-        `data-type="${escHtml(ev.type)}"`,
-        `data-conflict="${hasConflict}"`,
+        `data-item="${escHtml(ev.item)}"`, `data-instructor="${escHtml(ev.instructor_name)}"`,
+        `data-student="${escHtml(ev.student || '')}"`, `data-from="${escHtml(fmtTime(ev.from_time))}"`,
+        `data-to="${escHtml(fmtTime(ev.to_time))}"`, `data-facility="${escHtml(room.raw_facility_label)}"`,
+        `data-type="${escHtml(ev.type)}"`, `data-conflict="${hasConflict}"`,
       ].join(' ');
 
       html += `<div class="rs-event${isClass ? ' is-class' : ''}${hasConflict ? ' rs-conflict' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;background:${col.bg};border-left-color:${col.border}">${inner}</div>`;
     });
-
-    html += '</div>'; // .rs-room-col
+    html += '</div>';
   });
-  html += '</div>'; // .rs-rooms-area
-  html += '</div>'; // .rs-grid-body
+  html += '</div></div>';
   return html;
 }
 
 function renderSiteTabs() {
   const bar = document.getElementById('rs-site-tabs');
-  if (!bar) return;
-  const { sites, activeSite } = state.rs;
-  bar.innerHTML = sites.map(site => {
-    const count = state.rs.events.filter(e => e.site === site).length;
-    return `<button class="rs-site-tab${site === activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
+  bar.innerHTML = state.rs.sites.map(site => {
+    const count = state.data.events.filter(e => siteToBranch(e.site) === site).length;
+    return `<button class="rs-site-tab${site === state.rs.activeSite ? ' active' : ''}" data-site="${escHtml(site)}">${escHtml(site)} <span class="rs-tab-count">${count}</span></button>`;
   }).join('');
 }
 
 function renderDayTabs() {
   const bar = document.getElementById('rs-day-tabs');
-  if (!bar) return;
-  const { events, activeSite, activeDay } = state.rs;
-  const days = RS_DAYS_ORDER.filter(d => events.some(e => e.site === activeSite && e.day === d));
+  const days = RS_DAYS_ORDER.filter(d => state.data.events.some(e => siteToBranch(e.site) === state.rs.activeSite && e.day === d));
   bar.innerHTML = days.map(d =>
-    `<button class="rs-day-tab${d === activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d]}</button>`
+    `<button class="rs-day-tab${d === state.rs.activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d].slice(0, 3)}</button>`
   ).join('');
 }
 
-
-function renderGrid() {
-  const grid  = document.getElementById('rs-grid');
+function renderRSGrid() {
+  const grid = document.getElementById('rs-grid');
   const empty = document.getElementById('rs-empty');
-  if (!grid) return;
-  const evts      = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
-  const availWins = state.rs.availWindows.filter(w =>
-    w.day === state.rs.activeDay &&
-    state.rs.facilityToSite[w.facility] === state.rs.activeSite
-  );
-  if (!evts.length && !availWins.length) {
+  const evts = rsForSiteDay(state.rs.activeSite, state.rs.activeDay);
+  const rooms = state.rs.activeSite === 'Richmond' ? richmondColumns(evts) : roomsForEvents(evts, state.rs.activeSite);
+  if (!evts.length && !rooms.length) {
     grid.innerHTML = '';
-    if (empty) empty.classList.add('visible');
+    empty.classList.add('visible');
     return;
   }
-  if (empty) empty.classList.remove('visible');
-  const allRooms = rsGetRooms([...evts, ...availWins.map(w => ({ facility: w.facility }))]);
-  grid.innerHTML = rsBuildGrid(evts, availWins, allRooms, false);
+  empty.classList.remove('visible');
+  grid.innerHTML = rsBuildGrid(evts, rooms, false);
 }
 
-function rsPrintAllDays() {
+// Only the rooms actually booked in `evts` — looked up in the registry for
+// canonical name/order, falling back to a plain "needs_review" stub for any
+// facility not yet in the registry (shouldn't normally happen).
+function roomsForEvents(evts, site) {
+  const registryRooms = rsRoomsForSite(site, false);
+  const facilitiesUsed = [...new Set(evts.map(e => e.facility_raw))];
+  const rooms = facilitiesUsed.map(f =>
+    registryRooms.find(r => r.raw_facility_label === f) ||
+    { site, raw_facility_label: f, canonical_name: null, room_type: 'needs_review' }
+  );
+  rooms.sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999) || roomDisplayName(a).localeCompare(roomDisplayName(b)));
+  return rooms;
+}
+
+// Richmond's on-screen columns: the curated "physical" room set always shows
+// (even with nothing booked that day), plus any other room actually booked
+// that day (e.g. a virtual studio) so a real lesson is never hidden — those
+// extras just don't carry over to print, which stays to the pinned set only.
+function richmondColumns(evts) {
+  const pinned = rsRoomsForSite('Richmond', true);
+  const pinnedLabels = new Set(pinned.map(r => r.raw_facility_label));
+  const extraLabels = [...new Set(evts.map(e => e.facility_raw))].filter(f => !pinnedLabels.has(f));
+  const extras = extraLabels.map(f => {
+    const ev = evts.find(e => e.facility_raw === f);
+    return findRoom(ev.site, f) || { site: ev.site, raw_facility_label: f, canonical_name: null, room_type: 'needs_review' };
+  }).sort((a, b) => roomDisplayName(a).localeCompare(roomDisplayName(b)));
+  return [...pinned, ...extras];
+}
+
+function renderRoomSchedule() {
+  document.getElementById('rs-day-tabs').style.display = '';
+  renderSiteTabs();
+  renderDayTabs();
+  renderRSGrid();
+}
+
+// Prints the pinned Richmond room set (Admin -> Rooms, tagged "physical")
+// on 11x17 tabloid paper — the same columns every day regardless of what
+// happens to be booked, only rooms/times differ.
+function rsPrint() {
   const section = document.getElementById('rs-print-section');
-  if (!section) return;
-  const PRINT_SITE  = 'Richmond';
-  const PRINT_ROOMS = new Set(['A','B','C','D','GP','MP','SP']);
+  const PRINT_SITE = 'Richmond';
+  const rooms = rsRoomsForSite(PRINT_SITE, true);
+  if (!rooms.length) {
+    toast('No Richmond rooms are tagged "physical" yet — tag them in Admin → Rooms.', true);
+    return;
+  }
+  const roomLabels = new Set(rooms.map(r => r.raw_facility_label));
   const pages = [];
   RS_DAYS_ORDER.forEach(day => {
     const allEvts = rsForSiteDay(PRINT_SITE, day);
     if (!allEvts.length) return;
-    // Filter to specified rooms only (strip leading "(N) " prefix before matching)
-    const evts  = allEvts.filter(e => PRINT_ROOMS.has(e.facility.replace(/^\(\d+\)\s*/, '').trim()));
-    if (!evts.length) return;
-    const rooms = rsGetRooms(evts).filter(r => PRINT_ROOMS.has(r.replace(/^\(\d+\)\s*/, '').trim()));
-    pages.push(`<div class="rs-print-page">
-      <div class="rs-print-header">
-        <span class="rs-print-site">${escHtml(PRINT_SITE)}</span>
-        <span class="rs-print-day">${RS_DAYS_FULL[day]}</span>
-      </div>
-      <div>${rsBuildGrid(evts, [], rooms, true)}</div>
-    </div>`);
+    const evts = allEvts.filter(e => roomLabels.has(e.facility_raw));
+    pages.push({ day, html: rsBuildGrid(evts, rooms, true) });
   });
-  if (!pages.length) {
-    alert('No Richmond data available to print. Make sure the Room Schedule is loaded.');
-    return;
-  }
-  section.innerHTML = pages.join('');
+
+  if (!pages.length) { toast('Nothing to print for Richmond.', true); return; }
+
+  section.innerHTML = pages.map(p => `
+    <div class="rs-print-page">
+      <div class="rs-print-header">
+        <span class="rs-print-site">${PRINT_SITE}</span>
+        <span class="rs-print-day">${RS_DAYS_FULL[p.day]}</span>
+      </div>
+      <div id="rs-grid">${p.html}</div>
+    </div>
+  `).join('');
+
   window.print();
-  setTimeout(() => { section.innerHTML = ''; }, 2000);
 }
 
-// ── VIEW SWITCHING ─────────────────────────────────────────────────────────────
+// ── ADMIN: UPLOAD ────────────────────────────────────────────────────────────────
+function renderAdminUpload() {
+  document.querySelectorAll('.upload-card').forEach(card => {
+    const type = card.dataset.report;
+    const last = state.data.uploads.find(u => u.report_type === type);
+    card.querySelector('[data-lastupload]').textContent = last
+      ? `Last upload: ${new Date(last.uploaded_at).toLocaleString()} — ${last.row_count} rows — ${last.filename || ''}`
+      : 'No uploads yet';
+  });
+}
+
+async function handleUpload(card) {
+  const type = card.dataset.report;
+  const fileInput = card.querySelector('[data-fileinput]');
+  const statusEl = card.querySelector('[data-status]');
+  const btn = card.querySelector('[data-uploadbtn]');
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  statusEl.className = 'upload-status';
+  statusEl.textContent = 'Parsing…';
+  btn.disabled = true;
+
+  try {
+    const rawRows = await parseReportFile(file);
+    let mapped, rpcName;
+    if (type === 'open_slots') { mapped = mapOpenSlotsRows(rawRows); rpcName = 'replace_open_slots'; }
+    else if (type === 'master_schedule') { mapped = mapMasterScheduleRows(rawRows); rpcName = 'replace_master_schedule'; }
+    else { mapped = mapInstructorAvailabilityRows(rawRows); rpcName = 'replace_instructor_availability'; }
+
+    if (!mapped.length) throw new Error('No usable rows found — check this is the right report file.');
+
+    const prev = state.data.uploads.find(u => u.report_type === type);
+    if (prev && prev.row_count > 0) {
+      const delta = Math.abs(mapped.length - prev.row_count) / prev.row_count;
+      if (delta > 0.35) {
+        const ok = confirm(`This upload has ${mapped.length} rows vs. ${prev.row_count} last time (${Math.round(delta * 100)}% change). Continue anyway?`);
+        if (!ok) { statusEl.textContent = 'Cancelled.'; btn.disabled = false; return; }
+      }
+    }
+
+    statusEl.textContent = `Uploading ${mapped.length} rows…`;
+    const { error } = await state.sb.rpc(rpcName, { rows: mapped, p_filename: file.name });
+    if (error) throw error;
+
+    await refreshDataQuiet();
+    renderAdminUpload();
+    statusEl.className = 'upload-status ok';
+    statusEl.textContent = `Done — ${mapped.length} rows loaded.`;
+    fileInput.value = '';
+    btn.disabled = true;
+    toast(`${REPORT_LABELS[type]} updated.`);
+
+    if (state.appMode === 'lessonFinder') renderLessonFinder();
+    if (state.appMode === 'roomSchedule') initRoomScheduleState();
+  } catch (err) {
+    statusEl.className = 'upload-status error';
+    statusEl.textContent = 'Error: ' + (err.message || err);
+    btn.disabled = false;
+  }
+}
+
+// ── ADMIN: ROOMS ─────────────────────────────────────────────────────────────────
+function renderAdminRooms() {
+  const tbody = document.getElementById('admin-rooms-body');
+  const rooms = [...state.data.rooms].sort((a, b) =>
+    a.site.localeCompare(b.site) || (a.display_order ?? 999) - (b.display_order ?? 999) || a.raw_facility_label.localeCompare(b.raw_facility_label)
+  );
+  tbody.innerHTML = rooms.map(r => `
+    <tr data-roomid="${r.id}" class="${r.room_type === 'needs_review' ? 'needs-review' : ''}">
+      <td>${escHtml(r.site)}</td>
+      <td>${escHtml(r.raw_facility_label)}${r.room_type === 'needs_review' ? ' <span class="badge-review">needs review</span>' : ''}</td>
+      <td><input type="text" data-field="canonical_name" value="${escHtml(r.canonical_name || '')}" placeholder="${escHtml(r.raw_facility_label)}"></td>
+      <td>
+        <select data-field="room_type">
+          <option value="needs_review" ${r.room_type === 'needs_review' ? 'selected' : ''}>Needs review</option>
+          <option value="physical" ${r.room_type === 'physical' ? 'selected' : ''}>Physical</option>
+          <option value="virtual" ${r.room_type === 'virtual' ? 'selected' : ''}>Virtual</option>
+          <option value="home_studio" ${r.room_type === 'home_studio' ? 'selected' : ''}>Home studio</option>
+          <option value="offsite" ${r.room_type === 'offsite' ? 'selected' : ''}>Offsite</option>
+        </select>
+      </td>
+      <td><input type="number" data-field="display_order" value="${r.display_order ?? ''}"></td>
+      <td><button class="small-btn danger" data-deleteroom="${r.id}">Delete</button></td>
+    </tr>
+  `).join('');
+}
+
+async function saveRoomField(roomId, field, value) {
+  const patch = {};
+  patch[field] = field === 'display_order' ? (value === '' ? null : Number(value)) : (value || null);
+  const { error } = await state.sb.from('rooms').update(patch).eq('id', roomId);
+  if (error) { toast('Could not save: ' + error.message, true); return; }
+  const room = state.data.rooms.find(r => r.id === Number(roomId));
+  if (room) room[field] = patch[field];
+  toast('Saved.');
+}
+
+async function deleteRoom(roomId) {
+  if (!confirm('Delete this room from the registry? It will reappear as "needs review" if it shows up in a future Master Scheduler upload.')) return;
+  const { error } = await state.sb.from('rooms').delete().eq('id', roomId);
+  if (error) { toast('Could not delete: ' + error.message, true); return; }
+  state.data.rooms = state.data.rooms.filter(r => r.id !== Number(roomId));
+  renderAdminRooms();
+  toast('Room deleted.');
+}
+
+// ── ADMIN: AVAILABILITY OVERRIDES ───────────────────────────────────────────────
+function renderAdminOverrides() {
+  const tbody = document.getElementById('admin-overrides-body');
+  const ignored = new Map(state.data.overrides.map(o => [`${o.first_name}|${o.last_name}|${o.day}`, o]));
+
+  let rows = state.data.availability.map(a => ({
+    ...a,
+    span: timeToMins(a.end_time) - timeToMins(a.start_time),
+    ignoreKey: `${a.first_name}|${a.last_name}|${a.day}`,
+  }));
+
+  if (state.admin.ovSort === 'span') rows.sort((a, b) => b.span - a.span);
+  else rows.sort((a, b) => `${a.last_name}${a.first_name}`.localeCompare(`${b.last_name}${b.first_name}`) || RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day));
+
+  tbody.innerHTML = rows.map(a => {
+    const isIgnored = ignored.has(a.ignoreKey);
+    return `<tr class="${isIgnored ? 'ignored-row' : ''}">
+      <td>${escHtml(a.first_name)} ${escHtml(a.last_name)}</td>
+      <td>${RS_DAYS_FULL[a.day] || escHtml(a.day)}</td>
+      <td class="td-time">${fmtTime(a.start_time)}–${fmtTime(a.end_time)}</td>
+      <td>${(a.span / 60).toFixed(1)} hrs</td>
+      <td>${isIgnored
+        ? `<button class="small-btn" data-unignore="${escHtml(a.first_name)}|${escHtml(a.last_name)}|${escHtml(a.day)}">Un-ignore</button>`
+        : `<button class="small-btn danger" data-ignore="${escHtml(a.first_name)}|${escHtml(a.last_name)}|${escHtml(a.day)}">Ignore</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function ignoreAvailability(first, last, day) {
+  const { error } = await state.sb.from('availability_overrides')
+    .upsert({ first_name: first, last_name: last, day, created_by: state.session.user.id }, { onConflict: 'first_name,last_name,day' });
+  if (error) { toast('Could not save override: ' + error.message, true); return; }
+  const { data } = await state.sb.from('availability_overrides').select('*');
+  state.data.overrides = data || [];
+  renderAdminOverrides();
+  toast('Marked as ignored.');
+}
+
+async function unignoreAvailability(first, last, day) {
+  const { error } = await state.sb.from('availability_overrides').delete()
+    .match({ first_name: first, last_name: last, day });
+  if (error) { toast('Could not remove override: ' + error.message, true); return; }
+  state.data.overrides = state.data.overrides.filter(o => !(o.first_name === first && o.last_name === last && o.day === day));
+  renderAdminOverrides();
+  toast('Override removed.');
+}
+
+function renderAdmin() {
+  renderAdminRooms();
+  renderAdminOverrides();
+}
+
+// ── VIEW / MODE SWITCHING ────────────────────────────────────────────────────────
+// Richmond always sorts first and is the default site — everything else follows alphabetically.
+function sortSitesRichmondFirst(sites) {
+  return [...sites].sort((a, b) => (a === 'Richmond' ? -1 : b === 'Richmond' ? 1 : a.localeCompare(b)));
+}
+
+function initRoomScheduleState() {
+  const sites = sortSitesRichmondFirst([...new Set(state.data.events.map(e => siteToBranch(e.site)))]);
+  state.rs.sites = sites;
+  state.rs.activeSite = sites.includes('Richmond') ? 'Richmond' : (sites[0] || '');
+  const days = RS_DAYS_ORDER.filter(d => state.data.events.some(e => siteToBranch(e.site) === state.rs.activeSite && e.day === d));
+  state.rs.activeDay = days[0] || '';
+}
+
 function setAppMode(mode) {
   state.appMode = mode;
-  localStorage.setItem(LS_LAST_VIEW, mode);
-  document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === mode));
-  document.getElementById('lf-view').classList.toggle('active', mode === 'lessonFinder');
-  document.getElementById('rs-view').classList.toggle('active', mode === 'roomSchedule');
-  document.getElementById('as-view').classList.toggle('active', mode === 'assignments');
-  if (mode === 'lessonFinder') onLFViewActivated();
-  if (mode === 'roomSchedule') onRSViewActivated();
-  if (mode === 'assignments') onASViewActivated();
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  if (mode === 'lessonFinder') { document.getElementById('lf-view').classList.add('active'); renderLessonFinder(); }
+  if (mode === 'roomSchedule') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
+  if (mode === 'upload') { document.getElementById('upload-view').classList.add('active'); renderAdminUpload(); }
+  if (mode === 'admin') { document.getElementById('admin-view').classList.add('active'); renderAdmin(); }
 }
 
-function onLFViewActivated() {
-  buildChipSidebar();
-  renderTable();
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg || 'Loading…';
+  document.getElementById('loading-overlay').classList.add('visible');
+}
+function hideLoading() { document.getElementById('loading-overlay').classList.remove('visible'); }
+
+function showLoginScreen() {
+  hideLoading();
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('main-content').style.visibility = 'visible';
+}
+function showApp() {
+  hideLoading();
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-content').style.visibility = 'visible';
+  setAppMode('lessonFinder');
 }
 
-function onRSViewActivated() {
-  renderSiteTabs();
-  renderDayTabs();
-  renderGrid();
-}
+// ── EVENT LISTENERS ──────────────────────────────────────────────────────────────
+let loginMode = 'signin';
+document.getElementById('login-toggle-btn').addEventListener('click', () => {
+  loginMode = loginMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('login-title').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('login-submit-btn').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('login-toggle-btn').textContent = loginMode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in';
+  document.getElementById('login-error').classList.remove('visible');
+  document.getElementById('login-info').classList.remove('visible');
+});
 
-function onASViewActivated() {
-  renderAssignmentsTable();
-}
+document.getElementById('login-submit-btn').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const infoEl = document.getElementById('login-info');
+  errEl.classList.remove('visible');
+  infoEl.classList.remove('visible');
+  if (!email || !password) { errEl.textContent = 'Email and password are required.'; errEl.classList.add('visible'); return; }
 
-function renderAssignmentsTable() {
-  const tbody   = document.getElementById('as-tbody');
-  const emptyEl = document.getElementById('as-empty');
-  if (!tbody) return;
+  showLoading(loginMode === 'signin' ? 'Signing in…' : 'Creating account…');
+  const fn = loginMode === 'signin' ? 'signInWithPassword' : 'signUp';
+  const { data, error } = await state.sb.auth[fn]({ email, password });
+  hideLoading();
 
-  const query      = state.as.search.toLowerCase().trim();
-  const siteFilter = state.as.siteFilter;
+  if (error) { errEl.textContent = error.message; errEl.classList.add('visible'); return; }
 
-  // Filter
-  let rows = state.rs.availWindows.filter(w => {
-    if (siteFilter && w.site !== siteFilter) return false;
-    if (query && !w.instructor.toLowerCase().includes(query)) return false;
-    return true;
-  });
-
-  // Sort: site → instructor → day (Mon-Sun order)
-  rows.sort((a, b) => {
-    const siteCmp = (a.site || '').localeCompare(b.site || '');
-    if (siteCmp !== 0) return siteCmp;
-    const instrCmp = a.instructor.localeCompare(b.instructor);
-    if (instrCmp !== 0) return instrCmp;
-    return RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day);
-  });
-
-  if (rows.length === 0) {
-    tbody.innerHTML = '';
-    emptyEl.classList.add('visible');
+  if (loginMode === 'signup' && !data.session) {
+    infoEl.textContent = 'Account created. Check your email to confirm, then sign in.';
+    infoEl.classList.add('visible');
+    loginMode = 'signin';
+    document.getElementById('login-title').textContent = 'Sign In';
+    document.getElementById('login-submit-btn').textContent = 'Sign In';
     return;
   }
-  emptyEl.classList.remove('visible');
 
-  tbody.innerHTML = rows.map(w => `
-    <tr>
-      <td class="td-instructor">${escHtml(w.instructor)}</td>
-      <td>${escHtml(AS_DAY_FULL[w.day] || w.day)}</td>
-      <td class="td-mono">${escHtml(w.from)}</td>
-      <td class="td-mono">${escHtml(w.to)}</td>
-      <td>${escHtml(w.facility)}</td>
-      <td class="td-mono">${escHtml(w.site)}</td>
-    </tr>`).join('');
-}
+  state.session = data.session;
+  await afterLogin();
+});
 
-function switchLFTab(tab) {
-  state.lf.activeTab = tab;
-  document.querySelectorAll('#lf-tab-bar .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.lf-panel').forEach(p => {
-    p.style.display = p.id === `lf-panel-${tab}` ? '' : 'none';
-  });
-}
+document.getElementById('signout-btn').addEventListener('click', async () => {
+  await state.sb.auth.signOut();
+  location.reload();
+});
 
-// ── SHOW / HIDE APP SCREENS ────────────────────────────────────────────────────
-function showApp(statusMsg) {
-  state.appReady = true;
-  document.getElementById('setup-screen').classList.add('hidden');
-  document.getElementById('lf-search').disabled = false;
-  document.getElementById('refresh-btn').disabled = false;
-  document.getElementById('status-line').textContent = statusMsg || 'Loaded';
-  setAppMode(state.appMode);
-}
-
-function showSetup(errorMsg) {
-  document.getElementById('setup-screen').classList.remove('hidden');
-  document.getElementById('refresh-btn').disabled = true;
-  if (errorMsg) {
-    const errEl = document.getElementById('url-error');
-    errEl.textContent = errorMsg;
-    errEl.classList.add('visible');
-  }
-}
-
-// ── EVENT LISTENERS ────────────────────────────────────────────────────────────
-
-// View switcher
 document.querySelectorAll('.view-btn').forEach(btn => {
   btn.addEventListener('click', () => setAppMode(btn.dataset.view));
 });
 
-// Assignments search
-document.getElementById('as-search').addEventListener('input', e => {
-  state.as.search = e.target.value;
-  renderAssignmentsTable();
+document.getElementById('lf-tab-bar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  state.lf.activeTab = btn.dataset.tab;
+  document.querySelectorAll('#lf-tab-bar .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+  document.getElementById('lf-panel-availability').style.display = state.lf.activeTab === 'availability' ? '' : 'none';
+  document.getElementById('lf-panel-teachers').style.display = state.lf.activeTab === 'teachers' ? '' : 'none';
+  if (state.lf.activeTab === 'teachers') renderTeachers();
 });
 
-// Assignments site filter (event delegation)
-document.querySelector('.as-site-filter').addEventListener('click', e => {
-  const chip = e.target.closest('.as-site-chip');
-  if (!chip) return;
-  state.as.siteFilter = chip.dataset.site;
-  document.querySelectorAll('.as-site-chip').forEach(c => c.classList.toggle('active', c === chip));
-  renderAssignmentsTable();
-});
-
-// LF tab bar
-document.querySelectorAll('#lf-tab-bar .tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => switchLFTab(btn.dataset.tab));
-});
-
-// LF instructor select (event delegation via change on the chip-filters container)
-document.getElementById('lf-chip-filters').addEventListener('change', e => {
-  if (e.target.id !== 'lf-instructor-select') return;
-  state.lf.filters.instructor.clear();
-  if (e.target.value) state.lf.filters.instructor.add(e.target.value);
-  renderTable();
-  updateChipSidebar();
-});
-
-// LF chip filter sidebar (event delegation)
-document.getElementById('lf-chip-filters').addEventListener('click', e => {
-  const chip = e.target.closest('.filter-chip');
-  if (chip) {
-    const key = chip.dataset.key;
-    const val = key === 'duration' ? parseInt(chip.dataset.value) : chip.dataset.value;
-    if (state.lf.filters[key].has(val)) state.lf.filters[key].delete(val);
-    else state.lf.filters[key].add(val);
-    renderTable();
-    updateChipSidebar();
+document.getElementById('lf-chip-filters').addEventListener('click', (e) => {
+  const showMore = e.target.closest('[data-showmore]');
+  if (showMore) {
+    const key = showMore.dataset.showmore;
+    state.lf.chipShowAll[key] = !state.lf.chipShowAll[key];
+    buildChipSidebar();
     return;
   }
-  const more = e.target.closest('.chip-show-more');
-  if (more) {
-    state.lf.chipShowAll[more.dataset.key] = true;
-    updateChipSidebar();
-  }
+  const chip = e.target.closest('.filter-chip[data-key]');
+  if (!chip) return;
+  const { key, val } = chip.dataset;
+  const set = state.lf.filters[key];
+  if (set.has(val)) set.delete(val); else set.add(val);
+  renderLessonFinder();
 });
 
-// LF branch chips
-document.querySelector('.branch-filter-chips').addEventListener('click', e => {
-  const btn = e.target.closest('.branch-filter-chip');
-  if (!btn) return;
-  const branch = btn.dataset.branch;
-  if (state.lf.filterBranches.has(branch)) { state.lf.filterBranches.delete(branch); btn.classList.remove('active'); }
-  else { state.lf.filterBranches.add(branch); btn.classList.add('active'); }
-  renderTable();
-  updateChipSidebar();
+document.getElementById('lf-branch-chips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.branch-filter-chip');
+  if (!chip) return;
+  const b = chip.dataset.branch;
+  if (state.lf.filterBranches.has(b)) state.lf.filterBranches.delete(b); else state.lf.filterBranches.add(b);
+  renderLessonFinder();
 });
 
-// LF student age
-document.getElementById('lf-age-input').addEventListener('input', e => {
-  state.lf.filterStudentAge = e.target.value;
-  document.getElementById('lf-age-clear').classList.toggle('visible', state.lf.filterStudentAge !== '');
-  renderTable();
-  updateChipSidebar();
-});
-document.getElementById('lf-age-clear').addEventListener('click', () => {
-  state.lf.filterStudentAge = '';
-  document.getElementById('lf-age-input').value = '';
-  document.getElementById('lf-age-clear').classList.remove('visible');
-  renderTable();
-  updateChipSidebar();
-});
-
-// LF reset
 document.getElementById('lf-reset-btn').addEventListener('click', () => {
   state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
-  state.lf.filterBranches   = new Set();
-  state.lf.filterStudentAge = '';
-  Object.keys(state.lf.chipShowAll).forEach(k => { state.lf.chipShowAll[k] = false; });
-  const instrSel = document.getElementById('lf-instructor-select');
-  if (instrSel) instrSel.value = '';
-  document.getElementById('lf-age-input').value = '';
-  document.getElementById('lf-age-clear').classList.remove('visible');
-  document.querySelectorAll('.branch-filter-chip').forEach(b => b.classList.remove('active'));
-  renderTable();
-  updateChipSidebar();
+  state.lf.filterBranches = new Set();
+  renderLessonFinder();
 });
 
-// LF view mode toggle
-document.querySelector('.viewmode-group').addEventListener('click', e => {
-  const btn = e.target.closest('.viewmode-btn');
-  if (!btn) return;
-  state.lf.viewMode = btn.dataset.viewmode;
-  document.querySelectorAll('.viewmode-btn').forEach(b => b.classList.toggle('active', b === btn));
-  renderTable();
+document.querySelectorAll('.sort-group .sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.lf.sortBy = btn.dataset.sort;
+    document.querySelectorAll('.sort-group .sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderLFTable();
+  });
 });
 
-// LF sort group buttons
-document.querySelector('.sort-group').addEventListener('click', e => {
-  const btn = e.target.closest('.sort-btn');
-  if (!btn) return;
-  state.lf.sortBy = btn.dataset.sort;
-  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
-  renderTable();
+document.getElementById('lf-table-body').addEventListener('change', (e) => {
+  const cb = e.target.closest('.lf-row-check');
+  if (!cb) return;
+  const key = cb.dataset.rowkey;
+  if (cb.checked) state.lf.selected.add(key); else state.lf.selected.delete(key);
+  updateCopyButton(lfGetFiltered());
 });
 
-// LF active filter chip removal
-document.getElementById('lf-active-filters').addEventListener('click', e => {
-  const chip = e.target.closest('.active-chip');
-  if (!chip) return;
-  const { key, value } = chip.dataset;
-  if (key === 'branch') {
-    state.lf.filterBranches.delete(value);
-    document.querySelector(`.branch-filter-chip[data-branch="${CSS.escape(value)}"]`)?.classList.remove('active');
-  } else if (key === 'studentAge') {
-    state.lf.filterStudentAge = '';
-    document.getElementById('lf-age-input').value = '';
-    document.getElementById('lf-age-clear').classList.remove('visible');
-  } else {
-    const v = key === 'duration' ? parseInt(value) : value;
-    state.lf.filters[key].delete(v);
-  }
-  renderTable();
-  updateChipSidebar();
+document.getElementById('lf-select-all').addEventListener('change', (e) => {
+  const rows = lfGetFiltered();
+  if (e.target.checked) rows.forEach(r => state.lf.selected.add(rowKey(r)));
+  else rows.forEach(r => state.lf.selected.delete(rowKey(r)));
+  renderLFTable();
 });
 
-// LF search
-document.getElementById('lf-search').addEventListener('input', e => buildSearchDropdown(e.target.value));
-document.getElementById('lf-search').addEventListener('keydown', e => {
-  const dd    = document.getElementById('search-dropdown');
-  const items = [...dd.querySelectorAll('.sd-item:not(.already-active)')];
-  if (!dd.classList.contains('open') || !items.length) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    lfDdHighlight = Math.min(lfDdHighlight + 1, items.length - 1);
-    items.forEach((el, i) => el.classList.toggle('highlighted', i === lfDdHighlight));
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    lfDdHighlight = Math.max(lfDdHighlight - 1, 0);
-    items.forEach((el, i) => el.classList.toggle('highlighted', i === lfDdHighlight));
-  } else if (e.key === 'Enter' && lfDdHighlight >= 0) {
-    const el = items[lfDdHighlight];
-    selectSearchItem(el.dataset.key, el.dataset.value);
-  } else if (e.key === 'Escape') {
-    dd.classList.remove('open');
-  }
+document.getElementById('lf-copy-btn').addEventListener('click', copySelectedForEmail);
+
+function setSidebarOpen(open) {
+  document.getElementById('lf-sidebar').classList.toggle('sidebar-open', open);
+  document.getElementById('lf-sidebar-scrim').classList.toggle('visible', open);
+  document.getElementById('lf-sidebar-toggle').classList.toggle('sidebar-open', open);
+}
+document.getElementById('lf-sidebar-toggle').addEventListener('click', () => {
+  setSidebarOpen(!document.getElementById('lf-sidebar').classList.contains('sidebar-open'));
 });
-document.getElementById('search-dropdown').addEventListener('click', e => {
-  const item = e.target.closest('.sd-item');
-  if (item && !item.classList.contains('already-active')) selectSearchItem(item.dataset.key, item.dataset.value);
-});
-document.addEventListener('click', e => {
-  if (!document.getElementById('lf-search-wrap').contains(e.target))
-    document.getElementById('search-dropdown').classList.remove('open');
+document.getElementById('lf-sidebar-scrim').addEventListener('click', () => setSidebarOpen(false));
+document.getElementById('lf-sidebar').addEventListener('click', (e) => {
+  if (e.target.closest('.filter-chip, .branch-filter-chip, .lf-reset-btn')) setSidebarOpen(false);
 });
 
-// Connect button (setup screen)
-document.getElementById('connect-btn').addEventListener('click', async () => {
-  const lessonUrl   = document.getElementById('lesson-url-input').value.trim();
-  const roomUrl     = document.getElementById('room-url-input').value.trim();
-  const teachersUrl = document.getElementById('teachers-url-input').value.trim();
-  const errEl   = document.getElementById('url-error');
-  const inputEl = document.getElementById('lesson-url-input');
-
-  errEl.classList.remove('visible');
-  inputEl.classList.remove('error');
-
-  if (!lessonUrl) {
-    errEl.textContent = 'Please enter the Lesson Finder URL.';
-    errEl.classList.add('visible');
-    inputEl.classList.add('error');
-    return;
-  }
-  if (!isGoogleSheetUrl(lessonUrl)) {
-    errEl.textContent = "That doesn't look like a Google Sheets URL.";
-    errEl.classList.add('visible');
-    inputEl.classList.add('error');
-    return;
-  }
-
-  const urls = { lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null };
-  const btn  = document.getElementById('connect-btn');
-  btn.disabled = true;
-  const result = await loadAllData(urls);
-  btn.disabled = false;
-
-  if (result === true) {
-    const now = new Date();
-    showApp(`Connected ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
-  } else {
-    const msg = result.message || '';
-    let hint = '';
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('CORS')) {
-      hint = 'Network error — the sheet URL could not be reached. Open the URL in a new browser tab to check it works.';
-    } else if (msg.includes('HTTP')) {
-      hint = `Server error (${msg}) — the sheet may not be published. Go to File → Share → Publish to web in Google Sheets.`;
-    } else {
-      hint = `Error: ${msg}. Open the URL in a new tab — if it downloads a CSV, try again. If not, re-publish the sheet.`;
-    }
-    errEl.textContent = hint;
-    errEl.classList.add('visible');
-    inputEl.classList.add('error');
-  }
-});
-
-// Settings (gear) button
-document.getElementById('settings-btn').addEventListener('click', () => {
-  // Pre-fill inputs from current loaded URLs, falling back to whatever's already in the fields
-  if (state.sheetUrls.lessonUrl)   document.getElementById('lesson-url-input').value   = state.sheetUrls.lessonUrl;
-  if (state.sheetUrls.roomUrl)     document.getElementById('room-url-input').value     = state.sheetUrls.roomUrl;
-  if (state.sheetUrls.teachersUrl) document.getElementById('teachers-url-input').value = state.sheetUrls.teachersUrl;
-  document.getElementById('url-error').classList.remove('visible');
-  document.getElementById('cancel-setup-btn').classList.toggle('hidden', !state.appReady);
-  document.getElementById('setup-screen').classList.remove('hidden');
-});
-
-// Cancel button (only visible when app has already loaded data)
-document.getElementById('cancel-setup-btn').addEventListener('click', () => {
-  document.getElementById('setup-screen').classList.add('hidden');
-});
-
-// Refresh button
-document.getElementById('refresh-btn').addEventListener('click', async () => {
-  if (!state.sheetUrls.lessonUrl) return;
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true;
-  btn.classList.add('spinning');
-  const result = await loadAllData(state.sheetUrls);
-  btn.disabled = false;
-  btn.classList.remove('spinning');
-  if (result === true) {
-    const now = new Date();
-    document.getElementById('status-line').textContent =
-      `Refreshed ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    setAppMode(state.appMode);
-  } else {
-    alert('Refresh failed: ' + result.message);
-  }
-});
-
-// RS site tabs (event delegation)
-document.getElementById('rs-site-tabs').addEventListener('click', e => {
+document.getElementById('rs-site-tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('.rs-site-tab');
   if (!btn) return;
   state.rs.activeSite = btn.dataset.site;
-  localStorage.setItem(LS_LAST_SITE, state.rs.activeSite);
-  const daysForSite = RS_DAYS_ORDER.filter(d => state.rs.events.some(ev => ev.site === state.rs.activeSite && ev.day === d));
-  state.rs.activeDay = daysForSite[0] || '';
-  renderSiteTabs();
-  renderDayTabs();
-  renderGrid();
+  const days = RS_DAYS_ORDER.filter(d => state.data.events.some(ev => siteToBranch(ev.site) === state.rs.activeSite && ev.day === d));
+  state.rs.activeDay = days[0] || '';
+  renderRoomSchedule();
 });
 
-// RS day tabs (event delegation)
-document.getElementById('rs-day-tabs').addEventListener('click', e => {
+document.getElementById('rs-day-tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('.rs-day-tab');
   if (!btn) return;
   state.rs.activeDay = btn.dataset.day;
   renderDayTabs();
-  renderGrid();
+  renderRSGrid();
 });
 
-// RS print button
-document.getElementById('rs-print-btn').addEventListener('click', rsPrintAllDays);
+document.getElementById('rs-print-11x17-btn').addEventListener('click', rsPrint);
 
-// RS tooltip via event delegation on grid wrapper
-let _rsTtTarget = null;
-const _rsTt    = document.getElementById('rs-tooltip');
-const _rsTtTit = document.getElementById('rs-tt-title');
-const _rsTtBod = document.getElementById('rs-tt-body');
-
-document.getElementById('rs-grid-wrap').addEventListener('mouseover', e => {
-  const ev = e.target.closest('.rs-event');
-  if (ev && ev !== _rsTtTarget) {
-    _rsTtTarget = ev;
-    const d = ev.dataset;
-    _rsTtTit.textContent = d.item;
-    const lines = [
-      `${d.from}–${d.to}`,
-      d.instructor,
-      d.student ? `Student: ${d.student}` : '',
-      d.facility,
-      d.type === 'CLASS' || d.type === 'GROUP' ? 'Class (group)' : 'Private lesson',
-      d.conflict === 'true' ? '⚠ Scheduling conflict' : '',
-    ].filter(Boolean);
-    _rsTtBod.innerHTML = lines.map(l => escHtml(l)).join('<br>');
-    _rsTt.style.display = 'block';
-  } else if (!ev) {
-    _rsTt.style.display = 'none';
-    _rsTtTarget = null;
-  }
+document.getElementById('rs-grid-wrap').addEventListener('mousemove', (e) => {
+  const el = e.target.closest('.rs-event[data-item]');
+  const tooltip = document.getElementById('rs-tooltip');
+  if (!el) { tooltip.style.display = 'none'; return; }
+  document.getElementById('rs-tt-title').textContent = el.dataset.item;
+  const lines = [];
+  lines.push(`${el.dataset.instructor}`);
+  if (el.dataset.student) lines.push(`Student: ${el.dataset.student}`);
+  lines.push(`${el.dataset.from}–${el.dataset.to}`);
+  lines.push(el.dataset.facility);
+  if (el.dataset.conflict === 'true') lines.push('⚠ Double-booked');
+  document.getElementById('rs-tt-body').innerHTML = lines.map(escHtml).join('<br>');
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY + 14) + 'px';
 });
-
-document.getElementById('rs-grid-wrap').addEventListener('mousemove', e => {
-  if (_rsTt.style.display !== 'block') return;
-  const x = e.clientX + 14, y = e.clientY + 14;
-  const w = _rsTt.offsetWidth  || 200;
-  const h = _rsTt.offsetHeight || 80;
-  _rsTt.style.left = (x + w > window.innerWidth  ? e.clientX - w - 10 : x) + 'px';
-  _rsTt.style.top  = (y + h > window.innerHeight ? e.clientY - h - 10 : y) + 'px';
-});
-
 document.getElementById('rs-grid-wrap').addEventListener('mouseleave', () => {
-  _rsTt.style.display = 'none';
-  _rsTtTarget = null;
+  document.getElementById('rs-tooltip').style.display = 'none';
 });
 
-// ── MOBILE SIDEBAR TOGGLES ──────────────────────────────────────────────────────
-document.getElementById('lf-sidebar-toggle').addEventListener('click', () => {
-  const s = document.getElementById('lf-sidebar');
-  const scrim = document.getElementById('lf-sidebar-scrim');
-  const btn = document.getElementById('lf-sidebar-toggle');
-  const open = s.classList.toggle('sidebar-open');
-  scrim.classList.toggle('visible', open);
-  btn.classList.toggle('sidebar-open', open);
-});
-document.getElementById('lf-sidebar-scrim').addEventListener('click', () => {
-  ['lf-sidebar','lf-sidebar-scrim','lf-sidebar-toggle'].forEach(id =>
-    document.getElementById(id).classList.remove('sidebar-open', 'visible'));
+document.getElementById('admin-tab-bar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  state.admin.activeTab = btn.dataset.admintab;
+  document.querySelectorAll('#admin-tab-bar .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+  ['rooms', 'overrides'].forEach(t => {
+    document.getElementById(`admin-panel-${t}`).style.display = t === state.admin.activeTab ? '' : 'none';
+  });
 });
 
-// ── TEACHERS COLLAPSIBLE (setup card) ──────────────────────────────────────────
-let _teachersRendered = false;
-document.getElementById('teachers-toggle-btn').addEventListener('click', () => {
-  const body = document.getElementById('teachers-section-body');
-  const open = body.style.display === 'none';
-  body.style.display = open ? '' : 'none';
-  if (open && !_teachersRendered && state.appReady) {
-    renderTeachers();
-    _teachersRendered = true;
-  }
+document.querySelectorAll('.upload-card').forEach(card => {
+  const fileInput = card.querySelector('[data-fileinput]');
+  const btn = card.querySelector('[data-uploadbtn]');
+  fileInput.addEventListener('change', () => { btn.disabled = !fileInput.files[0]; });
+  btn.addEventListener('click', () => handleUpload(card));
 });
 
-// ── INIT ───────────────────────────────────────────────────────────────────────
-(function init() {
-  // Restore last-used view
-  const savedView = localStorage.getItem(LS_LAST_VIEW);
-  if (['lessonFinder','roomSchedule','assignments'].includes(savedView)) state.appMode = savedView;
+document.getElementById('admin-rooms-body').addEventListener('change', (e) => {
+  const field = e.target.dataset.field;
+  if (!field) return;
+  const roomId = e.target.closest('tr').dataset.roomid;
+  saveRoomField(roomId, field, e.target.value);
+});
+document.getElementById('admin-rooms-body').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-deleteroom]');
+  if (!btn) return;
+  deleteRoom(btn.dataset.deleteroom);
+});
 
-  // URLs are hardcoded — clear any stale localStorage values from old sessions
-  localStorage.removeItem('sfcmcLessonUrl');
-  localStorage.removeItem('sfcmcRoomUrl');
-  localStorage.removeItem('sfcmcTeachersUrl');
-  const lessonUrl   = DEFAULT_LESSON_URL;
-  const roomUrl     = DEFAULT_ROOM_URL;
-  const teachersUrl = DEFAULT_TEACHERS_URL;
-  const availUrl    = DEFAULT_AVAIL_URL;
+document.getElementById('ov-sort-select').addEventListener('change', (e) => {
+  state.admin.ovSort = e.target.value;
+  renderAdminOverrides();
+});
+document.getElementById('admin-overrides-body').addEventListener('click', (e) => {
+  const ignoreBtn = e.target.closest('[data-ignore]');
+  const unignoreBtn = e.target.closest('[data-unignore]');
+  if (ignoreBtn) { const [f, l, d] = ignoreBtn.dataset.ignore.split('|'); ignoreAvailability(f, l, d); }
+  if (unignoreBtn) { const [f, l, d] = unignoreBtn.dataset.unignore.split('|'); unignoreAvailability(f, l, d); }
+});
 
-  // Pre-fill setup form with whatever is saved
-  document.getElementById('lesson-url-input').value   = lessonUrl;
-  document.getElementById('room-url-input').value     = roomUrl;
-  document.getElementById('teachers-url-input').value = teachersUrl;
-
-  if (!lessonUrl) {
-    showSetup();
-    return;
-  }
-
-  loadAllData({ lessonUrl, roomUrl: roomUrl || null, teachersUrl: teachersUrl || null, availUrl: availUrl || null })
-    .then(result => {
-      if (result === true) {
-        const now = new Date();
-        showApp(`Loaded ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
-      } else {
-        showSetup();
-        document.getElementById('lesson-url-input').classList.add('error');
-      }
-    });
-}());
+// ── INIT ─────────────────────────────────────────────────────────────────────────
+document.getElementById('main-content').style.visibility = 'hidden';
+connectAndLoad();
 </script>
 </body>
 </html>

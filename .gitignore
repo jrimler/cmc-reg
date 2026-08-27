@@ -1,0 +1,5 @@
+# ASAP report exports — contain real instructor/student names, never commit
+*.xls
+*.xlsx
+
+.DS_Store
