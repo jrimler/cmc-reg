@@ -15,13 +15,19 @@ Filters open lesson slots by instrument, day, lesson length, instructor, and bra
 Per-instructor roster — instruments taught, branches, and weekly availability — computed entirely from the latest uploaded reports. No manually-maintained fields (age minimums, notes) exist in this version.
 
 ### Room Schedule
-Visualizes booked studio time by site and day, driven by the Master Scheduler report. Richmond always sorts first and is the default site. Richmond's columns are a curated, stable set — every room tagged `physical` in Admin → Rooms always shows, even with nothing booked there that day — plus any extra room actually booked that day (e.g. a virtual studio) so a real lesson is never hidden. Day tabs show every day present in the uploaded week (Monday through Sunday) with that day's actual calendar date. Prints as 11×17 (tabloid), one page per day per branch, covering both branches and all rooms actually booked — nothing is scoped out or cut off.
+Visualizes booked studio time by site and day, driven by the Master Scheduler report. Richmond always sorts first and is the default site. Richmond's columns are a curated, stable set — every room tagged `physical` in Admin → Rooms always shows, even with nothing booked there that day — plus any extra room actually booked that day (e.g. a virtual studio) so a real lesson is never hidden. Day tabs show every day present in the uploaded week (Monday through Sunday) with that day's actual calendar date.
+
+Two Richmond-only print formats, each with an "all week" or single-day picker:
+- **17×11 (Fixed Rooms)**: every `physical`-tagged Richmond room as a column, every time, whether booked or not — the same chart prints the same way day to day.
+- **11×8.5 (Booked Only)**: just the `physical` rooms actually booked that day, so the page stays compact with no empty columns.
+
+Both scale row height and column width to the day's actual time range and room count so a full day always fits on one physical page, and both are excluded from what they don't cover — non-`physical` rooms (home/virtual studios) never appear on either print, only in the on-screen view.
 
 ### Upload (admin role only)
 Upload the three ASAP exports (Open Slots, Master Scheduler, Instructor Availability). Each upload fully replaces the current data for that report type.
 
 ### Admin (admin role only)
-- **Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from the 11×17 print. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag.
+- **Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from both Room Schedule prints. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag.
 - **Availability Overrides**: mark specific instructor/day availability rows to ignore (e.g. an unedited generic 9–5 block from ASAP). Persists across future uploads.
 
 ---
@@ -128,3 +134,8 @@ The Instructor Availability report has no room/facility column, so (unlike the o
 **2026-08-27 (5)** — A page refresh no longer drops the user back to Lesson Finder. The last-active view (Lesson Finder / Room Schedule / Upload / Admin) is saved to `localStorage` on every switch and restored on load, falling back to Lesson Finder if nothing's saved, the saved view no longer exists, or it's an admin-only view and the signed-in user isn't an admin.
 
 **2026-08-27 (6)** — Room Schedule now also remembers the last-viewed branch and day (e.g. Mission / Saturday) across a refresh, not just that you were on the Room Schedule tab. Falls back to the usual default (Richmond, first day with data) if the saved site/day no longer applies to what's currently loaded.
+
+**2026-08-27 (7)** — Reworked Room Schedule printing into two Richmond-only formats, replacing the old single "Print 11×17 (All Branches)" button:
+- **17×11 (Fixed Rooms)**: every `physical`-tagged Richmond room as a column every time, whether booked or not. **11×8.5 (Booked Only)**: just the rooms actually booked that day. Each has its own day-picker ("All week" or a specific day) next to its print button.
+- Row height and column width are now computed per page from that day's actual time range and room count (previously both were fixed constants) — a fixed 28px-per-15-minutes row height meant a long day (e.g. 9am–9pm) silently ran onto a second physical page, cutting off the tail of the schedule exactly like the Saturday bug from (3)/(4) above, just resurfacing in print layout instead of data loading. Caught this by rendering actual PDFs at the target paper size in a headless browser and inspecting them, not just checking the generated HTML.
+- Also fixed two real bugs found the same way: `.rs-room-col-head`'s centered text was clipping symmetrically from both edges instead of ellipsizing from the end when a room label didn't fit a narrow column (now left-aligned for print); and the `@page` rules' `<explicit size> landscape` syntax wasn't reliably rotating in Chromium's PDF engine, so pages are now declared already-rotated (`17in 11in` / `11in 8.5in`) instead of relying on the `landscape` keyword.
