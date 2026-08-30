@@ -283,6 +283,10 @@ body {
 .dd-scroll { flex: 1; overflow: auto; min-height: 0; padding: 20px 28px; }
 .dd-table { width: 100%; border-collapse: collapse; }
 .dd-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 12px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+.dd-table thead th.dd-sortable { cursor: pointer; user-select: none; }
+.dd-table thead th.dd-sortable:hover { color: var(--ink); }
+.dd-table thead th.dd-sort-active { color: var(--teal); }
+.dd-sort-arrow { margin-left: 4px; }
 .dd-table tbody tr { border-bottom: 1px solid var(--rule); }
 .dd-table tbody tr:hover { background: var(--paper-dark); }
 .dd-table tbody td { padding: 11px 12px; vertical-align: top; }
@@ -563,7 +567,11 @@ body {
     </div>
     <div class="dd-scroll">
       <table class="dd-table">
-        <thead><tr><th>Teacher</th><th>Room(s)</th><th>Schedule</th></tr></thead>
+        <thead><tr id="dd-thead-row">
+          <th class="dd-sortable" data-sort="teacher"><span class="dd-th-label">Teacher</span><span class="dd-sort-arrow"></span></th>
+          <th class="dd-sortable" data-sort="room"><span class="dd-th-label">Room(s)</span><span class="dd-sort-arrow"></span></th>
+          <th class="dd-sortable" data-sort="schedule"><span class="dd-th-label">Schedule</span><span class="dd-sort-arrow"></span></th>
+        </tr></thead>
         <tbody id="dd-tbody"></tbody>
       </table>
       <div id="dd-empty" class="dd-empty">Nothing booked in a Richmond room for this day.</div>
@@ -684,6 +692,8 @@ const state = {
   dd: {
     days: [],
     activeDay: '',
+    sortBy: 'teacher',
+    sortDir: 'asc',
   },
 };
 
@@ -1618,6 +1628,26 @@ function ddTeachersForDay(day) {
   return teachers;
 }
 
+// Re-sorts a copy per the on-screen sort column/direction the user picked by
+// clicking a header — independent of ddTeachersForDay's own base order
+// (alphabetical by last name), which print always uses regardless.
+const DD_SORT_KEYS = {
+  teacher: (t) => t.lastName + '|' + t.name,
+  room: (t) => t.rooms[0] || '',
+  schedule: (t) => t.start,
+};
+function ddSortedTeachers(day) {
+  const teachers = ddTeachersForDay(day).slice();
+  const keyFn = DD_SORT_KEYS[state.dd.sortBy] || DD_SORT_KEYS.teacher;
+  const dir = state.dd.sortDir === 'desc' ? -1 : 1;
+  teachers.sort((a, b) => {
+    const ka = keyFn(a), kb = keyFn(b);
+    const cmp = typeof ka === 'number' ? ka - kb : String(ka).localeCompare(String(kb));
+    return cmp * dir;
+  });
+  return teachers;
+}
+
 function ddFmtRooms(rooms) {
   return rooms.map(r => `<span class="dd-room-tag">${escHtml(r)}</span>`).join('');
 }
@@ -1646,11 +1676,23 @@ function renderDigestDayTabs() {
   }).join('');
 }
 
+// Updates each header's arrow/active state to reflect state.dd.sortBy/sortDir
+// — doesn't touch the header labels themselves, so it's safe to call on
+// every render without re-wiring click listeners.
+function renderDigestHeader() {
+  document.querySelectorAll('#dd-thead-row .dd-sortable').forEach(th => {
+    const isActive = th.dataset.sort === state.dd.sortBy;
+    th.classList.toggle('dd-sort-active', isActive);
+    th.querySelector('.dd-sort-arrow').textContent = isActive ? (state.dd.sortDir === 'desc' ? '▼' : '▲') : '';
+  });
+}
+
 function renderDigestBody() {
   const tbody = document.getElementById('dd-tbody');
   const empty = document.getElementById('dd-empty');
+  renderDigestHeader();
   if (!state.dd.activeDay) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
-  const teachers = ddTeachersForDay(state.dd.activeDay);
+  const teachers = ddSortedTeachers(state.dd.activeDay);
   if (!teachers.length) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
   empty.classList.remove('visible');
   tbody.innerHTML = teachers.map(t => `
@@ -2049,6 +2091,15 @@ document.getElementById('dd-day-tabs').addEventListener('click', (e) => {
 });
 
 document.getElementById('dd-print-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-day').value));
+
+document.getElementById('dd-thead-row').addEventListener('click', (e) => {
+  const th = e.target.closest('.dd-sortable');
+  if (!th) return;
+  const key = th.dataset.sort;
+  if (state.dd.sortBy === key) state.dd.sortDir = state.dd.sortDir === 'asc' ? 'desc' : 'asc';
+  else { state.dd.sortBy = key; state.dd.sortDir = 'asc'; }
+  renderDigestBody();
+});
 
 document.getElementById('rs-grid-wrap').addEventListener('mousemove', (e) => {
   const el = e.target.closest('.rs-event[data-item]');
