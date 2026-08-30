@@ -287,13 +287,10 @@ body {
 .dd-table tbody tr:hover { background: var(--paper-dark); }
 .dd-table tbody td { padding: 11px 12px; vertical-align: top; }
 .dd-table td:first-child { width: 1%; white-space: nowrap; }
-.dd-tname { font-family: 'DM Serif Display', serif; font-size: 15px; }
-.dd-booking-line { display: flex; align-items: baseline; gap: 8px; font-family: 'DM Mono', monospace; font-size: 11.5px; }
-.dd-booking-line + .dd-booking-line { margin-top: 5px; }
-.dd-booking-room { font-weight: 500; color: var(--ink); min-width: 76px; flex-shrink: 0; }
-.dd-booking-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
-.dd-booking-item { color: var(--ink); font-family: 'DM Sans', sans-serif; }
-.dd-class-tag { font-family: 'DM Mono', monospace; font-size: 8.5px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; border-radius: 2px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.dd-table td:last-child { width: 1%; white-space: nowrap; }
+.dd-tname { font-family: 'DM Serif Display', serif; font-size: 16px; }
+.dd-room-tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 12.5px; font-weight: 500; letter-spacing: 0.02em; background: var(--teal-soft); color: var(--teal); border: 1.5px solid #b8d4e8; border-radius: 4px; padding: 4px 10px; margin: 2px 5px 2px 0; }
+.dd-span { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--ink); }
 .dd-empty { display: none; text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13px; }
 .dd-empty.visible { display: block; }
 
@@ -382,12 +379,11 @@ body {
   .dd-print-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
   .dd-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
   .dd-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
-  .dd-print-colheads { display: grid; grid-template-columns: 1.1fr 3.7fr; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
-  .dd-print-row { display: grid; grid-template-columns: 1.1fr 3.7fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
-  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 12.5px; }
-  .dd-print-page .dd-booking-line { font-size: 9.5px; }
-  .dd-print-page .dd-booking-room { min-width: 58px; }
-  .dd-print-page .dd-class-tag { background: none; border: 1px solid #333; color: #333; }
+  .dd-print-colheads { display: grid; grid-template-columns: 1.4fr 2fr 1.3fr; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
+  .dd-print-row { display: grid; grid-template-columns: 1.4fr 2fr 1.3fr; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 13px; }
+  .dd-print-span { font-family: 'DM Mono', monospace; font-size: 10.5px; }
+  .dd-print-page .dd-room-tag { font-size: 10px; padding: 2px 7px; background: none; border: 1px solid #333; color: #333; }
   .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 }
 #rs-print-section { display: none; }
@@ -567,7 +563,7 @@ body {
     </div>
     <div class="dd-scroll">
       <table class="dd-table">
-        <thead><tr><th>Teacher</th><th>Booked in (Richmond)</th></tr></thead>
+        <thead><tr><th>Teacher</th><th>Room(s)</th><th>Schedule</th></tr></thead>
         <tbody id="dd-tbody"></tbody>
       </table>
       <div id="dd-empty" class="dd-empty">Nothing booked in a Richmond room for this day.</div>
@@ -1589,10 +1585,14 @@ function ddDaysWithData() {
     siteToBranch(e.site) === 'Richmond' && e.day === d && physicalLabels.has(e.facility_raw)));
 }
 
-// Teachers booked in a Richmond physical room that day, each with their
-// bookings sorted by start time.
+// Teachers booked in a Richmond physical room that day: which room(s) (in
+// the order they're first used, deduped — most teachers have just one) and
+// their overall teaching span, the earliest student's start to the latest
+// student's end, not each individual lesson. No student/lesson-item detail —
+// this is a "where's the teacher" sheet, not a schedule of who's booked.
 function ddTeachersForDay(day) {
   const physicalLabels = ddPhysicalLabels();
+  const roomMap = ddRoomLabelMap();
   const evts = rsForSiteDay('Richmond', day).filter(e => physicalLabels.has(e.facility_raw));
 
   const byName = new Map();
@@ -1603,24 +1603,27 @@ function ddTeachersForDay(day) {
 
   const teachers = [...byName.entries()].map(([name, bookings]) => {
     bookings = bookings.slice().sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
-    return { name, bookings, bookedStart: timeToMins(bookings[0].from_time) };
+    const rooms = [...new Set(bookings.map(b => roomMap.get(b.facility_raw) || b.facility_raw))];
+    const start = Math.min(...bookings.map(b => timeToMins(b.from_time)));
+    const end = Math.max(...bookings.map(b => timeToMins(b.to_time)));
+    // Names are stored "First Last" (see normalizeInstructorName) — the part
+    // after the first space is the last name, same reconstruction the
+    // Teachers tab already relies on, since "Last" itself can be multi-word.
+    const parts = name.split(' ');
+    const lastName = parts.length > 1 ? parts.slice(1).join(' ') : name;
+    return { name, lastName, rooms, start, end };
   });
 
-  teachers.sort((a, b) => a.bookedStart - b.bookedStart || a.name.localeCompare(b.name));
+  teachers.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.name.localeCompare(b.name));
   return teachers;
 }
 
-function ddFmtBookingLine(e, roomMap) {
-  const room = roomMap.get(e.facility_raw) || e.facility_raw;
-  const dur = timeToMins(e.to_time) - timeToMins(e.from_time);
-  const classTag = e.type === 'CLASS' ? '<span class="dd-class-tag">Class</span>' : '';
-  const studentPart = e.student ? ` — ${escHtml(e.student)}` : '';
-  return `<div class="dd-booking-line">
-    <span class="dd-booking-room">${escHtml(room)}</span>
-    <span class="dd-booking-time">${fmtTime(e.from_time)}–${fmtTime(e.to_time)} (${dur}m)</span>
-    <span class="dd-booking-item">${escHtml(e.item)}${studentPart}</span>
-    ${classTag}
-  </div>`;
+function ddFmtRooms(rooms) {
+  return rooms.map(r => `<span class="dd-room-tag">${escHtml(r)}</span>`).join('');
+}
+
+function ddFmtSpan(t) {
+  return `${fmtTime(minsToTime24(t.start))}–${fmtTime(minsToTime24(t.end))}`;
 }
 
 // Defaults to today whenever today falls within the uploaded week, since a
@@ -1650,11 +1653,11 @@ function renderDigestBody() {
   const teachers = ddTeachersForDay(state.dd.activeDay);
   if (!teachers.length) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
   empty.classList.remove('visible');
-  const roomMap = ddRoomLabelMap();
   tbody.innerHTML = teachers.map(t => `
     <tr>
       <td class="dd-tname">${escHtml(t.name)}</td>
-      <td>${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</td>
+      <td>${ddFmtRooms(t.rooms)}</td>
+      <td class="dd-span">${ddFmtSpan(t)}</td>
     </tr>
   `).join('');
 }
@@ -1674,13 +1677,13 @@ function renderDigest() {
 
 function ddBuildPrintPage(day) {
   const teachers = ddTeachersForDay(day);
-  const roomMap = ddRoomLabelMap();
   const date = rsDateForSiteDay('Richmond', day);
   const rows = teachers.length
     ? teachers.map(t => `
         <div class="dd-print-row">
           <div class="dd-print-name">${escHtml(t.name)}</div>
-          <div class="dd-print-bookings">${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</div>
+          <div class="dd-print-rooms">${ddFmtRooms(t.rooms)}</div>
+          <div class="dd-print-span">${ddFmtSpan(t)}</div>
         </div>`).join('')
     : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
   return `
@@ -1689,7 +1692,7 @@ function ddBuildPrintPage(day) {
         <span class="dd-print-site">Richmond — Daily Digest</span>
         <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
       </div>
-      <div class="dd-print-colheads"><span>Teacher</span><span>Booked in</span></div>
+      <div class="dd-print-colheads"><span>Teacher</span><span>Room(s)</span><span>Schedule</span></div>
       ${rows}
     </div>`;
 }
