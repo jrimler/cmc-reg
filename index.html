@@ -228,7 +228,7 @@ body {
 .rs-site-tab:hover { color: var(--ink); }
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-#rs-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
+#rs-day-tabs, #dd-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
 .rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
@@ -237,7 +237,7 @@ body {
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
 .rs-site-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
 
-#rs-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
+#rs-action-bar, #dd-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
 .rs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
 .rs-btn:hover { border-color: var(--ink); color: var(--ink); }
 .rs-print-group { display: inline-flex; align-items: center; gap: 6px; }
@@ -278,6 +278,31 @@ body {
 
 #rs-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
 #rs-empty.visible { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   DAILY DIGEST STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.dd-scroll { flex: 1; overflow: auto; min-height: 0; padding: 20px 28px; }
+.dd-table { width: 100%; border-collapse: collapse; }
+.dd-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 12px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+.dd-table tbody tr { border-bottom: 1px solid var(--rule); }
+.dd-table tbody tr:hover { background: var(--paper-dark); }
+.dd-table tbody td { padding: 11px 12px; vertical-align: top; }
+.dd-table td:first-child { width: 1%; white-space: nowrap; }
+.dd-table td:last-child { width: 190px; }
+.dd-tname { font-family: 'DM Serif Display', serif; font-size: 15px; }
+.dd-booking-line { display: flex; align-items: baseline; gap: 8px; font-family: 'DM Mono', monospace; font-size: 11.5px; }
+.dd-booking-line + .dd-booking-line { margin-top: 5px; }
+.dd-booking-room { font-weight: 500; color: var(--ink); min-width: 76px; flex-shrink: 0; }
+.dd-booking-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
+.dd-booking-item { color: var(--ink); font-family: 'DM Sans', sans-serif; }
+.dd-class-tag { font-family: 'DM Mono', monospace; font-size: 8.5px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; border-radius: 2px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.dd-avail-window { font-family: 'DM Mono', monospace; font-size: 11.5px; }
+.dd-avail-window + .dd-avail-window { margin-top: 4px; }
+.dd-avail-hrs { color: var(--muted); font-size: 10.5px; margin-left: 3px; }
+.dd-avail-none { color: var(--muted); font-size: 11px; }
+.dd-empty { display: none; text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13px; }
+.dd-empty.visible { display: block; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ADMIN STYLES
@@ -323,6 +348,7 @@ body {
    doesn't reliably rotate in every print/PDF engine. */
 @page tabloid-page { size: 17in 11in; margin: 0.35in; }
 @page letter-landscape-page { size: 11in 8.5in; margin: 0.3in; }
+@page dd-page { size: 8.5in 11in; margin: 0.5in; }
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   #app-header, #main-content { display: none !important; }
@@ -357,8 +383,25 @@ body {
   .rs-print-page.letter .rs-event-info { font-size: 7.5px; line-height: 1.25; }
   .rs-print-page.letter .rs-print-site { font-size: 13px; }
   .rs-print-page.letter .rs-print-day { font-size: 9.5px; }
+
+  /* Daily Digest print: a plain portrait list, ink-light like the two grid
+     prints above — a small outlined tag for CLASS rather than a color fill. */
+  #dd-print-section { display: block !important; }
+  .dd-print-page { page: dd-page; page-break-after: always; color: #111; }
+  .dd-print-page:last-child { page-break-after: avoid; }
+  .dd-print-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
+  .dd-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
+  .dd-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
+  .dd-print-colheads { display: grid; grid-template-columns: 1.1fr 2.4fr 1.3fr; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
+  .dd-print-row { display: grid; grid-template-columns: 1.1fr 2.4fr 1.3fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 12.5px; }
+  .dd-print-page .dd-booking-line, .dd-print-page .dd-avail-window { font-size: 9.5px; }
+  .dd-print-page .dd-booking-room { min-width: 58px; }
+  .dd-print-page .dd-class-tag { background: none; border: 1px solid #333; color: #333; }
+  .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 }
 #rs-print-section { display: none; }
+#dd-print-section { display: none; }
 
 @media (max-width: 768px) {
   #app-header { padding: 0 8px 0 10px; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -396,6 +439,7 @@ body {
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
     <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
+    <button class="view-btn" data-view="dailyDigest">Daily Digest</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="upload" id="upload-view-btn">Upload</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="admin" id="admin-view-btn">Admin</button>
   </div>
@@ -523,6 +567,24 @@ body {
     </div>
   </div>
 
+  <!-- ══ DAILY DIGEST VIEW ═════════════════════════════════════════════════ -->
+  <div id="dd-view" class="view">
+    <div id="dd-day-tabs"></div>
+    <div id="dd-action-bar">
+      <div class="rs-print-group">
+        <select class="rs-day-select" id="dd-print-day"></select>
+        <button class="rs-btn" id="dd-print-btn">Print Daily Digest</button>
+      </div>
+    </div>
+    <div class="dd-scroll">
+      <table class="dd-table">
+        <thead><tr><th>Teacher</th><th>Booked in (Richmond)</th><th>Available</th></tr></thead>
+        <tbody id="dd-tbody"></tbody>
+      </table>
+      <div id="dd-empty" class="dd-empty">Nothing booked in a Richmond room for this day.</div>
+    </div>
+  </div>
+
   <!-- ══ UPLOAD VIEW ══════════════════════════════════════════════════════ -->
   <div id="upload-view" class="view">
     <div class="admin-body">
@@ -594,6 +656,7 @@ body {
 
 <div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
 <div id="rs-print-section"></div>
+<div id="dd-print-section"></div>
 <div id="toast"></div>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════════════════════ -->
@@ -665,6 +728,11 @@ const state = {
   rs: {
     sites: [],
     activeSite: '',
+    activeDay: '',
+  },
+
+  dd: {
+    days: [],
     activeDay: '',
   },
 
@@ -1614,6 +1682,168 @@ function rsPrintLetter(dayFilter) {
   renderPrintPages(pages, 'letter');
 }
 
+// ── DAILY DIGEST ─────────────────────────────────────────────────────────────────
+// A Richmond front-desk sheet: which teacher is in which physical room and for
+// how long, combining what's actually booked (Master Scheduler) with each
+// teacher's full potential window that day (Instructor Availability). Unlike
+// Room Schedule, this only ever lists teachers/rooms with a real booking —
+// availability has no room/facility column, so an available-but-unbooked
+// teacher can't be tied to a specific room (see README's "no room-specific
+// availability blocks" note).
+
+function ddPhysicalLabels() {
+  return new Set(rsRoomsForSite('Richmond', true).map(r => r.raw_facility_label));
+}
+
+function ddRoomLabelMap() {
+  const map = new Map();
+  rsRoomsForSite('Richmond', true).forEach(r => map.set(r.raw_facility_label, roomDisplayName(r)));
+  return map;
+}
+
+function ddDaysWithData() {
+  const physicalLabels = ddPhysicalLabels();
+  return RS_DAYS_ORDER.filter(d => state.data.events.some(e =>
+    siteToBranch(e.site) === 'Richmond' && e.day === d && physicalLabels.has(e.facility_raw)));
+}
+
+// Teachers booked in a Richmond physical room that day, each with their sorted
+// bookings and (if on file) their availability window(s) for the same day —
+// looked up the same way the Teachers tab does: by matching first/last name,
+// falling back to splitting the Master Scheduler name on its first space for
+// any teacher not present in the Availability upload, and skipping rows
+// marked ignored in Admin → Availability Overrides.
+function ddTeachersForDay(day) {
+  const physicalLabels = ddPhysicalLabels();
+  const evts = rsForSiteDay('Richmond', day).filter(e => physicalLabels.has(e.facility_raw));
+  const ignoredKeys = new Set(state.data.overrides.map(o => `${o.first_name}|${o.last_name}|${o.day}`));
+  const nameParts = new Map();
+  state.data.availability.forEach(a => nameParts.set(`${a.first_name} ${a.last_name}`, { first: a.first_name, last: a.last_name }));
+
+  const byName = new Map();
+  evts.forEach(e => {
+    if (!byName.has(e.instructor_name)) byName.set(e.instructor_name, []);
+    byName.get(e.instructor_name).push(e);
+  });
+
+  const teachers = [...byName.entries()].map(([name, bookings]) => {
+    bookings = bookings.slice().sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
+    const known = nameParts.get(name);
+    const parts = name.split(' ');
+    const first = known ? known.first : parts[0];
+    const last = known ? known.last : parts.slice(1).join(' ');
+    const availWindows = state.data.availability
+      .filter(a => a.first_name === first && a.last_name === last && a.day === day && !ignoredKeys.has(`${a.first_name}|${a.last_name}|${a.day}`))
+      .sort((a, b) => timeToMins(a.start_time) - timeToMins(b.start_time));
+    return { name, bookings, availWindows, bookedStart: timeToMins(bookings[0].from_time) };
+  });
+
+  teachers.sort((a, b) => a.bookedStart - b.bookedStart || a.name.localeCompare(b.name));
+  return teachers;
+}
+
+function ddFmtBookingLine(e, roomMap) {
+  const room = roomMap.get(e.facility_raw) || e.facility_raw;
+  const dur = timeToMins(e.to_time) - timeToMins(e.from_time);
+  const classTag = e.type === 'CLASS' ? '<span class="dd-class-tag">Class</span>' : '';
+  const studentPart = e.student ? ` — ${escHtml(e.student)}` : '';
+  return `<div class="dd-booking-line">
+    <span class="dd-booking-room">${escHtml(room)}</span>
+    <span class="dd-booking-time">${fmtTime(e.from_time)}–${fmtTime(e.to_time)} (${dur}m)</span>
+    <span class="dd-booking-item">${escHtml(e.item)}${studentPart}</span>
+    ${classTag}
+  </div>`;
+}
+
+function ddFmtAvailability(t) {
+  if (!t.availWindows.length) return '<span class="dd-avail-none">No availability on file</span>';
+  return t.availWindows.map(a => {
+    const hrs = ((timeToMins(a.end_time) - timeToMins(a.start_time)) / 60).toFixed(1);
+    return `<div class="dd-avail-window">${fmtTime(a.start_time)}–${fmtTime(a.end_time)} <span class="dd-avail-hrs">(${hrs} hrs)</span></div>`;
+  }).join('');
+}
+
+// Defaults to today whenever today falls within the uploaded week, since a
+// front-desk digest that quietly opened on a stale leftover day would be
+// exactly the kind of stale info this feature exists to avoid — falls back
+// to the first day with data otherwise (e.g. a new week not uploaded yet).
+function initDigestState() {
+  const days = ddDaysWithData();
+  state.dd.days = days;
+  const todayShort = ['Su','Mo','Tu','We','Th','Fr','Sa'][new Date().getDay()];
+  state.dd.activeDay = days.includes(todayShort) ? todayShort : (days[0] || '');
+}
+
+function renderDigestDayTabs() {
+  const bar = document.getElementById('dd-day-tabs');
+  bar.innerHTML = state.dd.days.map(d => {
+    const date = rsDateForSiteDay('Richmond', d);
+    const dateLabel = date ? ` <span class="rs-day-tab-date">${escHtml(fmtDateShort(date))}</span>` : '';
+    return `<button class="rs-day-tab${d === state.dd.activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d].slice(0, 3)}${dateLabel}</button>`;
+  }).join('');
+}
+
+function renderDigestBody() {
+  const tbody = document.getElementById('dd-tbody');
+  const empty = document.getElementById('dd-empty');
+  if (!state.dd.activeDay) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
+  const teachers = ddTeachersForDay(state.dd.activeDay);
+  if (!teachers.length) { tbody.innerHTML = ''; empty.classList.add('visible'); return; }
+  empty.classList.remove('visible');
+  const roomMap = ddRoomLabelMap();
+  tbody.innerHTML = teachers.map(t => `
+    <tr>
+      <td class="dd-tname">${escHtml(t.name)}</td>
+      <td>${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</td>
+      <td>${ddFmtAvailability(t)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderDigestPrintControls() {
+  const sel = document.getElementById('dd-print-day');
+  const prevValue = sel.value || 'all';
+  sel.innerHTML = rsPrintDayOptions();
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : 'all';
+}
+
+function renderDigest() {
+  renderDigestDayTabs();
+  renderDigestBody();
+  renderDigestPrintControls();
+}
+
+function ddBuildPrintPage(day) {
+  const teachers = ddTeachersForDay(day);
+  const roomMap = ddRoomLabelMap();
+  const date = rsDateForSiteDay('Richmond', day);
+  const rows = teachers.length
+    ? teachers.map(t => `
+        <div class="dd-print-row">
+          <div class="dd-print-name">${escHtml(t.name)}</div>
+          <div class="dd-print-bookings">${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</div>
+          <div class="dd-print-avail">${ddFmtAvailability(t)}</div>
+        </div>`).join('')
+    : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
+  return `
+    <div class="dd-print-page">
+      <div class="dd-print-header">
+        <span class="dd-print-site">Richmond — Daily Digest</span>
+        <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
+      </div>
+      <div class="dd-print-colheads"><span>Teacher</span><span>Booked in</span><span>Available</span></div>
+      ${rows}
+    </div>`;
+}
+
+function ddPrint(dayFilter) {
+  const days = dayFilter === 'all' ? ddDaysWithData() : [dayFilter];
+  if (!days.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
+  const section = document.getElementById('dd-print-section');
+  section.innerHTML = days.map(d => ddBuildPrintPage(d)).join('');
+  window.print();
+}
+
 // ── ADMIN: UPLOAD ────────────────────────────────────────────────────────────────
 function renderAdminUpload() {
   document.querySelectorAll('.upload-card').forEach(card => {
@@ -1669,6 +1899,7 @@ async function handleUpload(card) {
 
     if (state.appMode === 'lessonFinder') renderLessonFinder();
     if (state.appMode === 'roomSchedule') initRoomScheduleState();
+    if (state.appMode === 'dailyDigest') { initDigestState(); renderDigest(); }
   } catch (err) {
     statusEl.className = 'upload-status error';
     statusEl.textContent = 'Error: ' + (err.message || err);
@@ -1811,6 +2042,7 @@ function setAppMode(mode) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   if (mode === 'lessonFinder') { document.getElementById('lf-view').classList.add('active'); renderLessonFinder(); }
   if (mode === 'roomSchedule') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
+  if (mode === 'dailyDigest') { document.getElementById('dd-view').classList.add('active'); initDigestState(); renderDigest(); }
   if (mode === 'upload') { document.getElementById('upload-view').classList.add('active'); renderAdminUpload(); }
   if (mode === 'admin') { document.getElementById('admin-view').classList.add('active'); renderAdmin(); }
 }
@@ -1818,7 +2050,7 @@ function setAppMode(mode) {
 // Picks up where the user left off after a refresh — falls back to Lesson
 // Finder if nothing was saved, the saved view no longer exists, or it's an
 // admin-only view and this user isn't an admin.
-const APP_MODES = new Set(['lessonFinder', 'roomSchedule', 'upload', 'admin']);
+const APP_MODES = new Set(['lessonFinder', 'roomSchedule', 'dailyDigest', 'upload', 'admin']);
 const ADMIN_ONLY_MODES = new Set(['upload', 'admin']);
 
 function lastAppMode() {
@@ -1996,6 +2228,16 @@ document.getElementById('rs-day-tabs').addEventListener('click', (e) => {
 
 document.getElementById('rs-print-tabloid-btn').addEventListener('click', () => rsPrintTabloid(document.getElementById('rs-print-tabloid-day').value));
 document.getElementById('rs-print-letter-btn').addEventListener('click', () => rsPrintLetter(document.getElementById('rs-print-letter-day').value));
+
+document.getElementById('dd-day-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.rs-day-tab');
+  if (!btn) return;
+  state.dd.activeDay = btn.dataset.day;
+  renderDigestDayTabs();
+  renderDigestBody();
+});
+
+document.getElementById('dd-print-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-day').value));
 
 document.getElementById('rs-grid-wrap').addEventListener('mousemove', (e) => {
   const el = e.target.closest('.rs-event[data-item]');
