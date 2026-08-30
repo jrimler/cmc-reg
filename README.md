@@ -12,7 +12,7 @@ Internal registrar tool for the San Francisco Community Music Center. A single-p
 Filters open lesson slots by instrument, day, lesson length, instructor, and branch. Each result row shows a best-guess room (derived from the instructor's booked schedule that day — see "Room-linking" below). Rows can be multi-selected and copied as plain text for enrollment emails.
 
 ### Teachers (tab within Lesson Finder)
-Per-instructor roster — instruments taught, branches, and weekly availability — computed entirely from the latest uploaded reports. No manually-maintained fields (age minimums, notes) exist in this version.
+Per-instructor roster — instruments taught and branches — computed entirely from the latest uploaded reports. No manually-maintained fields (age minimums, notes) exist in this version.
 
 ### Room Schedule
 Visualizes booked studio time by site and day, driven by the Master Scheduler report. Richmond always sorts first and is the default site. Richmond's columns are a curated, stable set — every room tagged `physical` in Admin → Rooms always shows, even with nothing booked there that day — plus any extra room actually booked that day (e.g. a virtual studio) so a real lesson is never hidden. Day tabs show every day present in the uploaded week (Monday through Sunday) with that day's actual calendar date.
@@ -24,26 +24,26 @@ Two Richmond-only print formats, each with an "all week" or single-day picker:
 Both scale row height and column width to the day's actual time range and room count so a full day always fits on one physical page, and both are excluded from what they don't cover — non-`physical` rooms (home/virtual studios) never appear on either print, only in the on-screen view. Both are ink-light: events print as plain outlined boxes on white (no color fill), with lesson vs. class distinguished by a thicker left border rather than by color — the on-screen view keeps its blue/tan color coding.
 
 ### Daily Digest
-A Richmond front-desk sheet: which teacher is in which `physical` room and for how long, teacher-first. Combines what's actually booked (Master Scheduler) with each teacher's full potential window that day (Instructor Availability), so staff can see both "Room B, 10:00–10:45 AM, Piano" and that teacher's overall available window (e.g. "9:00 AM–5:00 PM, 8 hrs") in one glance. Only lists teachers/rooms with a real booking that day — availability has no room/facility column, so an available-but-unbooked teacher can't be tied to a specific room (see "Why Room Schedule has no room-specific availability blocks" below). Defaults to today's weekday whenever it falls within the uploaded week (not persisted across refresh, deliberately — a stale leftover day would defeat the point), falling back to the first day with data otherwise. Has its own portrait-letter print button ("all week" or a single day), styled ink-light like the two Room Schedule prints.
+A Richmond front-desk sheet: which teacher is in which `physical` room and for how long, teacher-first, driven entirely by the Master Scheduler report — one row per teacher with their booked rooms/times sorted by start time (e.g. "Room B, 10:00–10:45 AM, Piano"). Only lists teachers/rooms with a real booking that day. Defaults to today's weekday whenever it falls within the uploaded week (not persisted across refresh, deliberately — a stale leftover day would defeat the point), falling back to the first day with data otherwise. Has its own portrait-letter print button ("all week" or a single day), styled ink-light like the two Room Schedule prints.
 
 ### Upload (admin role only)
-Upload the three ASAP exports (Open Slots, Master Scheduler, Instructor Availability). Each upload fully replaces the current data for that report type.
+Upload the two ASAP exports (Open Slots, Master Scheduler). Each upload fully replaces the current data for that report type.
 
 ### Admin (admin role only)
-- **Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from both Room Schedule prints. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag.
-- **Availability Overrides**: mark specific instructor/day availability rows to ignore (e.g. an unedited generic 9–5 block from ASAP). Persists across future uploads.
+**Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from both Room Schedule prints. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag.
 
 ---
 
 ## Data sources
 
-Three ASAP report exports, uploaded through the Admin screen. They arrive as HTML tables saved with an `.xls`/`.xlsx` extension (an ASAP/RadGrid export quirk) — the app sniffs the file type and parses either a real XLSX or an HTML table. Columns are matched by name, not position.
+Two ASAP report exports, uploaded through the Admin screen. They arrive as HTML tables saved with an `.xls`/`.xlsx` extension (an ASAP/RadGrid export quirk) — the app sniffs the file type and parses either a real XLSX or an HTML table. Columns are matched by name, not position.
 
 | Report | Columns | Feeds |
 |---|---|---|
 | Open Slots Report | `Department, Subject, Instructor, Day, Time, Duration, Date, TimePeriod` | Lesson Finder |
-| Master Scheduler Report | `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type, Start Date, End Date` | Room Schedule, room registry, room-linking |
-| Instructor Availability | `Employee ID, Employee Type, First Name, Last Name, Day of Week, Is Available, Start Time, End Time, Break 1/2 Start/End, Exception Date, Exception Note` | Teachers tab |
+| Master Scheduler Report | `Date, Item, From, To, Day, Duration, Facility, Site, Instructor, PL Student, Type, Start Date, End Date` | Room Schedule, Daily Digest, room registry, room-linking |
+
+A third report, Instructor Availability, was dropped entirely (see the 2026-08-29 changelog entry below) — ASAP can't scope that export to the current term, so it mixed previous- and current-term rows with no reliable way to isolate one from the other.
 
 ---
 
@@ -60,14 +60,14 @@ Three ASAP report exports, uploaded through the Admin screen. They arrive as HTM
 ## First-time setup
 
 1. Create a Supabase project.
-2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0004).
+2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0005).
 3. Sign up through the app's login screen (first account defaults to `viewer` role), then in the Supabase SQL editor promote yourself:
    ```sql
    update profiles set role = 'admin' where id =
      (select id from auth.users where email = 'you@example.com');
    ```
 4. Reload the app, sign in — the Admin and Upload tabs should now be visible.
-5. Upload the three ASAP reports from the Upload screen.
+5. Upload the two ASAP reports from the Upload screen.
 
 The Supabase project URL and anon public key are hardcoded as constants near the top of `index.html`'s `<script>` (`SUPABASE_URL` / `SUPABASE_ANON_KEY`) — safe to keep in the client since the anon key is meant to be public and row-level security is what actually protects the data. To point this app at a different Supabase project, edit those two constants, commit, and push (Netlify auto-deploys).
 
@@ -84,16 +84,13 @@ Serves `index.html` at `http://localhost:3000` via `npx serve`.
 ## Architecture
 
 ### Auth & roles
-Supabase Auth (email/password). A `profiles` row (role: `admin` | `viewer`) is auto-created on signup via a Postgres trigger, defaulting to `viewer`. RLS policies: viewers can read all data tables; only admins can write to report data, `rooms`, and `availability_overrides`.
+Supabase Auth (email/password). A `profiles` row (role: `admin` | `viewer`) is auto-created on signup via a Postgres trigger, defaulting to `viewer`. RLS policies: viewers can read all data tables; only admins can write to report data and `rooms`.
 
 ### Upload flow
-Admin picks a file → client parses and column-maps it in-browser → a Postgres RPC function (`replace_open_slots` / `replace_master_schedule` / `replace_instructor_availability`) deletes the existing rows for that report type and bulk-inserts the new ones inside one transaction, logging the upload to `report_uploads`. A Master Scheduler upload also seeds any newly-seen rooms into the `rooms` registry as `needs_review`.
+Admin picks a file → client parses and column-maps it in-browser → a Postgres RPC function (`replace_open_slots` / `replace_master_schedule`) deletes the existing rows for that report type and bulk-inserts the new ones inside one transaction, logging the upload to `report_uploads`. A Master Scheduler upload also seeds any newly-seen rooms into the `rooms` registry as `needs_review`.
 
 ### Room-linking heuristic
 Open Slots rows don't carry a room. To show where a proposed lesson would likely happen, the app looks at the instructor's booked events that day (from Master Scheduler) and infers the room from whichever booking is adjacent (immediately before/after) the open slot. If adjacent bookings use different rooms, both are shown as an ambiguous guess rather than picking one. With no bookings that day at all, it falls back to the instructor's most-frequently-used room, labeled "Usually …". This is recomputed live — not stored.
-
-### Why Room Schedule has no room-specific availability blocks
-The Instructor Availability report has no room/facility column, so (unlike the old app's manually-maintained availability sheet) there's no reliable way to place a green "available" block in a specific room column. Availability instead powers the Teachers tab's weekly-availability view, which doesn't need a room.
 
 ---
 
@@ -146,3 +143,12 @@ The Instructor Availability report has no room/facility column, so (unlike the o
 **2026-08-27 (8)** — Both Room Schedule prints now use minimal ink: events render as plain white boxes with a thin gray outline instead of a filled color background (the color fill was the majority of the ink on a page with dozens of events). Lesson vs. class is still distinguishable at a glance via the existing thicker left border on class events, so no information was lost by dropping the color. The on-screen view is unaffected — it keeps its blue/tan color coding.
 
 **2026-08-29** — Added the Daily Digest view (new top-level tab, `#dd-view`): a Richmond front-desk sheet answering "which teacher is in which room and for how long," built from Master Scheduler (actual bookings) joined with Instructor Availability (each teacher's full potential window that day) by first/last name, reusing the same name-matching and Availability Overrides logic as the Teachers tab. Teacher-first, one row per teacher with their sorted bookings (room, time, duration, item, student, a "Class" tag for `type: CLASS`) and their availability window(s) side by side; only teachers with a real booking that day are listed. Defaults to today's weekday rather than persisting the last-viewed day like Room Schedule does, since a stale digest is exactly the failure mode this feature exists to avoid. Ships with its own portrait-letter print format (`@page dd-page`, ink-light styling matching the two Room Schedule prints). Verified against the real (gitignored) sample Master Scheduler / Instructor Availability files in a headless-browser harness (Supabase client stubbed with data run through the app's own mapping functions) rather than just checking generated HTML — caught and confirmed correct one data quirk along the way: three real Master Scheduler rows this week carry `Instructor` = "Schedule Unavailable" (an ASAP placeholder for a lesson with no assigned teacher on record, distinct from Open Slots' identically-named but differently-meaning filter value) — left unfiltered and shown as-is, since these are real student bookings front desk needs to see, not blocked-out time to hide.
+
+**2026-08-29 (2)** — Removed Instructor Availability entirely, app-wide: the user flagged that ASAP can't scope that report to the current term, so every export mixes previous- and current-term rows with no reliable way to tell them apart — the data was unusable, not just imperfect.
+- Teachers tab: dropped the "Weekly availability" column; now just instruments + branches (still fully derived from live uploads).
+- Daily Digest: dropped the "Available" column added earlier the same day; now just teacher + booked rooms/times, still Master-Scheduler-only.
+- Admin: removed the "Availability Overrides" tab entirely (it existed solely to curate instructor_availability rows) — Admin now goes straight to Rooms, no tab bar.
+- Upload screen: removed the Instructor Availability card; two report cards remain (Open Slots, Master Scheduler).
+- Deleted `mapInstructorAvailabilityRows()`, `TEACHER_EMPLOYEE_TYPES`, both override functions, and every `state.data.availability` / `state.data.overrides` reference; `fetchAllData()` no longer queries either table.
+- Added `supabase/migrations/0005_drop_instructor_availability.sql`, dropping the `instructor_availability` and `availability_overrides` tables (RLS policies and indexes go with them via `cascade`) and the `replace_instructor_availability` RPC. Not auto-applied — run it in the Supabase SQL editor like the others.
+- Verified with the same headless-browser harness as the Daily Digest work: Teachers tab renders 106 rows with no availability column, Admin shows Rooms with no tab bar, Upload shows exactly two cards, and Daily Digest's booking list is unchanged apart from the dropped column.

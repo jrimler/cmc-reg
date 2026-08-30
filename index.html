@@ -217,8 +217,6 @@ body {
 .td-tname { font-weight: 500; font-size: 13px; white-space: nowrap; }
 .instr-tags { display: flex; gap: 3px; flex-wrap: wrap; }
 .instr-tag { font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 6px; border-radius: 2px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; white-space: nowrap; }
-.avail-line { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink); white-space: nowrap; }
-.avail-line + .avail-line { margin-top: 2px; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ROOM SCHEDULE STYLES
@@ -289,7 +287,6 @@ body {
 .dd-table tbody tr:hover { background: var(--paper-dark); }
 .dd-table tbody td { padding: 11px 12px; vertical-align: top; }
 .dd-table td:first-child { width: 1%; white-space: nowrap; }
-.dd-table td:last-child { width: 190px; }
 .dd-tname { font-family: 'DM Serif Display', serif; font-size: 15px; }
 .dd-booking-line { display: flex; align-items: baseline; gap: 8px; font-family: 'DM Mono', monospace; font-size: 11.5px; }
 .dd-booking-line + .dd-booking-line { margin-top: 5px; }
@@ -297,10 +294,6 @@ body {
 .dd-booking-time { color: var(--muted); flex-shrink: 0; white-space: nowrap; }
 .dd-booking-item { color: var(--ink); font-family: 'DM Sans', sans-serif; }
 .dd-class-tag { font-family: 'DM Mono', monospace; font-size: 8.5px; background: var(--teal-soft); color: var(--teal); border: 1px solid #b8d4e8; border-radius: 2px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
-.dd-avail-window { font-family: 'DM Mono', monospace; font-size: 11.5px; }
-.dd-avail-window + .dd-avail-window { margin-top: 4px; }
-.dd-avail-hrs { color: var(--muted); font-size: 10.5px; margin-left: 3px; }
-.dd-avail-none { color: var(--muted); font-size: 11px; }
 .dd-empty { display: none; text-align: center; padding: 60px 20px; color: var(--muted); font-size: 13px; }
 .dd-empty.visible { display: block; }
 
@@ -327,7 +320,6 @@ body {
 .admin-table thead th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; border-bottom: 1.5px solid var(--rule); white-space: nowrap; position: sticky; top: 0; background: var(--paper); }
 .admin-table tbody tr { border-bottom: 1px solid var(--rule); }
 .admin-table tbody tr.needs-review { background: var(--accent-soft); }
-.admin-table tbody tr.ignored-row { opacity: 0.5; }
 .admin-table tbody td { padding: 7px 10px; vertical-align: middle; font-size: 12.5px; }
 .admin-table input[type=text], .admin-table input[type=number], .admin-table select {
   padding: 4px 6px; border: 1.5px solid var(--rule); border-radius: 3px; font-family: 'DM Sans', sans-serif; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; width: 100%;
@@ -337,8 +329,6 @@ body {
 .small-btn:hover { border-color: var(--ink); color: var(--ink); }
 .small-btn.danger:hover { border-color: var(--red); color: var(--red); }
 .badge-review { font-family: 'DM Mono', monospace; font-size: 9px; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 8px; }
-.admin-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.admin-toolbar select, .admin-toolbar input { padding: 5px 8px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; background: #fff; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    PRINT
@@ -392,10 +382,10 @@ body {
   .dd-print-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
   .dd-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
   .dd-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
-  .dd-print-colheads { display: grid; grid-template-columns: 1.1fr 2.4fr 1.3fr; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
-  .dd-print-row { display: grid; grid-template-columns: 1.1fr 2.4fr 1.3fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+  .dd-print-colheads { display: grid; grid-template-columns: 1.1fr 3.7fr; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
+  .dd-print-row { display: grid; grid-template-columns: 1.1fr 3.7fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
   .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 12.5px; }
-  .dd-print-page .dd-booking-line, .dd-print-page .dd-avail-window { font-size: 9.5px; }
+  .dd-print-page .dd-booking-line { font-size: 9.5px; }
   .dd-print-page .dd-booking-room { min-width: 58px; }
   .dd-print-page .dd-class-tag { background: none; border: 1px solid #333; color: #333; }
   .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
@@ -533,14 +523,13 @@ body {
     <div id="lf-panel-teachers" class="lf-panel" style="display:none; overflow:auto; padding:20px 28px;">
       <div class="lf-teachers-header">
         <h2>Teachers</h2>
-        <p>Instruments, branches, and weekly availability — derived from the latest uploads.</p>
+        <p>Instruments and branches — derived from the latest uploads.</p>
       </div>
       <table id="lf-teacher-table">
         <thead><tr>
           <th style="width:170px">Instructor</th>
           <th>Instruments</th>
           <th>Branch(es)</th>
-          <th>Weekly availability</th>
         </tr></thead>
         <tbody id="lf-teacher-body"></tbody>
       </table>
@@ -578,7 +567,7 @@ body {
     </div>
     <div class="dd-scroll">
       <table class="dd-table">
-        <thead><tr><th>Teacher</th><th>Booked in (Richmond)</th><th>Available</th></tr></thead>
+        <thead><tr><th>Teacher</th><th>Booked in (Richmond)</th></tr></thead>
         <tbody id="dd-tbody"></tbody>
       </table>
       <div id="dd-empty" class="dd-empty">Nothing booked in a Richmond room for this day.</div>
@@ -607,47 +596,18 @@ body {
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
           <div class="upload-status" data-status></div>
         </div>
-        <div class="upload-card" data-report="instructor_availability">
-          <h3>Instructor Availability</h3>
-          <a class="asap-link" href="https://app.asapconnected.com/reports/CustomQuery.aspx?ReportID=29319" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
-          <div class="last-upload" data-lastupload>No uploads yet</div>
-          <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
-          <button class="upload-btn" data-uploadbtn disabled>Upload</button>
-          <div class="upload-status" data-status></div>
-        </div>
       </div>
     </div>
   </div>
 
   <!-- ══ ADMIN VIEW ═══════════════════════════════════════════════════════ -->
   <div id="admin-view" class="view">
-    <div id="admin-tab-bar">
-      <button class="tab-btn active" data-admintab="rooms">Rooms</button>
-      <button class="tab-btn" data-admintab="overrides">Availability Overrides</button>
-    </div>
-
     <div class="admin-panel admin-body" id="admin-panel-rooms">
       <div class="admin-section-title">Rooms</div>
       <div class="admin-section-sub">New rooms from a Master Scheduler upload appear as "needs review" and are excluded from the 11×17 print until tagged. Tags persist across future uploads.</div>
       <table class="admin-table">
         <thead><tr><th>Site</th><th>Raw label</th><th style="width:220px">Display name</th><th style="width:150px">Type</th><th style="width:70px">Order</th><th style="width:60px"></th></tr></thead>
         <tbody id="admin-rooms-body"></tbody>
-      </table>
-    </div>
-
-    <div class="admin-panel admin-body" id="admin-panel-overrides" style="display:none">
-      <div class="admin-section-title">Availability Overrides</div>
-      <div class="admin-section-sub">Mark specific instructor/day availability rows to ignore (e.g. an unedited generic 9–5 default). Sorted by window span so unusually wide blocks are easy to spot. Overrides persist across future uploads.</div>
-      <div class="admin-toolbar">
-        <label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;">Sort</label>
-        <select id="ov-sort-select">
-          <option value="span">Window span (widest first)</option>
-          <option value="name">Instructor name</option>
-        </select>
-      </div>
-      <table class="admin-table">
-        <thead><tr><th>Instructor</th><th>Day</th><th>Window</th><th style="width:80px">Span</th><th style="width:100px"></th></tr></thead>
-        <tbody id="admin-overrides-body"></tbody>
       </table>
     </div>
   </div>
@@ -685,19 +645,15 @@ const LF_SKIP_SUBJECTS = new Set([
   'Ear Training','Eartraining','Sight Singing',
 ]);
 
-const TEACHER_EMPLOYEE_TYPES = new Set(['TCHR', 'TCHR+']);
-
 const LF_CHIP_LIMITS = { instrument: 10, day: 7, duration: 4 };
 
 const REPORT_LABELS = {
   open_slots: 'Open Slots Report',
   master_schedule: 'Master Scheduler Report',
-  instructor_availability: 'Instructor Availability',
 };
 const REPORT_LABELS_SHORT = {
   open_slots: 'Open Slots',
   master_schedule: 'Scheduler',
-  instructor_availability: 'Availability',
 };
 
 // ── GLOBAL STATE ───────────────────────────────────────────────────────────────
@@ -710,8 +666,6 @@ const state = {
   data: {
     openSlots: [],              // [{ id, department, instrument, instructor_name, day, start_time, end_time, duration_mins, ... }]
     events: [],                 // master_schedule_events
-    availability: [],           // instructor_availability (Yes rows only, already filtered/deduped by import)
-    overrides: [],              // availability_overrides
     rooms: [],                  // rooms registry
     uploads: [],                // report_uploads (most recent per type)
   },
@@ -734,11 +688,6 @@ const state = {
   dd: {
     days: [],
     activeDay: '',
-  },
-
-  admin: {
-    activeTab: 'rooms',
-    ovSort: 'span',
   },
 };
 
@@ -980,48 +929,6 @@ function mapMasterScheduleRows(rows) {
   return out;
 }
 
-// ── MAP INSTRUCTOR AVAILABILITY ROWS ────────────────────────────────────────────
-// Columns: Employee ID, Employee Type, First Name, Last Name, Day of Week, Is Available,
-//          Start Time, End Time, Break 1 Start, Break 1 End, Break 2 Start, Break 2 End,
-//          Exception Date, Exception Note
-// "No" rows carry stale times and are dropped. A few instructors have duplicate rows
-// under two Employee IDs — deduped by (first, last, day, start, end).
-function mapInstructorAvailabilityRows(rows) {
-  const out = [];
-  if (rows.length < 2) return out;
-  const header = rows[0].map(h => String(h || '').trim());
-  const col = {
-    empType:   headerIndex(header, /employee type/i),
-    first:     headerIndex(header, /first name/i),
-    last:      headerIndex(header, /last name/i),
-    day:       headerIndex(header, /day of week/i),
-    available: headerIndex(header, /is available/i),
-    start:     headerIndex(header, /^start time$/i),
-    end:       headerIndex(header, /^end time$/i),
-  };
-  const get = (row, k) => col[k] >= 0 ? String(row[col[k]] || '').trim() : '';
-  const seen = new Set();
-
-  for (let i = 1; i < rows.length; i++) {
-    const row = rows[i];
-    if (!TEACHER_EMPLOYEE_TYPES.has(get(row, 'empType'))) continue;
-    if (get(row, 'available') !== 'Yes') continue;
-    const first = get(row, 'first');
-    const last = get(row, 'last');
-    const day = get(row, 'day');
-    const startTime = to24h(get(row, 'start'));
-    const endTime = to24h(get(row, 'end'));
-    if (!first || !last || !day || !startTime || !endTime) continue;
-
-    const key = `${first}|${last}|${day}|${startTime}|${endTime}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    out.push({ first_name: first, last_name: last, day, start_time: startTime, end_time: endTime });
-  }
-  return out;
-}
-
 // ── SUPABASE CONNECT / AUTH ─────────────────────────────────────────────────────
 async function connectAndLoad() {
   state.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1087,18 +994,14 @@ async function fetchAllRows(table) {
 }
 
 async function fetchAllData() {
-  const [openSlotsRes, eventsRes, availRes, overridesRes, roomsRes, uploadsRes] = await Promise.all([
+  const [openSlotsRes, eventsRes, roomsRes, uploadsRes] = await Promise.all([
     fetchAllRows('open_slots'),
     fetchAllRows('master_schedule_events'),
-    fetchAllRows('instructor_availability'),
-    fetchAllRows('availability_overrides'),
     fetchAllRows('rooms'),
     state.sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
   ]);
   state.data.openSlots = openSlotsRes.data || [];
   state.data.events = eventsRes.data || [];
-  state.data.availability = availRes.data || [];
-  state.data.overrides = overridesRes.data || [];
   state.data.rooms = roomsRes.data || [];
   state.data.uploads = uploadsRes.data || [];
 }
@@ -1114,7 +1017,7 @@ function formatLastUpdated(iso) {
 
 function updateStatusLine() {
   const latestFor = (type) => state.data.uploads.find(u => u.report_type === type);
-  const rows = ['open_slots', 'master_schedule', 'instructor_availability'].map(t => {
+  const rows = ['open_slots', 'master_schedule'].map(t => {
     const u = latestFor(t);
     const when = u ? formatLastUpdated(u.uploaded_at) : 'not uploaded';
     return { label: REPORT_LABELS_SHORT[t], when, title: `${REPORT_LABELS[t]}: ${u ? 'updated ' + when : 'not uploaded'}` };
@@ -1353,37 +1256,20 @@ function copySelectedForEmail() {
 
 function renderTeachers() {
   const tbody = document.getElementById('lf-teacher-body');
-  const names = new Map(); // "First Last" -> { first, last }
-  state.data.availability.forEach(a => {
-    names.set(`${a.first_name} ${a.last_name}`, { first: a.first_name, last: a.last_name });
-  });
-  state.data.events.forEach(e => { if (!names.has(e.instructor_name)) names.set(e.instructor_name, null); });
-  state.data.openSlots.forEach(r => { if (!names.has(r.instructor_name)) names.set(r.instructor_name, null); });
+  const names = new Set();
+  state.data.events.forEach(e => names.add(e.instructor_name));
+  state.data.openSlots.forEach(r => names.add(r.instructor_name));
 
-  const ignoredKeys = new Set(state.data.overrides.map(o => `${o.first_name}|${o.last_name}|${o.day}`));
-
-  const sortedNames = [...names.keys()].sort();
+  const sortedNames = [...names].sort();
   tbody.innerHTML = sortedNames.map(name => {
     const instruments = new Set();
     state.data.openSlots.filter(r => r.instructor_name === name).forEach(r => instruments.add(r.instrument));
     const branches = branchesForInstructor(name);
-    const parts = name.split(' ');
-    const first = names.get(name) ? names.get(name).first : parts[0];
-    const last = names.get(name) ? names.get(name).last : parts.slice(1).join(' ');
-
-    const availRows = state.data.availability
-      .filter(a => a.first_name === first && a.last_name === last && !ignoredKeys.has(`${a.first_name}|${a.last_name}|${a.day}`))
-      .sort((a, b) => RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day));
-
-    const availHtml = availRows.length
-      ? availRows.map(a => `<span class="avail-line">${RS_DAYS_FULL[a.day]} ${fmtTime(a.start_time)}–${fmtTime(a.end_time)}</span>`).join('')
-      : '<span style="color:var(--muted);font-size:11px">No availability on file</span>';
 
     return `<tr>
       <td class="td-tname">${escHtml(name)}</td>
       <td><div class="instr-tags">${[...instruments].map(i => `<span class="instr-tag">${escHtml(i)}</span>`).join('') || '—'}</div></td>
       <td>${branches.join(', ') || '—'}</td>
-      <td>${availHtml}</td>
     </tr>`;
   }).join('');
 }
@@ -1684,12 +1570,8 @@ function rsPrintLetter(dayFilter) {
 
 // ── DAILY DIGEST ─────────────────────────────────────────────────────────────────
 // A Richmond front-desk sheet: which teacher is in which physical room and for
-// how long, combining what's actually booked (Master Scheduler) with each
-// teacher's full potential window that day (Instructor Availability). Unlike
-// Room Schedule, this only ever lists teachers/rooms with a real booking —
-// availability has no room/facility column, so an available-but-unbooked
-// teacher can't be tied to a specific room (see README's "no room-specific
-// availability blocks" note).
+// how long, from what's actually booked (Master Scheduler). Only ever lists
+// teachers/rooms with a real booking that day.
 
 function ddPhysicalLabels() {
   return new Set(rsRoomsForSite('Richmond', true).map(r => r.raw_facility_label));
@@ -1707,18 +1589,11 @@ function ddDaysWithData() {
     siteToBranch(e.site) === 'Richmond' && e.day === d && physicalLabels.has(e.facility_raw)));
 }
 
-// Teachers booked in a Richmond physical room that day, each with their sorted
-// bookings and (if on file) their availability window(s) for the same day —
-// looked up the same way the Teachers tab does: by matching first/last name,
-// falling back to splitting the Master Scheduler name on its first space for
-// any teacher not present in the Availability upload, and skipping rows
-// marked ignored in Admin → Availability Overrides.
+// Teachers booked in a Richmond physical room that day, each with their
+// bookings sorted by start time.
 function ddTeachersForDay(day) {
   const physicalLabels = ddPhysicalLabels();
   const evts = rsForSiteDay('Richmond', day).filter(e => physicalLabels.has(e.facility_raw));
-  const ignoredKeys = new Set(state.data.overrides.map(o => `${o.first_name}|${o.last_name}|${o.day}`));
-  const nameParts = new Map();
-  state.data.availability.forEach(a => nameParts.set(`${a.first_name} ${a.last_name}`, { first: a.first_name, last: a.last_name }));
 
   const byName = new Map();
   evts.forEach(e => {
@@ -1728,14 +1603,7 @@ function ddTeachersForDay(day) {
 
   const teachers = [...byName.entries()].map(([name, bookings]) => {
     bookings = bookings.slice().sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
-    const known = nameParts.get(name);
-    const parts = name.split(' ');
-    const first = known ? known.first : parts[0];
-    const last = known ? known.last : parts.slice(1).join(' ');
-    const availWindows = state.data.availability
-      .filter(a => a.first_name === first && a.last_name === last && a.day === day && !ignoredKeys.has(`${a.first_name}|${a.last_name}|${a.day}`))
-      .sort((a, b) => timeToMins(a.start_time) - timeToMins(b.start_time));
-    return { name, bookings, availWindows, bookedStart: timeToMins(bookings[0].from_time) };
+    return { name, bookings, bookedStart: timeToMins(bookings[0].from_time) };
   });
 
   teachers.sort((a, b) => a.bookedStart - b.bookedStart || a.name.localeCompare(b.name));
@@ -1753,14 +1621,6 @@ function ddFmtBookingLine(e, roomMap) {
     <span class="dd-booking-item">${escHtml(e.item)}${studentPart}</span>
     ${classTag}
   </div>`;
-}
-
-function ddFmtAvailability(t) {
-  if (!t.availWindows.length) return '<span class="dd-avail-none">No availability on file</span>';
-  return t.availWindows.map(a => {
-    const hrs = ((timeToMins(a.end_time) - timeToMins(a.start_time)) / 60).toFixed(1);
-    return `<div class="dd-avail-window">${fmtTime(a.start_time)}–${fmtTime(a.end_time)} <span class="dd-avail-hrs">(${hrs} hrs)</span></div>`;
-  }).join('');
 }
 
 // Defaults to today whenever today falls within the uploaded week, since a
@@ -1795,7 +1655,6 @@ function renderDigestBody() {
     <tr>
       <td class="dd-tname">${escHtml(t.name)}</td>
       <td>${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</td>
-      <td>${ddFmtAvailability(t)}</td>
     </tr>
   `).join('');
 }
@@ -1822,7 +1681,6 @@ function ddBuildPrintPage(day) {
         <div class="dd-print-row">
           <div class="dd-print-name">${escHtml(t.name)}</div>
           <div class="dd-print-bookings">${t.bookings.map(e => ddFmtBookingLine(e, roomMap)).join('')}</div>
-          <div class="dd-print-avail">${ddFmtAvailability(t)}</div>
         </div>`).join('')
     : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
   return `
@@ -1831,7 +1689,7 @@ function ddBuildPrintPage(day) {
         <span class="dd-print-site">Richmond — Daily Digest</span>
         <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
       </div>
-      <div class="dd-print-colheads"><span>Teacher</span><span>Booked in</span><span>Available</span></div>
+      <div class="dd-print-colheads"><span>Teacher</span><span>Booked in</span></div>
       ${rows}
     </div>`;
 }
@@ -1871,8 +1729,7 @@ async function handleUpload(card) {
     const rawRows = await parseReportFile(file);
     let mapped, rpcName;
     if (type === 'open_slots') { mapped = mapOpenSlotsRows(rawRows); rpcName = 'replace_open_slots'; }
-    else if (type === 'master_schedule') { mapped = mapMasterScheduleRows(rawRows); rpcName = 'replace_master_schedule'; }
-    else { mapped = mapInstructorAvailabilityRows(rawRows); rpcName = 'replace_instructor_availability'; }
+    else { mapped = mapMasterScheduleRows(rawRows); rpcName = 'replace_master_schedule'; }
 
     if (!mapped.length) throw new Error('No usable rows found — check this is the right report file.');
 
@@ -1952,57 +1809,8 @@ async function deleteRoom(roomId) {
   toast('Room deleted.');
 }
 
-// ── ADMIN: AVAILABILITY OVERRIDES ───────────────────────────────────────────────
-function renderAdminOverrides() {
-  const tbody = document.getElementById('admin-overrides-body');
-  const ignored = new Map(state.data.overrides.map(o => [`${o.first_name}|${o.last_name}|${o.day}`, o]));
-
-  let rows = state.data.availability.map(a => ({
-    ...a,
-    span: timeToMins(a.end_time) - timeToMins(a.start_time),
-    ignoreKey: `${a.first_name}|${a.last_name}|${a.day}`,
-  }));
-
-  if (state.admin.ovSort === 'span') rows.sort((a, b) => b.span - a.span);
-  else rows.sort((a, b) => `${a.last_name}${a.first_name}`.localeCompare(`${b.last_name}${b.first_name}`) || RS_DAYS_ORDER.indexOf(a.day) - RS_DAYS_ORDER.indexOf(b.day));
-
-  tbody.innerHTML = rows.map(a => {
-    const isIgnored = ignored.has(a.ignoreKey);
-    return `<tr class="${isIgnored ? 'ignored-row' : ''}">
-      <td>${escHtml(a.first_name)} ${escHtml(a.last_name)}</td>
-      <td>${RS_DAYS_FULL[a.day] || escHtml(a.day)}</td>
-      <td class="td-time">${fmtTime(a.start_time)}–${fmtTime(a.end_time)}</td>
-      <td>${(a.span / 60).toFixed(1)} hrs</td>
-      <td>${isIgnored
-        ? `<button class="small-btn" data-unignore="${escHtml(a.first_name)}|${escHtml(a.last_name)}|${escHtml(a.day)}">Un-ignore</button>`
-        : `<button class="small-btn danger" data-ignore="${escHtml(a.first_name)}|${escHtml(a.last_name)}|${escHtml(a.day)}">Ignore</button>`}
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-async function ignoreAvailability(first, last, day) {
-  const { error } = await state.sb.from('availability_overrides')
-    .upsert({ first_name: first, last_name: last, day, created_by: state.session.user.id }, { onConflict: 'first_name,last_name,day' });
-  if (error) { toast('Could not save override: ' + error.message, true); return; }
-  const { data } = await state.sb.from('availability_overrides').select('*');
-  state.data.overrides = data || [];
-  renderAdminOverrides();
-  toast('Marked as ignored.');
-}
-
-async function unignoreAvailability(first, last, day) {
-  const { error } = await state.sb.from('availability_overrides').delete()
-    .match({ first_name: first, last_name: last, day });
-  if (error) { toast('Could not remove override: ' + error.message, true); return; }
-  state.data.overrides = state.data.overrides.filter(o => !(o.first_name === first && o.last_name === last && o.day === day));
-  renderAdminOverrides();
-  toast('Override removed.');
-}
-
 function renderAdmin() {
   renderAdminRooms();
-  renderAdminOverrides();
 }
 
 // ── VIEW / MODE SWITCHING ────────────────────────────────────────────────────────
@@ -2259,16 +2067,6 @@ document.getElementById('rs-grid-wrap').addEventListener('mouseleave', () => {
   document.getElementById('rs-tooltip').style.display = 'none';
 });
 
-document.getElementById('admin-tab-bar').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab-btn');
-  if (!btn) return;
-  state.admin.activeTab = btn.dataset.admintab;
-  document.querySelectorAll('#admin-tab-bar .tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-  ['rooms', 'overrides'].forEach(t => {
-    document.getElementById(`admin-panel-${t}`).style.display = t === state.admin.activeTab ? '' : 'none';
-  });
-});
-
 document.querySelectorAll('.upload-card').forEach(card => {
   const fileInput = card.querySelector('[data-fileinput]');
   const btn = card.querySelector('[data-uploadbtn]');
@@ -2286,17 +2084,6 @@ document.getElementById('admin-rooms-body').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-deleteroom]');
   if (!btn) return;
   deleteRoom(btn.dataset.deleteroom);
-});
-
-document.getElementById('ov-sort-select').addEventListener('change', (e) => {
-  state.admin.ovSort = e.target.value;
-  renderAdminOverrides();
-});
-document.getElementById('admin-overrides-body').addEventListener('click', (e) => {
-  const ignoreBtn = e.target.closest('[data-ignore]');
-  const unignoreBtn = e.target.closest('[data-unignore]');
-  if (ignoreBtn) { const [f, l, d] = ignoreBtn.dataset.ignore.split('|'); ignoreAvailability(f, l, d); }
-  if (unignoreBtn) { const [f, l, d] = unignoreBtn.dataset.unignore.split('|'); unignoreAvailability(f, l, d); }
 });
 
 // ── INIT ─────────────────────────────────────────────────────────────────────────
