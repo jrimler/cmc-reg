@@ -388,33 +388,26 @@ body {
   .rs-print-page.letter .rs-print-site { font-size: 13px; }
   .rs-print-page.letter .rs-print-day { font-size: 9.5px; }
 
-  /* Daily Digest print: a plain portrait list, ink-light like the two grid
-     prints above — room tags are outlined, not filled. */
+  /* Daily Digest print: two pages sharing one visual language — a gray
+     section-title bar (teacher name on the By Teacher page, room name on
+     the By Room page) followed by simple 2-column rows underneath. No
+     table, no pill tags — just bar + rows, ink-light like the two grid
+     prints above. */
   .dd-print-page { page: dd-page; page-break-after: always; color: #111; }
   .dd-print-page:last-child { page-break-after: avoid; }
   .dd-print-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
   .dd-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
   .dd-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
-  /* Fixed inch-based columns, not fr — a full-width grid stretches Room(s)
-     and Schedule apart to fill the page even when their content is short,
-     the exact same "columns too far apart" issue fixed on-screen by letting
-     that table size to content instead of forcing width:100%. Sized to the
-     content (short teacher names, one room tag, one time range), not the
-     full 7.5in printable width, so the sheet reads as one compact block. */
-  .dd-print-colheads { display: grid; grid-template-columns: 2.1in 1.7in 1.7in; gap: 10px; font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #777; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; }
-  .dd-print-row { display: grid; grid-template-columns: 2.1in 1.7in 1.7in; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+  .dd-print-block { margin-bottom: 14px; page-break-inside: avoid; }
+  .dd-print-block-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: 3px 6px; margin-bottom: 2px; }
+  /* Fixed inch-based columns, not fr — a full-width grid stretches the two
+     columns apart to fill the page even when their content is short, the
+     same issue fixed on-screen by letting that table size to content
+     instead of forcing width:100%. */
+  .dd-print-row { display: grid; grid-template-columns: 2.8in 1.7in; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
   .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 13px; }
-  .dd-print-span { font-family: 'DM Mono', monospace; font-size: 10.5px; }
-  .dd-print-page .dd-room-tag { font-size: 10px; padding: 2px 7px; background: none; border: 1px solid #333; color: #333; }
+  .dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: 10.5px; }
   .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
-
-  /* By-room print: same page/header chrome as the by-teacher sheet, but each
-     room gets its own heading with a 2-column (teacher, span) list under it
-     instead of one flat 3-column table — room is now the grouping, not a
-     per-row tag. */
-  .dd-print-room-block { margin-bottom: 14px; page-break-inside: avoid; }
-  .dd-print-room-name { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: 3px 6px; margin-bottom: 2px; }
-  .dd-print-row--room { grid-template-columns: 2.8in 1.7in; }
 }
 #rs-print-section { display: none; }
 #dd-print-section { display: none; }
@@ -588,11 +581,7 @@ body {
     <div id="dd-action-bar">
       <div class="rs-print-group">
         <select class="rs-day-select" id="dd-print-day"></select>
-        <button class="rs-btn" id="dd-print-btn">Print Daily Digest (By Teacher)</button>
-      </div>
-      <div class="rs-print-group">
-        <select class="rs-day-select" id="dd-print-room-day"></select>
-        <button class="rs-btn" id="dd-print-room-btn">Print Daily Digest (By Room)</button>
+        <button class="rs-btn" id="dd-print-btn">Print Daily Digest</button>
       </div>
     </div>
     <div class="dd-scroll">
@@ -1764,11 +1753,10 @@ function renderDigestBody() {
 }
 
 function renderDigestPrintControls() {
-  [document.getElementById('dd-print-day'), document.getElementById('dd-print-room-day')].forEach(sel => {
-    const prevValue = sel.value || 'all';
-    sel.innerHTML = rsPrintDayOptions();
-    sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : 'all';
-  });
+  const sel = document.getElementById('dd-print-day');
+  const prevValue = sel.value || 'all';
+  sel.innerHTML = rsPrintDayOptions();
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : 'all';
 }
 
 function renderDigest() {
@@ -1777,25 +1765,30 @@ function renderDigest() {
   renderDigestPrintControls();
 }
 
+// Same gray-bar-plus-rows visual language as the By Room page below — here
+// each teacher gets the section title (their name) with their room(s) and
+// overall span as one plain-text row underneath, instead of the old flat
+// 3-column table with pill tags.
 function ddBuildPrintPage(day) {
   const teachers = ddTeachersForDay(day);
   const date = rsDateForSiteDay('Richmond', day);
-  const rows = teachers.length
+  const blocks = teachers.length
     ? teachers.map(t => `
-        <div class="dd-print-row">
-          <div class="dd-print-name">${escHtml(t.name)}</div>
-          <div class="dd-print-rooms">${ddFmtRooms(t.rooms)}</div>
-          <div class="dd-print-span">${ddFmtSpan(t)}</div>
+        <div class="dd-print-block">
+          <div class="dd-print-block-title">${escHtml(t.name)}</div>
+          <div class="dd-print-row">
+            <div class="dd-print-rooms-plain">${escHtml(t.rooms.join(', '))}</div>
+            <div class="dd-print-span">${ddFmtSpan(t)}</div>
+          </div>
         </div>`).join('')
     : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
   return `
     <div class="dd-print-page">
       <div class="dd-print-header">
-        <span class="dd-print-site">Richmond — Daily Digest</span>
+        <span class="dd-print-site">Richmond — Daily Digest (By Teacher)</span>
         <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
       </div>
-      <div class="dd-print-colheads"><span>Teacher</span><span>Room(s)</span><span>Schedule</span></div>
-      ${rows}
+      ${blocks}
     </div>`;
 }
 
@@ -1804,10 +1797,10 @@ function ddBuildPrintPageByRoom(day) {
   const date = rsDateForSiteDay('Richmond', day);
   const blocks = rooms.length
     ? rooms.map(r => `
-        <div class="dd-print-room-block">
-          <div class="dd-print-room-name">${escHtml(r.label)}</div>
+        <div class="dd-print-block">
+          <div class="dd-print-block-title">${escHtml(r.label)}</div>
           ${r.teachers.map(t => `
-            <div class="dd-print-row dd-print-row--room">
+            <div class="dd-print-row">
               <div class="dd-print-name">${escHtml(t.name)}</div>
               <div class="dd-print-span">${ddFmtSpan(t)}</div>
             </div>`).join('')}
@@ -1823,11 +1816,14 @@ function ddBuildPrintPageByRoom(day) {
     </div>`;
 }
 
-function ddPrint(dayFilter, buildPage) {
+// Always two pages per day — By Teacher then By Room — so the printout is
+// predictable regardless of how busy a day is, rather than trying to
+// squeeze both views onto one page and risking cramped text on a full day.
+function ddPrint(dayFilter) {
   const days = dayFilter === 'all' ? ddDaysWithData() : [dayFilter];
   if (!days.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
   const section = document.getElementById('dd-print-section');
-  section.innerHTML = days.map(d => buildPage(d)).join('');
+  section.innerHTML = days.map(d => ddBuildPrintPage(d) + ddBuildPrintPageByRoom(d)).join('');
   section.classList.add('print-active');
   document.getElementById('rs-print-section').classList.remove('print-active');
   window.print();
@@ -2176,8 +2172,7 @@ document.getElementById('dd-day-tabs').addEventListener('click', (e) => {
   renderDigestBody();
 });
 
-document.getElementById('dd-print-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-day').value, ddBuildPrintPage));
-document.getElementById('dd-print-room-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-room-day').value, ddBuildPrintPageByRoom));
+document.getElementById('dd-print-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-day').value));
 
 document.getElementById('dd-thead-row').addEventListener('click', (e) => {
   const th = e.target.closest('.dd-sortable');
