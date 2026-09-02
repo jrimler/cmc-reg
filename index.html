@@ -388,42 +388,57 @@ body {
   .rs-print-page.letter .rs-print-site { font-size: 13px; }
   .rs-print-page.letter .rs-print-day { font-size: 9.5px; }
 
-  /* Daily Digest print: one landscape page per day, By Room and By
-     Instructor side by side rather than as two separate portrait pages —
-     both share one visual language, a gray section-title bar (room or
-     instructor name) followed by simple 2-column rows underneath. No
-     table, no pill tags — just bar + rows, ink-light like the two grid
-     prints above. */
-  .dd-print-page { page: dd-page; page-break-after: always; color: #111; }
-  .dd-print-page:last-child { page-break-after: avoid; }
-  /* The day of the week is the thing a staffer actually needs to spot at a
-     glance — it's the hero element. "Richmond" is just enough to identify
-     the sheet if it gets separated, so it's shrunk to a small corner label
-     instead of competing for attention; By Room / By Instructor each get
-     their own title at the top of their column instead. */
-  .dd-print-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
-  .dd-print-dayname { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; }
-  .dd-print-datesub { font-family: 'DM Mono', monospace; font-size: 13px; color: #555; margin-left: 8px; }
-  .dd-print-pagelabel { font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; }
-  .dd-print-columns { display: flex; }
-  .dd-print-col { flex: 1 1 0; min-width: 0; padding: 0 0.3in; }
-  .dd-print-col:first-child { padding-left: 0; }
-  .dd-print-col:last-child { padding-right: 0; border-left: 1px solid #ccc; }
-  .dd-print-col-title { font-family: 'DM Serif Display', serif; font-size: 15px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1.5px solid #333; }
-  .dd-print-block { margin-bottom: 12px; page-break-inside: avoid; }
-  .dd-print-block-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: 3px 6px; margin-bottom: 2px; }
-  /* Fixed inch-based columns, not fr — a full-width grid stretches the two
-     row cells apart to fill the column even when their content is short,
-     the same issue fixed on-screen by letting that table size to content
-     instead of forcing width:100%. Sized to fit within one ~4.5in print
-     column (page width minus margins, divider, and the other column). */
-  .dd-print-row { display: grid; grid-template-columns: 1fr 1.5in; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
-  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 12px; }
-  .dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: 10px; }
-  .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 }
 #rs-print-section { display: none; }
 #dd-print-section { display: none; }
+
+/* Daily Digest print: one landscape page per day, By Room and By
+   Instructor side by side rather than as two separate portrait pages —
+   both share one visual language, a gray section-title bar (room or
+   instructor name) followed by simple 2-column rows underneath. No
+   table, no pill tags — just bar + rows, ink-light like the two grid
+   prints above.
+
+   Deliberately NOT scoped inside @media print, unlike the rest of this
+   file's print styles — ddScalePrintPages() (see JS) needs to measure
+   real rendered heights (real fonts, real padding) *before* window.print()
+   is called, while the browser is still in screen mode, so these rules
+   have to be "live" outside of an actual print context too. Harmless: the
+   elements they target live under #dd-print-section, which stays
+   display:none except during that measurement pass and actual printing. */
+.dd-print-page { --dd-scale: 1; page: dd-page; page-break-after: always; color: #111; }
+.dd-print-page:last-child { page-break-after: avoid; }
+/* The day of the week is the thing a staffer actually needs to spot at a
+   glance — it's the hero element. "Richmond" is just enough to identify
+   the sheet if it gets separated, so it's shrunk to a small corner label
+   instead of competing for attention; By Room / By Instructor each get
+   their own title at the top of their column instead. */
+.dd-print-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
+.dd-print-dayname { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; }
+.dd-print-datesub { font-family: 'DM Mono', monospace; font-size: 13px; color: #555; margin-left: 8px; }
+.dd-print-pagelabel { font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; }
+.dd-print-columns { display: flex; }
+.dd-print-col { flex: 1 1 0; min-width: 0; padding: 0 0.3in; }
+.dd-print-col:first-child { padding-left: 0; }
+.dd-print-col:last-child { padding-right: 0; border-left: 1px solid #ccc; }
+.dd-print-col-title { font-family: 'DM Serif Display', serif; font-size: 15px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1.5px solid #333; }
+/* Everything below scales with --dd-scale, set per-page by
+   ddScalePrintPages() only when a day's content would otherwise overflow
+   the physical page — a light day prints at scale 1, unchanged. */
+.dd-print-block { margin-bottom: calc(6px * var(--dd-scale)); page-break-inside: avoid; }
+.dd-print-block-title { font-family: 'DM Mono', monospace; font-size: calc(10px * var(--dd-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(2px * var(--dd-scale)) 6px; margin-bottom: 1px; }
+/* Fixed inch-based columns, not fr — a full-width grid stretches the two
+   row cells apart to fill the column even when their content is short,
+   the same issue fixed on-screen by letting that table size to content
+   instead of forcing width:100%. Sized to fit within one ~4.5in print
+   column (page width minus margins, divider, and the other column). */
+.dd-print-row { display: grid; grid-template-columns: 1fr 1.5in; gap: 8px; align-items: baseline; padding: calc(4px * var(--dd-scale)) 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+/* The instructor side's flat per-teacher row (name, room(s), span all on
+   one line) needs a third column instead of the room block's two. */
+.dd-print-row--flat { grid-template-columns: 1.6in 1.5in 1.1in; }
+.dd-print-name { font-family: 'DM Serif Display', serif; font-size: calc(12px * var(--dd-scale)); }
+.dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: calc(10px * var(--dd-scale)); }
+.dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 
 @media (max-width: 768px) {
   #app-header { padding: 0 8px 0 10px; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1778,10 +1793,15 @@ function renderDigest() {
   renderDigestPrintControls();
 }
 
-// Same gray-bar-plus-rows visual language on both sides — a room gets its
-// name as the section title with each teacher who used it (and their span)
-// as a row underneath; a teacher gets their name as the title with one row
-// listing their room(s) as plain text and their overall span.
+// A room gets its name as a gray section-title bar with each teacher who
+// used it (and their span) as a row underneath — the bar earns its keep
+// there since it groups potentially several teachers under one room. An
+// instructor doesn't get that same benefit (there's nothing to group under
+// a single teacher's name), so that side is a flat single-line row per
+// teacher instead — name, room(s), span all on one line, no title bar —
+// which also matters for fitting a fully-booked day on one page: a title
+// bar per teacher would cost roughly 2x the vertical space for zero
+// grouping benefit.
 function ddRoomBlocksHtml(day) {
   const rooms = ddRoomsForDay(day);
   return rooms.length
@@ -1801,12 +1821,10 @@ function ddTeacherBlocksHtml(day) {
   const teachers = ddTeachersForDay(day);
   return teachers.length
     ? teachers.map(t => `
-        <div class="dd-print-block">
-          <div class="dd-print-block-title">${escHtml(t.name)}</div>
-          <div class="dd-print-row">
-            <div class="dd-print-rooms-plain">${escHtml(t.rooms.join(', '))}</div>
-            <div class="dd-print-span">${ddFmtSpan(t)}</div>
-          </div>
+        <div class="dd-print-row dd-print-row--flat">
+          <div class="dd-print-name">${escHtml(t.name)}</div>
+          <div class="dd-print-rooms-plain">${escHtml(t.rooms.join(', '))}</div>
+          <div class="dd-print-span">${ddFmtSpan(t)}</div>
         </div>`).join('')
     : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
 }
@@ -1836,11 +1854,46 @@ function ddBuildPrintPage(day) {
     </div>`;
 }
 
+// dd-page is 11in x 8.5in with a 0.35in margin (see the @page rule above),
+// so this is the actual usable height a page's content has to fit inside.
+// Shrunk by DD_FIT_SAFETY to leave real-world headroom beyond this app's
+// own math — font hinting and a browser/printer's own default margins can
+// eat a little more space than the CSS numbers alone predict.
+const DD_PRINT_USABLE_H_PX = (8.5 - 2 * 0.35) * 96;
+const DD_FIT_SAFETY = 0.92;
+const DD_MIN_SCALE = 0.7;
+
+// Measures each print page's actual rendered content — real fonts, real
+// padding, whatever this browser does with them — and shrinks it (via the
+// --dd-scale custom property every dd-print-* rule reads from) just enough
+// to fit the physical page, the same "scale to fit" approach Room
+// Schedule's grid print already uses (rsBuildGrid), just measured from the
+// live DOM instead of computed analytically. A light day measures under
+// budget and stays at scale 1 — this only kicks in on a busy day.
+function ddScalePrintPages(section) {
+  const prevDisplay = section.style.display;
+  section.style.display = 'block'; // force into layout to measure, even though it's display:none on screen
+  section.querySelectorAll('.dd-print-page').forEach(pageEl => {
+    pageEl.style.setProperty('--dd-scale', '1');
+    const header = pageEl.querySelector('.dd-print-header');
+    const cols = pageEl.querySelectorAll('.dd-print-col');
+    if (!header || !cols.length) return;
+    const headerH = header.getBoundingClientRect().height + parseFloat(getComputedStyle(header).marginBottom || '0');
+    const budgetPx = (DD_PRINT_USABLE_H_PX - headerH) * DD_FIT_SAFETY;
+    const maxColH = Math.max(...[...cols].map(c => c.scrollHeight));
+    if (maxColH > budgetPx) {
+      pageEl.style.setProperty('--dd-scale', Math.max(DD_MIN_SCALE, budgetPx / maxColH).toFixed(3));
+    }
+  });
+  section.style.display = prevDisplay;
+}
+
 function ddPrint(dayFilter) {
   const days = dayFilter === 'all' ? ddDaysWithData() : [dayFilter];
   if (!days.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
   const section = document.getElementById('dd-print-section');
   section.innerHTML = days.map(d => ddBuildPrintPage(d)).join('');
+  ddScalePrintPages(section);
   section.classList.add('print-active');
   document.getElementById('rs-print-section').classList.remove('print-active');
   window.print();
