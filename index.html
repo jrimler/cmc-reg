@@ -395,9 +395,15 @@ body {
      prints above. */
   .dd-print-page { page: dd-page; page-break-after: always; color: #111; }
   .dd-print-page:last-child { page-break-after: avoid; }
-  .dd-print-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
-  .dd-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
-  .dd-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
+  /* The day of the week is the thing a staffer actually needs to spot at a
+     glance — it's the hero element. "Daily Digest" and the page format
+     (By Teacher / By Room) are just enough to tell two printed pages apart
+     if they get separated, so they're shrunk to a small corner label
+     instead of competing for attention. */
+  .dd-print-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
+  .dd-print-dayname { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; }
+  .dd-print-datesub { font-family: 'DM Mono', monospace; font-size: 13px; color: #555; margin-left: 8px; }
+  .dd-print-pagelabel { font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; }
   .dd-print-block { margin-bottom: 14px; page-break-inside: avoid; }
   .dd-print-block-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: 3px 6px; margin-bottom: 2px; }
   /* Fixed inch-based columns, not fr — a full-width grid stretches the two
@@ -1785,8 +1791,8 @@ function ddBuildPrintPage(day) {
   return `
     <div class="dd-print-page">
       <div class="dd-print-header">
-        <span class="dd-print-site">Richmond — Daily Digest (By Teacher)</span>
-        <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
+        <div><span class="dd-print-dayname">${RS_DAYS_FULL[day]}</span>${date ? `<span class="dd-print-datesub">${escHtml(fmtDateShort(date))}</span>` : ''}</div>
+        <span class="dd-print-pagelabel">Richmond · By Teacher</span>
       </div>
       ${blocks}
     </div>`;
@@ -1809,8 +1815,8 @@ function ddBuildPrintPageByRoom(day) {
   return `
     <div class="dd-print-page">
       <div class="dd-print-header">
-        <span class="dd-print-site">Richmond — Daily Digest (By Room)</span>
-        <span class="dd-print-day">${RS_DAYS_FULL[day]}${date ? ' · ' + escHtml(fmtDateShort(date)) : ''}</span>
+        <div><span class="dd-print-dayname">${RS_DAYS_FULL[day]}</span>${date ? `<span class="dd-print-datesub">${escHtml(fmtDateShort(date))}</span>` : ''}</div>
+        <span class="dd-print-pagelabel">Richmond · By Room</span>
       </div>
       ${blocks}
     </div>`;
