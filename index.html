@@ -339,7 +339,7 @@ body {
    doesn't reliably rotate in every print/PDF engine. */
 @page tabloid-page { size: 17in 11in; margin: 0.35in; }
 @page letter-landscape-page { size: 11in 8.5in; margin: 0.3in; }
-@page dd-page { size: 8.5in 11in; margin: 0.5in; }
+@page dd-page { size: 11in 8.5in; margin: 0.35in; }
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* body's pale-blue --paper background otherwise prints too, since the rule
@@ -388,31 +388,38 @@ body {
   .rs-print-page.letter .rs-print-site { font-size: 13px; }
   .rs-print-page.letter .rs-print-day { font-size: 9.5px; }
 
-  /* Daily Digest print: two pages sharing one visual language — a gray
-     section-title bar (teacher name on the By Teacher page, room name on
-     the By Room page) followed by simple 2-column rows underneath. No
+  /* Daily Digest print: one landscape page per day, By Room and By
+     Instructor side by side rather than as two separate portrait pages —
+     both share one visual language, a gray section-title bar (room or
+     instructor name) followed by simple 2-column rows underneath. No
      table, no pill tags — just bar + rows, ink-light like the two grid
      prints above. */
   .dd-print-page { page: dd-page; page-break-after: always; color: #111; }
   .dd-print-page:last-child { page-break-after: avoid; }
   /* The day of the week is the thing a staffer actually needs to spot at a
-     glance — it's the hero element. "Daily Digest" and the page format
-     (By Teacher / By Room) are just enough to tell two printed pages apart
-     if they get separated, so they're shrunk to a small corner label
-     instead of competing for attention. */
+     glance — it's the hero element. "Richmond" is just enough to identify
+     the sheet if it gets separated, so it's shrunk to a small corner label
+     instead of competing for attention; By Room / By Instructor each get
+     their own title at the top of their column instead. */
   .dd-print-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1.5px solid #333; }
   .dd-print-dayname { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; }
   .dd-print-datesub { font-family: 'DM Mono', monospace; font-size: 13px; color: #555; margin-left: 8px; }
   .dd-print-pagelabel { font-family: 'DM Mono', monospace; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; }
-  .dd-print-block { margin-bottom: 14px; page-break-inside: avoid; }
+  .dd-print-columns { display: flex; }
+  .dd-print-col { flex: 1 1 0; min-width: 0; padding: 0 0.3in; }
+  .dd-print-col:first-child { padding-left: 0; }
+  .dd-print-col:last-child { padding-right: 0; border-left: 1px solid #ccc; }
+  .dd-print-col-title { font-family: 'DM Serif Display', serif; font-size: 15px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1.5px solid #333; }
+  .dd-print-block { margin-bottom: 12px; page-break-inside: avoid; }
   .dd-print-block-title { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: 3px 6px; margin-bottom: 2px; }
   /* Fixed inch-based columns, not fr — a full-width grid stretches the two
-     columns apart to fill the page even when their content is short, the
-     same issue fixed on-screen by letting that table size to content
-     instead of forcing width:100%. */
-  .dd-print-row { display: grid; grid-template-columns: 2.8in 1.7in; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
-  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 13px; }
-  .dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: 10.5px; }
+     row cells apart to fill the column even when their content is short,
+     the same issue fixed on-screen by letting that table size to content
+     instead of forcing width:100%. Sized to fit within one ~4.5in print
+     column (page width minus margins, divider, and the other column). */
+  .dd-print-row { display: grid; grid-template-columns: 1fr 1.5in; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+  .dd-print-name { font-family: 'DM Serif Display', serif; font-size: 12px; }
+  .dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: 10px; }
   .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 }
 #rs-print-section { display: none; }
@@ -1771,37 +1778,13 @@ function renderDigest() {
   renderDigestPrintControls();
 }
 
-// Same gray-bar-plus-rows visual language as the By Room page below — here
-// each teacher gets the section title (their name) with their room(s) and
-// overall span as one plain-text row underneath, instead of the old flat
-// 3-column table with pill tags.
-function ddBuildPrintPage(day) {
-  const teachers = ddTeachersForDay(day);
-  const date = rsDateForSiteDay('Richmond', day);
-  const blocks = teachers.length
-    ? teachers.map(t => `
-        <div class="dd-print-block">
-          <div class="dd-print-block-title">${escHtml(t.name)}</div>
-          <div class="dd-print-row">
-            <div class="dd-print-rooms-plain">${escHtml(t.rooms.join(', '))}</div>
-            <div class="dd-print-span">${ddFmtSpan(t)}</div>
-          </div>
-        </div>`).join('')
-    : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
-  return `
-    <div class="dd-print-page">
-      <div class="dd-print-header">
-        <div><span class="dd-print-dayname">${RS_DAYS_FULL[day]}</span>${date ? `<span class="dd-print-datesub">${escHtml(fmtDateShort(date))}</span>` : ''}</div>
-        <span class="dd-print-pagelabel">Richmond · By Teacher</span>
-      </div>
-      ${blocks}
-    </div>`;
-}
-
-function ddBuildPrintPageByRoom(day) {
+// Same gray-bar-plus-rows visual language on both sides — a room gets its
+// name as the section title with each teacher who used it (and their span)
+// as a row underneath; a teacher gets their name as the title with one row
+// listing their room(s) as plain text and their overall span.
+function ddRoomBlocksHtml(day) {
   const rooms = ddRoomsForDay(day);
-  const date = rsDateForSiteDay('Richmond', day);
-  const blocks = rooms.length
+  return rooms.length
     ? rooms.map(r => `
         <div class="dd-print-block">
           <div class="dd-print-block-title">${escHtml(r.label)}</div>
@@ -1812,24 +1795,52 @@ function ddBuildPrintPageByRoom(day) {
             </div>`).join('')}
         </div>`).join('')
     : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
+}
+
+function ddTeacherBlocksHtml(day) {
+  const teachers = ddTeachersForDay(day);
+  return teachers.length
+    ? teachers.map(t => `
+        <div class="dd-print-block">
+          <div class="dd-print-block-title">${escHtml(t.name)}</div>
+          <div class="dd-print-row">
+            <div class="dd-print-rooms-plain">${escHtml(t.rooms.join(', '))}</div>
+            <div class="dd-print-span">${ddFmtSpan(t)}</div>
+          </div>
+        </div>`).join('')
+    : '<div class="dd-print-empty">Nothing booked in a Richmond room this day.</div>';
+}
+
+// One landscape page per day — By Room and By Instructor side by side,
+// each in their own column with their own title — instead of two separate
+// portrait pages. The day name stays the large header element; the two
+// column titles are what tell the halves apart.
+function ddBuildPrintPage(day) {
+  const date = rsDateForSiteDay('Richmond', day);
   return `
     <div class="dd-print-page">
       <div class="dd-print-header">
         <div><span class="dd-print-dayname">${RS_DAYS_FULL[day]}</span>${date ? `<span class="dd-print-datesub">${escHtml(fmtDateShort(date))}</span>` : ''}</div>
-        <span class="dd-print-pagelabel">Richmond · By Room</span>
+        <span class="dd-print-pagelabel">Richmond</span>
       </div>
-      ${blocks}
+      <div class="dd-print-columns">
+        <div class="dd-print-col">
+          <div class="dd-print-col-title">By Room</div>
+          ${ddRoomBlocksHtml(day)}
+        </div>
+        <div class="dd-print-col">
+          <div class="dd-print-col-title">By Instructor</div>
+          ${ddTeacherBlocksHtml(day)}
+        </div>
+      </div>
     </div>`;
 }
 
-// Always two pages per day — By Teacher then By Room — so the printout is
-// predictable regardless of how busy a day is, rather than trying to
-// squeeze both views onto one page and risking cramped text on a full day.
 function ddPrint(dayFilter) {
   const days = dayFilter === 'all' ? ddDaysWithData() : [dayFilter];
   if (!days.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
   const section = document.getElementById('dd-print-section');
-  section.innerHTML = days.map(d => ddBuildPrintPage(d) + ddBuildPrintPageByRoom(d)).join('');
+  section.innerHTML = days.map(d => ddBuildPrintPage(d)).join('');
   section.classList.add('print-active');
   document.getElementById('rs-print-section').classList.remove('print-active');
   window.print();
