@@ -819,6 +819,18 @@ function usDateToIso(str) {
   return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
 }
 
+// "2026-09-23" → "Mo" — the weekday derived straight from the calendar date,
+// not trusted from a report's separate "Day" text column (see
+// mapMasterScheduleRows). Built via Date.UTC + getUTCDay rather than
+// `new Date(iso)` + getDay, so a date-only string can't drift a day from
+// local-timezone parsing the way fmtDateShort's comment below warns about.
+const ISO_WEEKDAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+function isoToShortDay(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return ISO_WEEKDAY_SHORT[new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).getUTCDay()];
+}
+
 // "2026-09-23" → "Sep 23" — parsed from the ISO parts directly (not `new Date`)
 // so the displayed date can't drift a day from local-timezone UTC parsing.
 const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -963,12 +975,22 @@ function mapMasterScheduleRows(rows) {
     const toTime = to24h(get(row, 'to'));
     if (!fromTime || !toTime) continue;
 
+    // Derived from the parsed Date column, not read from the report's own
+    // Day column — ASAP's Day text can disagree with Date for some rows
+    // (seen on recurring bookings, where Day reflects the weekly pattern
+    // but Date can lag), which surfaced as Room Schedule/Daily Digest
+    // showing the same calendar date under two different weekday tabs.
+    // Deriving it from Date instead guarantees the weekday a row is
+    // bucketed under always matches the date displayed for that bucket,
+    // since both now come from the same single field. Falls back to the
+    // raw column only if Date itself failed to parse.
+    const eventDate = usDateToIso(get(row, 'date'));
     out.push({
-      event_date: usDateToIso(get(row, 'date')),
+      event_date: eventDate,
       item,
       from_time: fromTime,
       to_time: toTime,
-      day: get(row, 'day'),
+      day: isoToShortDay(eventDate) || get(row, 'day'),
       duration_mins: parseDurationMins(get(row, 'duration')),
       facility_raw: get(row, 'facility'),
       site,
