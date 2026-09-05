@@ -226,7 +226,7 @@ body {
 .rs-site-tab:hover { color: var(--ink); }
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-#rs-day-tabs, #dd-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
+#rs-day-tabs, #dd-day-tabs, #rp-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
 .rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
@@ -235,14 +235,14 @@ body {
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
 .rs-site-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
 
-#rs-action-bar, #dd-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
+#dd-action-bar, #rp-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
 .rs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
 .rs-btn:hover { border-color: var(--ink); color: var(--ink); }
 .rs-print-group { display: inline-flex; align-items: center; gap: 6px; }
 .rs-day-select { padding: 5px 6px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; background: #fff; color: var(--muted); }
 
-#rs-grid-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
-#rs-grid, .rs-print-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
+#rs-grid-wrap, #rp-grid-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
+#rs-grid, #rp-grid, .rp-print-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
 
 .rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
 .rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
@@ -270,12 +270,27 @@ body {
 .rs-event-item { font-family: 'DM Serif Display', serif; font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .rs-event-info { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(0,0,0,0.52); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; }
 
-#rs-tooltip { display: none; position: fixed; z-index: 400; background: var(--ink); color: #fff; border-radius: 4px; padding: 9px 12px; font-size: 12px; pointer-events: none; max-width: 240px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-#rs-tt-title { font-weight: 500; margin-bottom: 5px; font-size: 13px; }
-#rs-tt-body { font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; opacity: 0.82; }
+#rs-tooltip, #rp-tooltip { display: none; position: fixed; z-index: 400; background: var(--ink); color: #fff; border-radius: 4px; padding: 9px 12px; font-size: 12px; pointer-events: none; max-width: 240px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+#rs-tt-title, #rp-tt-title { font-weight: 500; margin-bottom: 5px; font-size: 13px; }
+#rs-tt-body, #rp-tt-body { font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; opacity: 0.82; }
 
-#rs-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-#rs-empty.visible { display: flex; }
+#rs-empty, #rp-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+#rs-empty.visible, #rp-empty.visible { display: flex; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ROOM PLAN STYLES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+/* A teacher's whole reserved span in a room: a pale tint of the lesson/class
+   color, sized from their actual first-start to actual last-end that day.
+   The label sits at the top; actual booked time is called out by the darker
+   .rp-segment(s) layered inside (see rpBuildGrid) rather than by any text on
+   the segments themselves — the block already says "whose room this is and
+   for how long," the segments say "and here's exactly when they're busy." */
+.rp-block { position: absolute; left: 2px; right: 2px; border-radius: 3px; overflow: hidden; padding: 2px 4px; border-left: 3px solid transparent; box-sizing: border-box; }
+.rp-block.is-class { border-left-width: 5px; }
+.rp-block-name { font-family: 'DM Serif Display', serif; font-size: 10.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; position: relative; z-index: 1; }
+.rp-block-span { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(0,0,0,0.52); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.45; position: relative; z-index: 1; }
+.rp-segment { position: absolute; left: 0; right: 0; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    DAILY DIGEST STYLES
@@ -354,42 +369,44 @@ body {
      @page content Daily Digest uses (page: dd-page) makes Chromium insert a
      phantom blank leading page, since it has to break from the unnamed
      default page context to the named one. Toggled via .print-active,
-     set by renderPrintPages() / ddPrint() right before window.print(). */
-  #rs-print-section, #dd-print-section { display: none !important; }
-  #rs-print-section.print-active, #dd-print-section.print-active { display: block !important; }
-  .rs-print-page { page-break-after: always; }
-  .rs-print-page:last-child { page-break-after: avoid; }
-  .rs-print-page.tabloid { page: tabloid-page; }
-  .rs-print-page.letter { page: letter-landscape-page; }
-  .rs-print-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1.5px solid #333; }
-  .rs-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
-  .rs-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
-  .rs-room-header { position: static !important; }
-  .rs-corner, .rs-time-col { position: static !important; }
+     set by renderRPPrintPages() / ddPrint() right before window.print(). */
+  #rp-print-section, #dd-print-section { display: none !important; }
+  #rp-print-section.print-active, #dd-print-section.print-active { display: block !important; }
+  .rp-print-page { page-break-after: always; }
+  .rp-print-page:last-child { page-break-after: avoid; }
+  .rp-print-page.tabloid { page: tabloid-page; }
+  .rp-print-page.letter { page: letter-landscape-page; }
+  .rp-print-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1.5px solid #333; }
+  .rp-print-site { font-family: 'DM Serif Display', serif; font-size: 16px; }
+  .rp-print-day { font-family: 'DM Mono', monospace; font-size: 11px; color: #555; }
+  .rp-print-page .rs-room-header { position: static !important; }
+  .rp-print-page .rs-corner, .rp-print-page .rs-time-col { position: static !important; }
   /* Centered + overflow:hidden clips a too-long label symmetrically from
      both edges, which reads as garbled ("tal Hall" instead of "Recital
      Hall…"). Left-aligning makes the ellipsis truncate predictably from the
      end instead — matters most for letter's narrow, room-count-scaled
      columns, but safe for tabloid too. */
-  .rs-print-page .rs-room-col-head { justify-content: flex-start; text-align: left; }
+  .rp-print-page .rs-room-col-head { justify-content: flex-start; text-align: left; }
 
-  /* Row heights are set inline per page by rsBuildGrid (scaled to fit that
-     day's time range on one sheet) — only fonts/widths are styled here. */
-  .rs-print-page.tabloid .rs-time-tick { font-size: 10px; }
-  .rs-print-page.tabloid .rs-event-item { font-size: 11px; }
-  .rs-print-page.tabloid .rs-event-info { font-size: 9.5px; }
+  /* Row heights are set inline per page by rpBuildGrid (scaled to fit that
+     day's time range on one sheet) — only fonts/widths are styled here. Kept
+     in color (unlike Room Detail's old ink-saving grayscale print) since the
+     lesson/class color coding is the point of a block chart. */
+  .rp-print-page.tabloid .rs-time-tick { font-size: 10px; }
+  .rp-print-page.tabloid .rp-block-name { font-size: 11px; }
+  .rp-print-page.tabloid .rp-block-span { font-size: 9.5px; }
 
   /* Letter (11×8.5) is a much shorter/narrower page than tabloid, so its
      fonts are scaled down further to stay legible at the smaller row height. */
-  .rs-print-page.letter .rs-corner, .rs-print-page.letter .rs-time-col { width: 42px; }
-  .rs-print-page.letter .rs-time-tick { font-size: 8px; padding-right: 3px; }
-  .rs-print-page.letter .rs-event-item { font-size: 9px; }
-  .rs-print-page.letter .rs-event-info { font-size: 7.5px; line-height: 1.25; }
-  .rs-print-page.letter .rs-print-site { font-size: 13px; }
-  .rs-print-page.letter .rs-print-day { font-size: 9.5px; }
+  .rp-print-page.letter .rs-corner, .rp-print-page.letter .rs-time-col { width: 42px; }
+  .rp-print-page.letter .rs-time-tick { font-size: 8px; padding-right: 3px; }
+  .rp-print-page.letter .rp-block-name { font-size: 9px; }
+  .rp-print-page.letter .rp-block-span { font-size: 7.5px; line-height: 1.25; }
+  .rp-print-page.letter .rp-print-site { font-size: 13px; }
+  .rp-print-page.letter .rp-print-day { font-size: 9.5px; }
 
 }
-#rs-print-section { display: none; }
+#rp-print-section { display: none; }
 #dd-print-section { display: none; }
 
 /* Daily Digest print: one landscape page per day, By Room and By
@@ -475,7 +492,8 @@ body {
 
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
-    <button class="view-btn" data-view="roomSchedule">Room Schedule</button>
+    <button class="view-btn" data-view="roomDetail">Room Detail</button>
+    <button class="view-btn" data-view="roomPlan">Room Plan</button>
     <button class="view-btn" data-view="dailyDigest">Daily Digest</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="upload" id="upload-view-btn">Upload</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="admin" id="admin-view-btn">Admin</button>
@@ -583,23 +601,32 @@ body {
     </div>
   </div>
 
-  <!-- ══ ROOM SCHEDULE VIEW ════════════════════════════════════════════════ -->
+  <!-- ══ ROOM DETAIL VIEW ══════════════════════════════════════════════════ -->
   <div id="rs-view" class="view">
     <div id="rs-site-tabs"></div>
     <div id="rs-day-tabs"></div>
-    <div id="rs-action-bar">
-      <div class="rs-print-group">
-        <select class="rs-day-select" id="rs-print-tabloid-day"></select>
-        <button class="rs-btn" id="rs-print-tabloid-btn">Print 17×11 (Richmond, Fixed Rooms)</button>
-      </div>
-      <div class="rs-print-group">
-        <select class="rs-day-select" id="rs-print-letter-day"></select>
-        <button class="rs-btn" id="rs-print-letter-btn">Print 11×8.5 (Richmond, Booked Only)</button>
-      </div>
-    </div>
     <div id="rs-grid-wrap">
       <div id="rs-grid"></div>
       <div id="rs-empty">No events for this site and day.</div>
+    </div>
+  </div>
+
+  <!-- ══ ROOM PLAN VIEW ════════════════════════════════════════════════════ -->
+  <div id="rp-view" class="view">
+    <div id="rp-day-tabs"></div>
+    <div id="rp-action-bar">
+      <div class="rs-print-group">
+        <select class="rs-day-select" id="rp-print-tabloid-day"></select>
+        <button class="rs-btn" id="rp-print-tabloid-btn">Print 17×11 (Fixed Rooms)</button>
+      </div>
+      <div class="rs-print-group">
+        <select class="rs-day-select" id="rp-print-letter-day"></select>
+        <button class="rs-btn" id="rp-print-letter-btn">Print 11×8.5 (Booked Only)</button>
+      </div>
+    </div>
+    <div id="rp-grid-wrap">
+      <div id="rp-grid"></div>
+      <div id="rp-empty">No events for Richmond this day.</div>
     </div>
   </div>
 
@@ -666,7 +693,8 @@ body {
 </div><!-- #main-content -->
 
 <div id="rs-tooltip"><div id="rs-tt-title"></div><div id="rs-tt-body"></div></div>
-<div id="rs-print-section"></div>
+<div id="rp-tooltip"><div id="rp-tt-title"></div><div id="rp-tt-body"></div></div>
+<div id="rp-print-section"></div>
 <div id="dd-print-section"></div>
 <div id="toast"></div>
 
@@ -688,6 +716,12 @@ const DAY_FULL_TO_SHORT = { Monday:'Mo', Tuesday:'Tu', Wednesday:'We', Thursday:
 
 const RS_COLOR_PRIVATE = { bg: '#d4e8f8', border: '#4a90d9' };
 const RS_COLOR_GROUP   = { bg: '#f0e0b8', border: '#d9a030' };
+
+// Room Plan blocks: a pale tint of the same two colors for the teacher's
+// overall reserved span, so the darker RS_COLOR_PRIVATE/RS_COLOR_GROUP fill
+// used for each actual booking inside it reads as visibly "busier."
+const RP_COLOR_PRIVATE_LIGHT = { bg: '#eef6fc', border: '#a8cdea' };
+const RP_COLOR_GROUP_LIGHT   = { bg: '#faf5e7', border: '#e8cd8e' };
 
 const LF_SKIP_SUBJECTS = new Set([
   'Group Class','Group Classes','Room Reservation','Hold','No Subject',
@@ -733,6 +767,11 @@ const state = {
   rs: {
     sites: [],
     activeSite: '',
+    activeDay: '',
+  },
+
+  rp: {
+    days: [],
     activeDay: '',
   },
 
@@ -1408,7 +1447,104 @@ const PRINT_TARGET_WIDTH = { tabloid: 1450, letter: 950 };
 const PRINT_MAX_ROOM_W = { tabloid: 115, letter: 85 };
 const PRINT_MIN_ROOM_W = { tabloid: 60, letter: 40 };
 
-function rsBuildGrid(evts, rooms, printMode) {
+function rsBuildGrid(evts, rooms) {
+  if (!evts.length && !rooms.length) return '';
+  const ROOM_W = 140;
+
+  let lo = Infinity, hi = -Infinity;
+  evts.forEach(e => {
+    const s = timeToMins(e.from_time), n = timeToMins(e.to_time);
+    if (s < lo) lo = s;
+    if (n > hi) hi = n;
+  });
+  if (!isFinite(lo)) { lo = 9 * 60; hi = 18 * 60; }
+  lo = Math.floor(lo / 30) * 30;
+  hi = Math.ceil(hi / 30) * 30;
+  const totalSlots = (hi - lo) / 15;
+  const PX = 28;
+
+  let html = '<div class="rs-room-header"><div class="rs-corner"></div>';
+  rooms.forEach(r => {
+    html += `<div class="rs-room-col-head" style="width:${ROOM_W}px">${escHtml(roomDisplayName(r))}</div>`;
+  });
+  html += '</div><div class="rs-grid-body"><div class="rs-time-col">';
+  for (let i = 0; i < totalSlots; i++) {
+    const mins = lo + i * 15;
+    const onHour = mins % 60 === 0;
+    html += `<div class="rs-time-tick${onHour ? ' on-hour' : ''}" style="height:${PX}px">${onHour ? escHtml(fmtTime(minsToTime24(mins))) : ''}</div>`;
+  }
+  html += '</div><div class="rs-rooms-area">';
+
+  const conflicts = rsDetectConflicts(evts);
+
+  rooms.forEach(room => {
+    const colH = totalSlots * PX;
+    html += `<div class="rs-room-col" style="width:${ROOM_W}px;height:${colH}px">`;
+    for (let i = 0; i < totalSlots; i++) {
+      const mins = lo + i * 15;
+      const cls = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
+      html += `<div class="rs-slot-row${cls}" style="height:${PX}px"></div>`;
+    }
+    evts.filter(e => e.facility_raw === room.raw_facility_label).forEach(ev => {
+      const evIdx = evts.indexOf(ev);
+      const startM = timeToMins(ev.from_time), endM = timeToMins(ev.to_time);
+      const top = (startM - lo) / 15 * PX;
+      const height = Math.max((endM - startM) / 15 * PX - 2, 16);
+      const isClass = ev.type === 'CLASS';
+      const col = isClass ? RS_COLOR_GROUP : RS_COLOR_PRIVATE;
+      const hasConflict = conflicts.has(evIdx);
+
+      let inner = `<span class="rs-event-item">${escHtml(ev.item)}</span>`;
+      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor_name)}</span>`;
+      if (height >= 52) inner += `<span class="rs-event-info">${fmtTime(ev.from_time)}–${fmtTime(ev.to_time)}</span>`;
+      if (height >= 68 && ev.student) inner += `<span class="rs-event-info">${escHtml(ev.student)}</span>`;
+
+      const dataAttrs = [
+        `data-item="${escHtml(ev.item)}"`, `data-instructor="${escHtml(ev.instructor_name)}"`,
+        `data-student="${escHtml(ev.student || '')}"`, `data-from="${escHtml(fmtTime(ev.from_time))}"`,
+        `data-to="${escHtml(fmtTime(ev.to_time))}"`, `data-facility="${escHtml(room.raw_facility_label)}"`,
+        `data-type="${escHtml(ev.type)}"`, `data-conflict="${hasConflict}"`,
+      ].join(' ');
+
+      html += `<div class="rs-event${isClass ? ' is-class' : ''}${hasConflict ? ' rs-conflict' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;background:${col.bg};border-left-color:${col.border}">${inner}</div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+// Groups a room's events by teacher into one span each — earliest start to
+// latest end that day, in that room — the same "who's using this room and
+// when" shape as ddRoomsForDay, plus the individual bookings so rpBuildGrid
+// can render each as a darker segment inside the teacher's overall span.
+function rpTeacherBlocksForRoom(evts, room) {
+  const roomEvts = evts.filter(e => e.facility_raw === room.raw_facility_label);
+  const byName = new Map();
+  roomEvts.forEach(e => {
+    if (!byName.has(e.instructor_name)) byName.set(e.instructor_name, []);
+    byName.get(e.instructor_name).push(e);
+  });
+  return [...byName.entries()].map(([name, bookings]) => {
+    bookings = bookings.slice().sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
+    return {
+      name,
+      start: Math.min(...bookings.map(b => timeToMins(b.from_time))),
+      end: Math.max(...bookings.map(b => timeToMins(b.to_time))),
+      isClass: bookings[0].type === 'CLASS',
+      bookings,
+    };
+  }).sort((a, b) => a.start - b.start);
+}
+
+// Room Plan's grid: same header/time-column/room-column scaffolding as
+// rsBuildGrid, but each room column renders one pale .rp-block per teacher
+// (their full start-to-end span, no gap-splitting) with a darker .rp-segment
+// layered inside for each actual booking — "where's the teacher, and when
+// exactly are they busy," with no student or lesson-item detail. printMode
+// only drives sizing (reusing rsBuildGrid's print scale-to-fit constants) —
+// unlike Room Detail's old print, Room Plan always renders in color.
+function rpBuildGrid(evts, rooms, printMode) {
   if (!evts.length && !rooms.length) return '';
   const ROOM_W = printMode
     ? Math.max(PRINT_MIN_ROOM_W[printMode], Math.min(PRINT_MAX_ROOM_W[printMode], PRINT_TARGET_WIDTH[printMode] / Math.max(rooms.length, 1)))
@@ -1441,8 +1577,6 @@ function rsBuildGrid(evts, rooms, printMode) {
   }
   html += '</div><div class="rs-rooms-area">';
 
-  const conflicts = printMode ? new Set() : rsDetectConflicts(evts);
-
   rooms.forEach(room => {
     const colH = totalSlots * PX;
     html += `<div class="rs-room-col" style="width:${ROOM_W}px;height:${colH}px">`;
@@ -1451,35 +1585,28 @@ function rsBuildGrid(evts, rooms, printMode) {
       const cls = mins % 60 === 0 ? ' on-hour' : (mins % 30 === 0 ? ' half-hour' : '');
       html += `<div class="rs-slot-row${cls}" style="height:${PX}px"></div>`;
     }
-    evts.filter(e => e.facility_raw === room.raw_facility_label).forEach(ev => {
-      const evIdx = evts.indexOf(ev);
-      const startM = timeToMins(ev.from_time), endM = timeToMins(ev.to_time);
-      const top = (startM - lo) / 15 * PX;
-      const height = Math.max((endM - startM) / 15 * PX - 2, 16);
-      const isClass = ev.type === 'CLASS';
-      const col = isClass ? RS_COLOR_GROUP : RS_COLOR_PRIVATE;
-      const hasConflict = conflicts.has(evIdx);
+    rpTeacherBlocksForRoom(evts, room).forEach(block => {
+      const top = (block.start - lo) / 15 * PX;
+      const height = Math.max((block.end - block.start) / 15 * PX - 2, 16);
+      const light = block.isClass ? RP_COLOR_GROUP_LIGHT : RP_COLOR_PRIVATE_LIGHT;
 
-      let inner = `<span class="rs-event-item">${escHtml(ev.item)}</span>`;
-      if (height >= 36) inner += `<span class="rs-event-info">${escHtml(ev.instructor_name)}</span>`;
-      if (height >= 52) inner += `<span class="rs-event-info">${fmtTime(ev.from_time)}–${fmtTime(ev.to_time)}</span>`;
+      let inner = `<span class="rp-block-name">${escHtml(block.name)}</span>`;
+      if (height >= 36) inner += `<span class="rp-block-span">${fmtTime(minsToTime24(block.start))}–${fmtTime(minsToTime24(block.end))}</span>`;
+
+      block.bookings.forEach(b => {
+        const segStart = timeToMins(b.from_time), segEnd = timeToMins(b.to_time);
+        const segTop = (segStart - block.start) / 15 * PX;
+        const segHeight = Math.max((segEnd - segStart) / 15 * PX, 4);
+        const segCol = b.type === 'CLASS' ? RS_COLOR_GROUP : RS_COLOR_PRIVATE;
+        inner += `<div class="rp-segment" style="top:${segTop}px;height:${segHeight}px;background:${segCol.bg}"></div>`;
+      });
 
       const dataAttrs = printMode ? '' : [
-        `data-item="${escHtml(ev.item)}"`, `data-instructor="${escHtml(ev.instructor_name)}"`,
-        `data-student="${escHtml(ev.student || '')}"`, `data-from="${escHtml(fmtTime(ev.from_time))}"`,
-        `data-to="${escHtml(fmtTime(ev.to_time))}"`, `data-facility="${escHtml(room.raw_facility_label)}"`,
-        `data-type="${escHtml(ev.type)}"`, `data-conflict="${hasConflict}"`,
+        `data-teacher="${escHtml(block.name)}"`, `data-facility="${escHtml(roomDisplayName(room))}"`,
+        `data-from="${escHtml(fmtTime(minsToTime24(block.start)))}"`, `data-to="${escHtml(fmtTime(minsToTime24(block.end)))}"`,
       ].join(' ');
 
-      // Print skips the color fill entirely (that's most of the ink on a
-      // page with dozens of events) and uses a plain grayscale outline
-      // instead — the existing border-left-width difference (3px vs 5px
-      // for .is-class) still distinguishes lesson vs class without color.
-      const boxStyle = printMode
-        ? `background:#fff;border:1px solid #999;border-left-color:#333`
-        : `background:${col.bg};border-left-color:${col.border}`;
-
-      html += `<div class="rs-event${isClass ? ' is-class' : ''}${hasConflict ? ' rs-conflict' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;${boxStyle}">${inner}</div>`;
+      html += `<div class="rp-block${block.isClass ? ' is-class' : ''}" ${dataAttrs} style="top:${top}px;height:${height}px;background:${light.bg};border-left-color:${light.border}">${inner}</div>`;
     });
     html += '</div>';
   });
@@ -1516,7 +1643,7 @@ function renderRSGrid() {
     return;
   }
   empty.classList.remove('visible');
-  grid.innerHTML = rsBuildGrid(evts, rooms, false);
+  grid.innerHTML = rsBuildGrid(evts, rooms);
 }
 
 // Only the rooms actually booked in `evts` — looked up in the registry for
@@ -1553,18 +1680,16 @@ function renderRoomSchedule() {
   renderSiteTabs();
   renderDayTabs();
   renderRSGrid();
-  renderPrintControls();
 }
 
-// ── PRINT ────────────────────────────────────────────────────────────────────
-// Two Richmond-only print formats, both scoped to rooms tagged "physical" in
-// Admin -> Rooms (Richmond's studio spaces, not home/virtual studios):
-//   - Tabloid (17x11): the full fixed room set as columns every time, whether
-//     booked or not, so the same chart prints the same way day to day.
-//   - Letter (11x8.5): only whichever physical rooms are actually booked that
-//     day, so the page stays small and there are no empty columns.
+// ── ROOM PLAN ────────────────────────────────────────────────────────────────────
+// Richmond-only "where's the teacher" wall chart: every teacher's bookings in
+// a room collapse into one block (their earliest start to latest end that
+// day), with the actual booked sub-ranges shown darker inside it. This is
+// also where the two print formats live — front desk prints from here, not
+// from Room Detail.
 
-function rsPrintDayOptions() {
+function richmondPrintDayOptions() {
   const opts = ['<option value="all">All week</option>'];
   RS_DAYS_ORDER.forEach(d => {
     const date = rsDateForSiteDay('Richmond', d);
@@ -1574,26 +1699,56 @@ function rsPrintDayOptions() {
   return opts.join('');
 }
 
+function renderRPDayTabs() {
+  const bar = document.getElementById('rp-day-tabs');
+  const days = RS_DAYS_ORDER.filter(d => state.data.events.some(e => siteToBranch(e.site) === 'Richmond' && e.day === d));
+  bar.innerHTML = days.map(d => {
+    const date = rsDateForSiteDay('Richmond', d);
+    const dateLabel = date ? ` <span class="rs-day-tab-date">${escHtml(fmtDateShort(date))}</span>` : '';
+    return `<button class="rs-day-tab${d === state.rp.activeDay ? ' active' : ''}" data-day="${d}">${RS_DAYS_FULL[d].slice(0, 3)}${dateLabel}</button>`;
+  }).join('');
+}
+
+function renderRPGrid() {
+  const grid = document.getElementById('rp-grid');
+  const empty = document.getElementById('rp-empty');
+  const evts = rsForSiteDay('Richmond', state.rp.activeDay);
+  const rooms = richmondColumns(evts);
+  if (!evts.length && !rooms.length) {
+    grid.innerHTML = '';
+    empty.classList.add('visible');
+    return;
+  }
+  empty.classList.remove('visible');
+  grid.innerHTML = rpBuildGrid(evts, rooms, false);
+}
+
 // Keeps the two print day-pickers current with Richmond's loaded dates,
 // preserving whatever the user already had selected when possible.
-function renderPrintControls() {
-  ['rs-print-tabloid-day', 'rs-print-letter-day'].forEach(id => {
+function renderRPPrintControls() {
+  ['rp-print-tabloid-day', 'rp-print-letter-day'].forEach(id => {
     const sel = document.getElementById(id);
     const prevValue = sel.value || 'all';
-    sel.innerHTML = rsPrintDayOptions();
+    sel.innerHTML = richmondPrintDayOptions();
     sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : 'all';
   });
 }
 
-function renderPrintPages(pages, modeClass) {
-  const section = document.getElementById('rs-print-section');
+function renderRoomPlan() {
+  renderRPDayTabs();
+  renderRPGrid();
+  renderRPPrintControls();
+}
+
+function renderRPPrintPages(pages, modeClass) {
+  const section = document.getElementById('rp-print-section');
   section.innerHTML = pages.map(p => `
-    <div class="rs-print-page ${modeClass}">
-      <div class="rs-print-header">
-        <span class="rs-print-site">Richmond</span>
-        <span class="rs-print-day">${RS_DAYS_FULL[p.day]}${p.date ? ' · ' + escHtml(fmtDateShort(p.date)) : ''}</span>
+    <div class="rp-print-page ${modeClass}">
+      <div class="rp-print-header">
+        <span class="rp-print-site">Richmond</span>
+        <span class="rp-print-day">${RS_DAYS_FULL[p.day]}${p.date ? ' · ' + escHtml(fmtDateShort(p.date)) : ''}</span>
       </div>
-      <div class="rs-print-grid">${p.html}</div>
+      <div class="rp-print-grid">${p.html}</div>
     </div>
   `).join('');
   section.classList.add('print-active');
@@ -1604,7 +1759,7 @@ function renderPrintPages(pages, modeClass) {
 // dayFilter is 'all' or a day code. For 'all', days with nothing booked in
 // any physical room are skipped; a specific day is always printed even if
 // empty, since the user asked for that exact day.
-function rsPrintTabloid(dayFilter) {
+function rpPrintTabloid(dayFilter) {
   const rooms = rsRoomsForSite('Richmond', true);
   if (!rooms.length) {
     toast('No Richmond rooms are tagged "physical" yet — tag them in Admin → Rooms.', true);
@@ -1617,16 +1772,16 @@ function rsPrintTabloid(dayFilter) {
     const allEvts = rsForSiteDay('Richmond', day);
     if (dayFilter === 'all' && !allEvts.length) return;
     const evts = allEvts.filter(e => roomLabels.has(e.facility_raw));
-    pages.push({ day, date: rsDateForSiteDay('Richmond', day), html: rsBuildGrid(evts, rooms, 'tabloid') });
+    pages.push({ day, date: rsDateForSiteDay('Richmond', day), html: rpBuildGrid(evts, rooms, 'tabloid') });
   });
   if (!pages.length) { toast('Nothing to print for Richmond.', true); return; }
-  renderPrintPages(pages, 'tabloid');
+  renderRPPrintPages(pages, 'tabloid');
 }
 
 // A day with nothing booked in a physical room has nothing to show, whether
 // that's the single day picked or one of the seven in "all week" — so both
 // cases just end up with no page for that day.
-function rsPrintLetter(dayFilter) {
+function rpPrintLetter(dayFilter) {
   const allRooms = rsRoomsForSite('Richmond', true);
   if (!allRooms.length) {
     toast('No Richmond rooms are tagged "physical" yet — tag them in Admin → Rooms.', true);
@@ -1639,10 +1794,29 @@ function rsPrintLetter(dayFilter) {
     if (!evts.length) return;
     const bookedLabels = new Set(evts.map(e => e.facility_raw));
     const rooms = allRooms.filter(r => bookedLabels.has(r.raw_facility_label));
-    pages.push({ day, date: rsDateForSiteDay('Richmond', day), html: rsBuildGrid(evts, rooms, 'letter') });
+    pages.push({ day, date: rsDateForSiteDay('Richmond', day), html: rpBuildGrid(evts, rooms, 'letter') });
   });
   if (!pages.length) { toast('Nothing booked in a Richmond physical room for the selected day.', true); return; }
-  renderPrintPages(pages, 'letter');
+  renderRPPrintPages(pages, 'letter');
+}
+
+const RP_PREFS_STORAGE_KEY = 'sfcmc_lastRoomPlan';
+
+function saveRPPrefs() {
+  try { localStorage.setItem(RP_PREFS_STORAGE_KEY, JSON.stringify({ day: state.rp.activeDay })); } catch {}
+}
+
+function loadRPPrefs() {
+  try { return JSON.parse(localStorage.getItem(RP_PREFS_STORAGE_KEY) || 'null'); } catch { return null; }
+}
+
+// Restores the last-viewed day on refresh — falling back to the first day
+// with data whenever the saved day no longer applies (e.g. a new upload).
+function initRoomPlanState() {
+  const days = RS_DAYS_ORDER.filter(d => state.data.events.some(e => siteToBranch(e.site) === 'Richmond' && e.day === d));
+  state.rp.days = days;
+  const saved = loadRPPrefs();
+  state.rp.activeDay = (saved && days.includes(saved.day)) ? saved.day : (days[0] || '');
 }
 
 // ── DAILY DIGEST ─────────────────────────────────────────────────────────────────
@@ -1805,7 +1979,7 @@ function renderDigestBody() {
 function renderDigestPrintControls() {
   const sel = document.getElementById('dd-print-day');
   const prevValue = sel.value || 'all';
-  sel.innerHTML = rsPrintDayOptions();
+  sel.innerHTML = richmondPrintDayOptions();
   sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : 'all';
 }
 
@@ -1917,7 +2091,7 @@ function ddPrint(dayFilter) {
   section.innerHTML = days.map(d => ddBuildPrintPage(d)).join('');
   ddScalePrintPages(section);
   section.classList.add('print-active');
-  document.getElementById('rs-print-section').classList.remove('print-active');
+  document.getElementById('rp-print-section').classList.remove('print-active');
   window.print();
 }
 
@@ -1974,7 +2148,8 @@ async function handleUpload(card) {
     toast(`${REPORT_LABELS[type]} updated.`);
 
     if (state.appMode === 'lessonFinder') renderLessonFinder();
-    if (state.appMode === 'roomSchedule') initRoomScheduleState();
+    if (state.appMode === 'roomDetail') initRoomScheduleState();
+    if (state.appMode === 'roomPlan') { initRoomPlanState(); renderRoomPlan(); }
     if (state.appMode === 'dailyDigest') { initDigestState(); renderDigest(); }
   } catch (err) {
     statusEl.className = 'upload-status error';
@@ -2068,7 +2243,8 @@ function setAppMode(mode) {
   document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   if (mode === 'lessonFinder') { document.getElementById('lf-view').classList.add('active'); renderLessonFinder(); }
-  if (mode === 'roomSchedule') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
+  if (mode === 'roomDetail') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
+  if (mode === 'roomPlan') { document.getElementById('rp-view').classList.add('active'); initRoomPlanState(); renderRoomPlan(); }
   if (mode === 'dailyDigest') { document.getElementById('dd-view').classList.add('active'); initDigestState(); renderDigest(); }
   if (mode === 'upload') { document.getElementById('upload-view').classList.add('active'); renderAdminUpload(); }
   if (mode === 'admin') { document.getElementById('admin-view').classList.add('active'); renderAdmin(); }
@@ -2077,7 +2253,7 @@ function setAppMode(mode) {
 // Picks up where the user left off after a refresh — falls back to Lesson
 // Finder if nothing was saved, the saved view no longer exists, or it's an
 // admin-only view and this user isn't an admin.
-const APP_MODES = new Set(['lessonFinder', 'roomSchedule', 'dailyDigest', 'upload', 'admin']);
+const APP_MODES = new Set(['lessonFinder', 'roomDetail', 'roomPlan', 'dailyDigest', 'upload', 'admin']);
 const ADMIN_ONLY_MODES = new Set(['upload', 'admin']);
 
 function lastAppMode() {
@@ -2253,8 +2429,17 @@ document.getElementById('rs-day-tabs').addEventListener('click', (e) => {
   renderRSGrid();
 });
 
-document.getElementById('rs-print-tabloid-btn').addEventListener('click', () => rsPrintTabloid(document.getElementById('rs-print-tabloid-day').value));
-document.getElementById('rs-print-letter-btn').addEventListener('click', () => rsPrintLetter(document.getElementById('rs-print-letter-day').value));
+document.getElementById('rp-day-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.rs-day-tab');
+  if (!btn) return;
+  state.rp.activeDay = btn.dataset.day;
+  saveRPPrefs();
+  renderRPDayTabs();
+  renderRPGrid();
+});
+
+document.getElementById('rp-print-tabloid-btn').addEventListener('click', () => rpPrintTabloid(document.getElementById('rp-print-tabloid-day').value));
+document.getElementById('rp-print-letter-btn').addEventListener('click', () => rpPrintLetter(document.getElementById('rp-print-letter-day').value));
 
 document.getElementById('dd-day-tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('.rs-day-tab');
@@ -2293,6 +2478,21 @@ document.getElementById('rs-grid-wrap').addEventListener('mousemove', (e) => {
 });
 document.getElementById('rs-grid-wrap').addEventListener('mouseleave', () => {
   document.getElementById('rs-tooltip').style.display = 'none';
+});
+
+document.getElementById('rp-grid-wrap').addEventListener('mousemove', (e) => {
+  const el = e.target.closest('.rp-block[data-teacher]');
+  const tooltip = document.getElementById('rp-tooltip');
+  if (!el) { tooltip.style.display = 'none'; return; }
+  document.getElementById('rp-tt-title').textContent = el.dataset.teacher;
+  const lines = [el.dataset.facility, `${el.dataset.from}–${el.dataset.to}`];
+  document.getElementById('rp-tt-body').innerHTML = lines.map(escHtml).join('<br>');
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY + 14) + 'px';
+});
+document.getElementById('rp-grid-wrap').addEventListener('mouseleave', () => {
+  document.getElementById('rp-tooltip').style.display = 'none';
 });
 
 document.querySelectorAll('.upload-card').forEach(card => {
