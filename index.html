@@ -226,7 +226,7 @@ body {
 .rs-site-tab:hover { color: var(--ink); }
 .rs-site-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
 
-#rs-day-tabs, #dd-day-tabs, #rp-day-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
+#rs-day-tabs, #dd-day-tabs, #rp-day-tabs, #rm-room-tabs { height: 38px; flex-shrink: 0; display: flex; align-items: center; background: var(--paper-dark); border-bottom: 1.5px solid var(--rule); padding: 0 18px; gap: 5px; }
 .rs-day-tab { height: 28px; padding: 0 14px; border: none; border-radius: 3px; background: transparent; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; transition: color 0.1s, background 0.1s; }
 .rs-day-tab:hover { color: var(--ink); background: rgba(0,0,0,0.05); }
 .rs-day-tab.active { color: var(--teal); background: var(--teal-soft); }
@@ -235,14 +235,15 @@ body {
 .rs-tab-count { font-size: 9px; background: var(--paper-dark); border-radius: 8px; padding: 1px 5px; color: var(--muted); font-family: 'DM Mono', monospace; }
 .rs-site-tab.active .rs-tab-count { background: rgba(42,100,150,0.12); color: var(--teal); }
 
-#dd-action-bar, #rp-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
+#dd-action-bar, #rp-action-bar, #rm-action-bar { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; padding: 6px 16px; border-bottom: 1px solid var(--rule); background: #fff; gap: 10px; }
 .rs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; color: var(--muted); white-space: nowrap; flex-shrink: 0; transition: border-color 0.15s, color 0.15s; }
 .rs-btn:hover { border-color: var(--ink); color: var(--ink); }
 .rs-print-group { display: inline-flex; align-items: center; gap: 6px; }
 .rs-day-select { padding: 5px 6px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 10px; background: #fff; color: var(--muted); }
 
-#rs-grid-wrap, #rp-grid-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
+#rs-grid-wrap, #rp-grid-wrap, #rm-preview-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
 #rs-grid, #rp-grid, .rp-print-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
+#rm-preview { max-width: 640px; margin: 24px auto; padding: 0 20px; }
 
 .rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
 .rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
@@ -274,8 +275,8 @@ body {
 #rs-tt-title, #rp-tt-title { font-weight: 500; margin-bottom: 5px; font-size: 13px; }
 #rs-tt-body, #rp-tt-body { font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.7; opacity: 0.82; }
 
-#rs-empty, #rp-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
-#rs-empty.visible, #rp-empty.visible { display: flex; }
+#rs-empty, #rp-empty, #rm-empty { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+#rs-empty.visible, #rp-empty.visible, #rm-empty.visible { display: flex; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ROOM PLAN STYLES
@@ -355,6 +356,7 @@ body {
 @page tabloid-page { size: 17in 11in; margin: 0.35in; }
 @page letter-landscape-page { size: 11in 8.5in; margin: 0.3in; }
 @page dd-page { size: 11in 8.5in; margin: 0.35in; }
+@page rm-page { size: 8.5in 11in; margin: 0.45in; }
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* body's pale-blue --paper background otherwise prints too, since the rule
@@ -369,9 +371,10 @@ body {
      @page content Daily Digest uses (page: dd-page) makes Chromium insert a
      phantom blank leading page, since it has to break from the unnamed
      default page context to the named one. Toggled via .print-active,
-     set by renderRPPrintPages() / ddPrint() right before window.print(). */
-  #rp-print-section, #dd-print-section { display: none !important; }
-  #rp-print-section.print-active, #dd-print-section.print-active { display: block !important; }
+     set by renderRPPrintPages() / ddPrint() / rmPrint() right before
+     window.print(). */
+  #rp-print-section, #dd-print-section, #rm-print-section { display: none !important; }
+  #rp-print-section.print-active, #dd-print-section.print-active, #rm-print-section.print-active { display: block !important; }
   .rp-print-page { page-break-after: always; }
   .rp-print-page:last-child { page-break-after: avoid; }
   .rp-print-page.tabloid { page: tabloid-page; }
@@ -408,6 +411,7 @@ body {
 }
 #rp-print-section { display: none; }
 #dd-print-section { display: none; }
+#rm-print-section { display: none; }
 
 /* Daily Digest print: one landscape page per day, By Room and By
    Instructor side by side rather than as two separate portrait pages —
@@ -457,6 +461,28 @@ body {
 .dd-print-span, .dd-print-rooms-plain { font-family: 'DM Mono', monospace; font-size: calc(10px * var(--dd-scale)); }
 .dd-print-empty { padding: 20px 0; color: #777; font-size: 11px; }
 
+/* Room Signs: shared markup between the on-screen preview (#rm-preview) and
+   print (#rm-print-section) — one room's full Monday–Saturday breakdown,
+   built once by rmDaysBlockHtml() and reused in both places (unlike Daily
+   Digest, which renders its screen table and print blocks separately). The
+   --rm-scale custom property defaults to 1 for the on-screen copy and is
+   only ever overridden by rmScalePrintPages() on the print copy, the same
+   "measure real height, shrink just enough" approach as --dd-scale above —
+   deliberately never applied to .rm-roomname/.rm-notice, which must stay
+   large and legible on a door regardless of how busy that room's week is. */
+.rm-roomname { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; margin-bottom: 10px; }
+.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 10px 14px; margin-bottom: 18px; }
+.rm-days { --rm-scale: 1; }
+.rm-day-block { margin-bottom: calc(10px * var(--rm-scale)); page-break-inside: avoid; }
+.rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(11px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(3px * var(--rm-scale)) 8px; margin-bottom: 2px; }
+.rm-day-row { display: flex; justify-content: space-between; gap: 10px; padding: calc(4px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+.rm-day-name { font-family: 'DM Serif Display', serif; font-size: calc(13px * var(--rm-scale)); }
+.rm-day-span { font-family: 'DM Mono', monospace; font-size: calc(11px * var(--rm-scale)); white-space: nowrap; }
+.rm-day-empty { padding: calc(4px * var(--rm-scale)) 8px; color: #777; font-size: calc(11px * var(--rm-scale)); font-style: italic; }
+
+.rm-print-page { --rm-scale: 1; page: rm-page; page-break-after: always; color: #111; }
+.rm-print-page:last-child { page-break-after: avoid; }
+
 @media (max-width: 768px) {
   #app-header { padding: 0 8px 0 10px; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   #status-stack, #whoami { display: none; }
@@ -495,6 +521,7 @@ body {
     <button class="view-btn" data-view="roomDetail">Room Detail</button>
     <button class="view-btn" data-view="roomPlan">Room Plan</button>
     <button class="view-btn" data-view="dailyDigest">Daily Digest</button>
+    <button class="view-btn" data-view="roomSigns">Room Signs</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="upload" id="upload-view-btn">Upload</button>
     <button class="view-btn admin-only-view-btn hidden" data-view="admin" id="admin-view-btn">Admin</button>
   </div>
@@ -652,6 +679,24 @@ body {
     </div>
   </div>
 
+  <!-- ══ ROOM SIGNS VIEW ═══════════════════════════════════════════════════ -->
+  <div id="rm-view" class="view">
+    <div id="rm-room-tabs"></div>
+    <div id="rm-action-bar">
+      <div class="rs-print-group">
+        <select class="rs-day-select" id="rm-print-room"></select>
+        <button class="rs-btn" id="rm-print-one-btn">Print This Room</button>
+      </div>
+      <div class="rs-print-group">
+        <button class="rs-btn" id="rm-print-all-btn">Print All Room Signs</button>
+      </div>
+    </div>
+    <div id="rm-preview-wrap">
+      <div id="rm-preview"></div>
+      <div id="rm-empty">No Richmond rooms have anything booked this week.</div>
+    </div>
+  </div>
+
   <!-- ══ UPLOAD VIEW ══════════════════════════════════════════════════════ -->
   <div id="upload-view" class="view">
     <div class="admin-body">
@@ -696,6 +741,7 @@ body {
 <div id="rp-tooltip"><div id="rp-tt-title"></div><div id="rp-tt-body"></div></div>
 <div id="rp-print-section"></div>
 <div id="dd-print-section"></div>
+<div id="rm-print-section"></div>
 <div id="toast"></div>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════════════════════ -->
@@ -780,6 +826,11 @@ const state = {
     activeDay: '',
     sortBy: 'teacher',
     sortDir: 'asc',
+  },
+
+  rm: {
+    rooms: [],
+    activeRoomId: null,
   },
 };
 
@@ -1753,6 +1804,7 @@ function renderRPPrintPages(pages, modeClass) {
   `).join('');
   section.classList.add('print-active');
   document.getElementById('dd-print-section').classList.remove('print-active');
+  document.getElementById('rm-print-section').classList.remove('print-active');
   window.print();
 }
 
@@ -2092,7 +2144,182 @@ function ddPrint(dayFilter) {
   ddScalePrintPages(section);
   section.classList.add('print-active');
   document.getElementById('rp-print-section').classList.remove('print-active');
+  document.getElementById('rm-print-section').classList.remove('print-active');
   window.print();
+}
+
+// ── ROOM SIGNS ───────────────────────────────────────────────────────────────────
+// A Richmond front-door printout: one 8.5x11 page per booked physical room,
+// listing Monday–Saturday who has that room and roughly when. Unlike Room
+// Plan/Daily Digest (booked-only spans from Master Scheduler), a teacher's
+// displayed span here also stretches to cover their Open Slots availability
+// in that room, since front desk feedback was that a teacher booked 1–2pm
+// but available 12–4pm still expects to be able to use the room outside
+// their actual booking. Open Slots rows carry no room, so which room an
+// open slot extends is inferred with the same adjacent-booking heuristic
+// Lesson Finder already uses for its room guess (guessRoomForSlot) — an
+// open slot inherits whichever room the same teacher is booked into
+// immediately before/after it that day.
+
+const RM_DAYS_ORDER = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+// Richmond physical rooms with at least one real booking Mon–Sat this week
+// ("booked only on-site rooms") — Sunday is deliberately excluded, unlike
+// Room Detail/Room Plan/Daily Digest which show all 7 days.
+function rmRoomsWithBookings() {
+  return rsRoomsForSite('Richmond', true).filter(room =>
+    RM_DAYS_ORDER.some(d => rsForSiteDay('Richmond', d).some(e => e.facility_raw === room.raw_facility_label)));
+}
+
+// Each teacher booked in this room+day, span widened by any of their Open
+// Slots rows that this same adjacency heuristic also attributes to this
+// room. Only ever widens an existing booking — a teacher with no booking in
+// this room that day is never listed here, matching the "still booked, just
+// for less time than they're available" framing this feature exists for.
+// The ambiguous case (the heuristic can't tell which of two rooms an open
+// slot belongs to) is treated inclusively — extends into both candidates —
+// since understating a room's real use is the worse failure mode for a door
+// sign; cleaning up stale ASAP schedules reduces how often this triggers.
+function rmTeacherSpansForRoomDay(room, day) {
+  const roomEvts = rsForSiteDay('Richmond', day).filter(e => e.facility_raw === room.raw_facility_label);
+  const byName = new Map();
+  roomEvts.forEach(e => {
+    if (!byName.has(e.instructor_name)) byName.set(e.instructor_name, []);
+    byName.get(e.instructor_name).push(e);
+  });
+
+  const roomLabel = roomDisplayName(room);
+  return [...byName.entries()].map(([name, bookings]) => {
+    let start = Math.min(...bookings.map(b => timeToMins(b.from_time)));
+    let end = Math.max(...bookings.map(b => timeToMins(b.to_time)));
+
+    state.data.openSlots.filter(r => r.instructor_name === name && r.day === day).forEach(slot => {
+      const guess = guessRoomForSlot(name, day, slot.start_time);
+      if (guess.guess) return; // no real same-day booking to anchor to — not this heuristic's job to fix
+      const candidates = guess.ambiguous ? guess.label.split(' or ') : [guess.label];
+      if (!candidates.includes(roomLabel)) return;
+      start = Math.min(start, timeToMins(slot.start_time));
+      end = Math.max(end, timeToMins(slot.end_time));
+    });
+
+    return { name, start, end };
+  }).sort((a, b) => a.start - b.start || a.name.localeCompare(b.name));
+}
+
+function rmFmtSpan(t) {
+  return `${fmtTime(minsToTime24(t.start))}–${fmtTime(minsToTime24(t.end))}`;
+}
+
+// Shared between the on-screen preview and print — see the CSS comment
+// above .rm-roomname for why the two can reuse the exact same markup.
+function rmDaysBlockHtml(room) {
+  return `<div class="rm-days">${RM_DAYS_ORDER.map(day => {
+    const spans = rmTeacherSpansForRoomDay(room, day);
+    return `
+      <div class="rm-day-block">
+        <div class="rm-day-title">${escHtml(RS_DAYS_FULL[day])}</div>
+        ${spans.length
+          ? spans.map(t => `
+              <div class="rm-day-row">
+                <div class="rm-day-name">${escHtml(t.name)}</div>
+                <div class="rm-day-span">${rmFmtSpan(t)}</div>
+              </div>`).join('')
+          : '<div class="rm-day-empty">Nothing scheduled</div>'}
+      </div>`;
+  }).join('')}</div>`;
+}
+
+const RM_NOTICE = 'Rooms for Faculty and Student use ONLY. Current students must check with reception before entering a room.';
+
+function rmRoomPageHtml(room) {
+  return `
+    <div class="rm-roomname">${escHtml(roomDisplayName(room))}</div>
+    <div class="rm-notice">${escHtml(RM_NOTICE)}</div>
+    ${rmDaysBlockHtml(room)}`;
+}
+
+function rmBuildPrintPage(room) {
+  return `<div class="rm-print-page">${rmRoomPageHtml(room)}</div>`;
+}
+
+// Same "measure real rendered height, shrink via a CSS custom property"
+// approach as ddScalePrintPages — reused here so a busy room's full week
+// still fits on its one physical page. Only .rm-days content scales; the
+// room name and notice banner are excluded on purpose (see CSS comment).
+const RM_PRINT_USABLE_H_PX = (11 - 2 * 0.45) * 96;
+const RM_FIT_SAFETY = 0.92;
+const RM_MIN_SCALE = 0.6;
+
+function rmScalePrintPages(section) {
+  const prevDisplay = section.style.display;
+  section.style.display = 'block';
+  section.querySelectorAll('.rm-print-page').forEach(pageEl => {
+    pageEl.style.setProperty('--rm-scale', '1');
+    const roomname = pageEl.querySelector('.rm-roomname');
+    const notice = pageEl.querySelector('.rm-notice');
+    const days = pageEl.querySelector('.rm-days');
+    if (!roomname || !notice || !days) return;
+    const fixedH = roomname.getBoundingClientRect().height + notice.getBoundingClientRect().height
+      + parseFloat(getComputedStyle(notice).marginBottom || '0');
+    const budgetPx = (RM_PRINT_USABLE_H_PX - fixedH) * RM_FIT_SAFETY;
+    if (days.scrollHeight > budgetPx) {
+      pageEl.style.setProperty('--rm-scale', Math.max(RM_MIN_SCALE, budgetPx / days.scrollHeight).toFixed(3));
+    }
+  });
+  section.style.display = prevDisplay;
+}
+
+// roomFilter: 'all' (every qualifying room, one page each) or a room id.
+function rmPrint(roomFilter) {
+  const rooms = roomFilter === 'all' ? state.rm.rooms : state.rm.rooms.filter(r => String(r.id) === String(roomFilter));
+  if (!rooms.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
+  const section = document.getElementById('rm-print-section');
+  section.innerHTML = rooms.map(r => rmBuildPrintPage(r)).join('');
+  rmScalePrintPages(section);
+  section.classList.add('print-active');
+  document.getElementById('rp-print-section').classList.remove('print-active');
+  document.getElementById('dd-print-section').classList.remove('print-active');
+  window.print();
+}
+
+function renderRMRoomTabs() {
+  const bar = document.getElementById('rm-room-tabs');
+  bar.innerHTML = state.rm.rooms.map(r =>
+    `<button class="rs-day-tab${r.id === state.rm.activeRoomId ? ' active' : ''}" data-roomid="${r.id}">${escHtml(roomDisplayName(r))}</button>`
+  ).join('');
+}
+
+function renderRMPreview() {
+  const wrap = document.getElementById('rm-preview');
+  const empty = document.getElementById('rm-empty');
+  const room = state.rm.rooms.find(r => r.id === state.rm.activeRoomId);
+  if (!room) { wrap.innerHTML = ''; empty.classList.add('visible'); return; }
+  empty.classList.remove('visible');
+  wrap.innerHTML = rmRoomPageHtml(room);
+}
+
+function renderRMPrintControls() {
+  const sel = document.getElementById('rm-print-room');
+  const prevValue = sel.value;
+  sel.innerHTML = state.rm.rooms.map(r => `<option value="${r.id}">${escHtml(roomDisplayName(r))}</option>`).join('');
+  if (state.rm.rooms.some(r => String(r.id) === prevValue)) sel.value = prevValue;
+  else if (state.rm.activeRoomId != null) sel.value = state.rm.activeRoomId;
+}
+
+function renderRoomSigns() {
+  renderRMRoomTabs();
+  renderRMPreview();
+  renderRMPrintControls();
+}
+
+// Richmond rooms with anything booked Mon–Sat this week, in the same
+// curated display order as everywhere else — falls back to no active room
+// (and the empty state) if nothing at all qualifies.
+function initRoomSignsState() {
+  state.rm.rooms = rmRoomsWithBookings();
+  if (!state.rm.rooms.some(r => r.id === state.rm.activeRoomId)) {
+    state.rm.activeRoomId = state.rm.rooms.length ? state.rm.rooms[0].id : null;
+  }
 }
 
 // ── ADMIN: UPLOAD ────────────────────────────────────────────────────────────────
@@ -2151,6 +2378,7 @@ async function handleUpload(card) {
     if (state.appMode === 'roomDetail') initRoomScheduleState();
     if (state.appMode === 'roomPlan') { initRoomPlanState(); renderRoomPlan(); }
     if (state.appMode === 'dailyDigest') { initDigestState(); renderDigest(); }
+    if (state.appMode === 'roomSigns') { initRoomSignsState(); renderRoomSigns(); }
   } catch (err) {
     statusEl.className = 'upload-status error';
     statusEl.textContent = 'Error: ' + (err.message || err);
@@ -2246,6 +2474,7 @@ function setAppMode(mode) {
   if (mode === 'roomDetail') { document.getElementById('rs-view').classList.add('active'); initRoomScheduleState(); renderRoomSchedule(); }
   if (mode === 'roomPlan') { document.getElementById('rp-view').classList.add('active'); initRoomPlanState(); renderRoomPlan(); }
   if (mode === 'dailyDigest') { document.getElementById('dd-view').classList.add('active'); initDigestState(); renderDigest(); }
+  if (mode === 'roomSigns') { document.getElementById('rm-view').classList.add('active'); initRoomSignsState(); renderRoomSigns(); }
   if (mode === 'upload') { document.getElementById('upload-view').classList.add('active'); renderAdminUpload(); }
   if (mode === 'admin') { document.getElementById('admin-view').classList.add('active'); renderAdmin(); }
 }
@@ -2253,7 +2482,7 @@ function setAppMode(mode) {
 // Picks up where the user left off after a refresh — falls back to Lesson
 // Finder if nothing was saved, the saved view no longer exists, or it's an
 // admin-only view and this user isn't an admin.
-const APP_MODES = new Set(['lessonFinder', 'roomDetail', 'roomPlan', 'dailyDigest', 'upload', 'admin']);
+const APP_MODES = new Set(['lessonFinder', 'roomDetail', 'roomPlan', 'dailyDigest', 'roomSigns', 'upload', 'admin']);
 const ADMIN_ONLY_MODES = new Set(['upload', 'admin']);
 
 function lastAppMode() {
@@ -2450,6 +2679,17 @@ document.getElementById('dd-day-tabs').addEventListener('click', (e) => {
 });
 
 document.getElementById('dd-print-btn').addEventListener('click', () => ddPrint(document.getElementById('dd-print-day').value));
+
+document.getElementById('rm-room-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.rs-day-tab');
+  if (!btn) return;
+  state.rm.activeRoomId = Number(btn.dataset.roomid);
+  renderRMRoomTabs();
+  renderRMPreview();
+});
+
+document.getElementById('rm-print-one-btn').addEventListener('click', () => rmPrint(document.getElementById('rm-print-room').value));
+document.getElementById('rm-print-all-btn').addEventListener('click', () => rmPrint('all'));
 
 document.getElementById('dd-thead-row').addEventListener('click', (e) => {
   const th = e.target.closest('.dd-sortable');
