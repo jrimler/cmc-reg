@@ -471,17 +471,14 @@ body {
    deliberately never applied to .rm-roomname/.rm-notice, which must stay
    large and legible on a door regardless of how busy that room's week is. */
 .rm-roomname { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; margin-bottom: 10px; }
-.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
+.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
 .rm-days { --rm-scale: 1; }
 .rm-day-block { margin-bottom: calc(12px * var(--rm-scale)); page-break-inside: avoid; }
-.rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(14px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(4px * var(--rm-scale)) 8px; margin-bottom: 2px; }
-/* flex-start + a fixed name column (not space-between, which stretched the
-   name and time to opposite edges of the full page width) keeps the two
-   close together and reads as one line instead of two widely-split ones. */
-.rm-day-row { display: flex; align-items: baseline; gap: 18px; padding: calc(5px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
-.rm-day-name { font-family: 'DM Serif Display', serif; font-size: calc(16px * var(--rm-scale)); min-width: 200px; }
-.rm-day-span { font-family: 'DM Mono', monospace; font-size: calc(14px * var(--rm-scale)); white-space: nowrap; }
-.rm-day-empty { padding: calc(5px * var(--rm-scale)) 8px; color: #777; font-size: calc(13px * var(--rm-scale)); font-style: italic; }
+.rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(15px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(4px * var(--rm-scale)) 8px; margin-bottom: 2px; }
+.rm-day-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: calc(5px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+.rm-day-name { font-family: 'DM Serif Display', serif; font-size: calc(18px * var(--rm-scale)); }
+.rm-day-span { font-family: 'DM Mono', monospace; font-size: calc(16px * var(--rm-scale)); white-space: nowrap; }
+.rm-day-empty { padding: calc(5px * var(--rm-scale)) 8px; color: #777; font-size: calc(14px * var(--rm-scale)); font-style: italic; }
 
 .rm-print-page { --rm-scale: 1; page: rm-page; page-break-after: always; color: #111; }
 .rm-print-page:last-child { page-break-after: avoid; }
