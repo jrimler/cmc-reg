@@ -471,14 +471,17 @@ body {
    deliberately never applied to .rm-roomname/.rm-notice, which must stay
    large and legible on a door regardless of how busy that room's week is. */
 .rm-roomname { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; margin-bottom: 10px; }
-.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 10px 14px; margin-bottom: 18px; }
+.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
 .rm-days { --rm-scale: 1; }
-.rm-day-block { margin-bottom: calc(10px * var(--rm-scale)); page-break-inside: avoid; }
-.rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(11px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(3px * var(--rm-scale)) 8px; margin-bottom: 2px; }
-.rm-day-row { display: flex; justify-content: space-between; gap: 10px; padding: calc(4px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
-.rm-day-name { font-family: 'DM Serif Display', serif; font-size: calc(13px * var(--rm-scale)); }
-.rm-day-span { font-family: 'DM Mono', monospace; font-size: calc(11px * var(--rm-scale)); white-space: nowrap; }
-.rm-day-empty { padding: calc(4px * var(--rm-scale)) 8px; color: #777; font-size: calc(11px * var(--rm-scale)); font-style: italic; }
+.rm-day-block { margin-bottom: calc(12px * var(--rm-scale)); page-break-inside: avoid; }
+.rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(14px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(4px * var(--rm-scale)) 8px; margin-bottom: 2px; }
+/* flex-start + a fixed name column (not space-between, which stretched the
+   name and time to opposite edges of the full page width) keeps the two
+   close together and reads as one line instead of two widely-split ones. */
+.rm-day-row { display: flex; align-items: baseline; gap: 18px; padding: calc(5px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
+.rm-day-name { font-family: 'DM Serif Display', serif; font-size: calc(16px * var(--rm-scale)); min-width: 200px; }
+.rm-day-span { font-family: 'DM Mono', monospace; font-size: calc(14px * var(--rm-scale)); white-space: nowrap; }
+.rm-day-empty { padding: calc(5px * var(--rm-scale)) 8px; color: #777; font-size: calc(13px * var(--rm-scale)); font-style: italic; }
 
 .rm-print-page { --rm-scale: 1; page: rm-page; page-break-after: always; color: #111; }
 .rm-print-page:last-child { page-break-after: avoid; }
@@ -944,6 +947,14 @@ function normalizeInstructorName(s) {
 function roomDisplayName(room) {
   if (!room) return '';
   return (room.canonical_name && room.canonical_name.trim()) || room.raw_facility_label.replace(/^\([^)]*\)\s*/, '');
+}
+
+// Drops the trailing "-- RDB" branch marker every Richmond room label
+// carries (it exists only to disambiguate from Mission rooms). Room
+// Detail/Room Plan show both branches side by side and keep the marker;
+// Room Signs and Daily Digest are Richmond-only, where it's just noise.
+function roomDisplayNameShort(room) {
+  return roomDisplayName(room).replace(/\s*--\s*RDB\s*$/i, '').trim();
 }
 
 function findRoom(site, rawLabel) {
@@ -1882,7 +1893,7 @@ function ddPhysicalLabels() {
 
 function ddRoomLabelMap() {
   const map = new Map();
-  rsRoomsForSite('Richmond', true).forEach(r => map.set(r.raw_facility_label, roomDisplayName(r)));
+  rsRoomsForSite('Richmond', true).forEach(r => map.set(r.raw_facility_label, roomDisplayNameShort(r)));
   return map;
 }
 
@@ -2233,7 +2244,7 @@ const RM_NOTICE = 'Rooms for Faculty and Student use ONLY. Current students must
 
 function rmRoomPageHtml(room) {
   return `
-    <div class="rm-roomname">${escHtml(roomDisplayName(room))}</div>
+    <div class="rm-roomname">${escHtml(roomDisplayNameShort(room))}</div>
     <div class="rm-notice">${escHtml(RM_NOTICE)}</div>
     ${rmDaysBlockHtml(room)}`;
 }
@@ -2285,7 +2296,7 @@ function rmPrint(roomFilter) {
 function renderRMRoomTabs() {
   const bar = document.getElementById('rm-room-tabs');
   bar.innerHTML = state.rm.rooms.map(r =>
-    `<button class="rs-day-tab${r.id === state.rm.activeRoomId ? ' active' : ''}" data-roomid="${r.id}">${escHtml(roomDisplayName(r))}</button>`
+    `<button class="rs-day-tab${r.id === state.rm.activeRoomId ? ' active' : ''}" data-roomid="${r.id}">${escHtml(roomDisplayNameShort(r))}</button>`
   ).join('');
 }
 
@@ -2301,7 +2312,7 @@ function renderRMPreview() {
 function renderRMPrintControls() {
   const sel = document.getElementById('rm-print-room');
   const prevValue = sel.value;
-  sel.innerHTML = state.rm.rooms.map(r => `<option value="${r.id}">${escHtml(roomDisplayName(r))}</option>`).join('');
+  sel.innerHTML = state.rm.rooms.map(r => `<option value="${r.id}">${escHtml(roomDisplayNameShort(r))}</option>`).join('');
   if (state.rm.rooms.some(r => String(r.id) === prevValue)) sel.value = prevValue;
   else if (state.rm.activeRoomId != null) sel.value = state.rm.activeRoomId;
 }
