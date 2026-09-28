@@ -244,6 +244,19 @@ body {
 #rs-grid-wrap, #rp-grid-wrap, #rm-preview-wrap { flex: 1; overflow: auto; min-height: 0; position: relative; }
 #rs-grid, #rp-grid, .rp-print-grid { display: inline-flex; flex-direction: column; min-width: 100%; }
 #rm-preview { max-width: 640px; margin: 24px auto; padding: 0 20px; }
+/* Room Signs change tracking — screen-only (lives in #rm-view, never in
+   #rm-print-section), so none of it reaches the printed sign. */
+.rm-tab-flag { font-size: 9px; border-radius: 8px; padding: 1px 6px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.rm-tab-flag--changed { background: var(--accent-soft); color: var(--gold); }
+.rm-tab-flag--new { background: var(--teal-soft); color: var(--teal); }
+.rm-status { font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.5; border-radius: 4px; padding: 10px 12px; margin-bottom: 18px; border: 1px solid var(--rule); background: #fff; color: var(--muted); }
+.rm-status--changed { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.rm-status--unchanged { border-color: var(--green); background: var(--green-soft); color: var(--ink); }
+.rm-status ul { margin: 6px 0 0 18px; padding: 0; }
+#rm-stale { margin-right: auto; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--red); display: inline-flex; align-items: center; gap: 8px; }
+#rm-stale:empty { display: none; }
+.rs-btn:disabled { opacity: 0.45; cursor: default; }
+.rs-btn:disabled:hover { border-color: var(--rule); color: var(--muted); }
 
 .rs-room-header { display: flex; position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 2px solid var(--rule); }
 .rs-corner { width: 56px; flex-shrink: 0; position: sticky; left: 0; z-index: 25; background: #fff; border-right: 2px solid var(--rule); }
@@ -683,6 +696,10 @@ body {
   <div id="rm-view" class="view">
     <div id="rm-room-tabs"></div>
     <div id="rm-action-bar">
+      <div id="rm-stale"></div>
+      <div class="rs-print-group">
+        <button class="rs-btn" id="rm-print-changed-btn">Print Changed Signs</button>
+      </div>
       <div class="rs-print-group">
         <select class="rs-day-select" id="rm-print-room"></select>
         <button class="rs-btn" id="rm-print-one-btn">Print This Room</button>
@@ -799,6 +816,8 @@ const state = {
     events: [],                 // master_schedule_events
     rooms: [],                  // rooms registry
     uploads: [],                // report_uploads (most recent per type)
+    signPrints: [],             // room_sign_prints: last-printed snapshot per room
+    signPrintsAvailable: false, // false until migration 0008 has been run
   },
 
   lf: {
@@ -1167,16 +1186,21 @@ async function fetchAllRows(table) {
 }
 
 async function fetchAllData() {
-  const [openSlotsRes, eventsRes, roomsRes, uploadsRes] = await Promise.all([
+  const [openSlotsRes, eventsRes, roomsRes, uploadsRes, signPrintsRes] = await Promise.all([
     fetchAllRows('open_slots'),
     fetchAllRows('master_schedule_events'),
     fetchAllRows('rooms'),
     state.sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
+    fetchAllRows('room_sign_prints'),
   ]);
   state.data.openSlots = openSlotsRes.data || [];
   state.data.events = eventsRes.data || [];
   state.data.rooms = roomsRes.data || [];
   state.data.uploads = uploadsRes.data || [];
+  // A missing table (migration 0008 not run yet) just turns Room Signs'
+  // change tracking off — it must never block the rest of the app loading.
+  state.data.signPrintsAvailable = !signPrintsRes.error;
+  state.data.signPrints = signPrintsRes.data || [];
 }
 
 // "today 5:47 PM" if uploaded today, else "8/26 5:47 PM"
@@ -2246,6 +2270,115 @@ function rmRoomPageHtml(room) {
     ${rmDaysBlockHtml(room)}`;
 }
 
+// ── Change tracking: what's on the door vs. what the current data says ──
+// A sign's snapshot is its rendered text (room name, notice, each day's
+// teacher + formatted span) rather than raw events, so it only reports a
+// change a reader of the door sign would actually notice — a re-upload that
+// shuffles row ids or splits one booking into two with the same overall
+// span doesn't count, but a wording change to RM_NOTICE flags every room.
+function rmSnapshot(room) {
+  const days = {};
+  RM_DAYS_ORDER.forEach(d => {
+    days[d] = rmTeacherSpansForRoomDay(room, d).map(t => ({ name: t.name, span: rmFmtSpan(t) }));
+  });
+  return { roomName: roomDisplayNameShort(room), notice: RM_NOTICE, days };
+}
+
+function rmLastPrint(room) {
+  return state.data.signPrints.find(p => p.site === room.site && p.raw_facility_label === room.raw_facility_label) || null;
+}
+
+// { status: 'new' | 'changed' | 'unchanged', changes: [human-readable lines], printedAt }
+function rmSignStatus(room) {
+  const last = rmLastPrint(room);
+  if (!last) return { status: 'new', changes: [], printedAt: null };
+  const prev = last.snapshot || {}, cur = rmSnapshot(room);
+  const changes = [];
+  if (prev.roomName !== cur.roomName) changes.push(`Room name: ${prev.roomName} → ${cur.roomName}`);
+  if (prev.notice !== cur.notice) changes.push('Door notice wording');
+  RM_DAYS_ORDER.forEach(d => {
+    const before = new Map(((prev.days || {})[d] || []).map(t => [t.name, t.span]));
+    const after = new Map(cur.days[d].map(t => [t.name, t.span]));
+    const dayLabel = RS_DAYS_FULL[d];
+    after.forEach((span, name) => {
+      if (!before.has(name)) changes.push(`${dayLabel}: ${name} added (${span})`);
+      else if (before.get(name) !== span) changes.push(`${dayLabel}: ${name} ${before.get(name)} → ${span}`);
+    });
+    before.forEach((span, name) => {
+      if (!after.has(name)) changes.push(`${dayLabel}: ${name} removed (was ${span})`);
+    });
+  });
+  return { status: changes.length ? 'changed' : 'unchanged', changes, printedAt: last.printed_at };
+}
+
+// Signs recorded as printed for a Richmond room that no longer has anything
+// booked Mon–Sat (or is no longer tagged physical) — i.e. a sign still on a
+// door that shouldn't be.
+function rmStalePrints() {
+  const live = new Set(state.rm.rooms.map(r => r.raw_facility_label));
+  return state.data.signPrints.filter(p => siteToBranch(p.site) === 'Richmond' && !live.has(p.raw_facility_label));
+}
+
+function rmNeedsReprint(room) {
+  return rmSignStatus(room).status !== 'unchanged';
+}
+
+function rmFmtPrintedAt(iso) {
+  return new Date(iso).toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' });
+}
+
+function rmStatusHtml(room) {
+  if (!state.data.signPrintsAvailable) {
+    return state.profile.role === 'admin'
+      ? `<div class="rm-status">Change tracking is off — run <code>supabase/migrations/0008_room_sign_prints.sql</code> in the Supabase SQL editor to turn it on.</div>`
+      : '';
+  }
+  const st = rmSignStatus(room);
+  if (st.status === 'new') {
+    return `<div class="rm-status">No printed copy on record for this room yet — print it once to start tracking changes.</div>`;
+  }
+  const when = rmFmtPrintedAt(st.printedAt);
+  if (st.status === 'unchanged') {
+    return `<div class="rm-status rm-status--unchanged">Unchanged since last printed ${escHtml(when)} — the sign on the door is current.</div>`;
+  }
+  return `<div class="rm-status rm-status--changed">Changed since last printed ${escHtml(when)} — reprint this sign:
+    <ul>${st.changes.map(c => `<li>${escHtml(c)}</li>`).join('')}</ul></div>`;
+}
+
+// Records what just went on the doors. Upserts one row per room, keyed the
+// same way rmLastPrint() looks them up.
+async function rmRecordPrints(rooms) {
+  const rows = rooms.map(r => ({
+    site: r.site,
+    raw_facility_label: r.raw_facility_label,
+    snapshot: rmSnapshot(r),
+    // Set explicitly: column defaults only apply on insert, not on the
+    // update half of an upsert.
+    printed_at: new Date().toISOString(),
+    printed_by: state.profile.id,
+  }));
+  const { data, error } = await state.sb.from('room_sign_prints')
+    .upsert(rows, { onConflict: 'site,raw_facility_label' }).select();
+  if (error) { toast('Could not record the print: ' + error.message, true); return; }
+  (data || []).forEach(row => {
+    state.data.signPrints = state.data.signPrints.filter(p =>
+      !(p.site === row.site && p.raw_facility_label === row.raw_facility_label));
+    state.data.signPrints.push(row);
+  });
+  toast(`Recorded ${rows.length} sign${rows.length === 1 ? '' : 's'} as printed.`);
+  renderRoomSigns();
+}
+
+async function rmClearStale() {
+  const stale = rmStalePrints();
+  if (!stale.length) return;
+  const { error } = await state.sb.from('room_sign_prints').delete().in('id', stale.map(p => p.id));
+  if (error) { toast('Could not clear: ' + error.message, true); return; }
+  const ids = new Set(stale.map(p => p.id));
+  state.data.signPrints = state.data.signPrints.filter(p => !ids.has(p.id));
+  renderRoomSigns();
+}
+
 function rmBuildPrintPage(room) {
   return `<div class="rm-print-page">${rmRoomPageHtml(room)}</div>`;
 }
@@ -2277,10 +2410,17 @@ function rmScalePrintPages(section) {
   section.style.display = prevDisplay;
 }
 
-// roomFilter: 'all' (every qualifying room, one page each) or a room id.
+// roomFilter: 'all' (every qualifying room, one page each), 'changed' (only
+// rooms whose sign differs from its last recorded print, or was never
+// printed), or a room id.
 function rmPrint(roomFilter) {
-  const rooms = roomFilter === 'all' ? state.rm.rooms : state.rm.rooms.filter(r => String(r.id) === String(roomFilter));
-  if (!rooms.length) { toast('Nothing booked in a Richmond room to print.', true); return; }
+  const rooms = roomFilter === 'all' ? state.rm.rooms
+    : roomFilter === 'changed' ? state.rm.rooms.filter(rmNeedsReprint)
+    : state.rm.rooms.filter(r => String(r.id) === String(roomFilter));
+  if (!rooms.length) {
+    toast(roomFilter === 'changed' ? 'Every sign matches its last printed copy — nothing to reprint.' : 'Nothing booked in a Richmond room to print.', true);
+    return;
+  }
   const section = document.getElementById('rm-print-section');
   section.innerHTML = rooms.map(r => rmBuildPrintPage(r)).join('');
   rmScalePrintPages(section);
@@ -2288,13 +2428,25 @@ function rmPrint(roomFilter) {
   document.getElementById('rp-print-section').classList.remove('print-active');
   document.getElementById('dd-print-section').classList.remove('print-active');
   window.print();
+  // window.print() returns once the dialog closes, but a browser won't say
+  // whether the user actually printed or hit Cancel — so ask, rather than
+  // recording a sign as "on the door" that never came off the printer.
+  if (state.data.signPrintsAvailable && state.profile.role === 'admin') {
+    const label = rooms.length === 1 ? `the ${roomDisplayNameShort(rooms[0])} sign` : `these ${rooms.length} signs`;
+    if (confirm(`Did ${label} print OK?\n\nOK records ${rooms.length === 1 ? 'it' : 'them'} as what's now on the door, for tracking future changes. Cancel if you didn't print.`)) {
+      rmRecordPrints(rooms);
+    }
+  }
 }
 
 function renderRMRoomTabs() {
   const bar = document.getElementById('rm-room-tabs');
-  bar.innerHTML = state.rm.rooms.map(r =>
-    `<button class="rs-day-tab${r.id === state.rm.activeRoomId ? ' active' : ''}" data-roomid="${r.id}">${escHtml(roomDisplayNameShort(r))}</button>`
-  ).join('');
+  bar.innerHTML = state.rm.rooms.map(r => {
+    const st = state.data.signPrintsAvailable ? rmSignStatus(r).status : null;
+    const flag = st === 'changed' ? '<span class="rm-tab-flag rm-tab-flag--changed">changed</span>'
+      : st === 'new' ? '<span class="rm-tab-flag rm-tab-flag--new">new</span>' : '';
+    return `<button class="rs-day-tab${r.id === state.rm.activeRoomId ? ' active' : ''}" data-roomid="${r.id}">${escHtml(roomDisplayNameShort(r))}${flag}</button>`;
+  }).join('');
 }
 
 function renderRMPreview() {
@@ -2303,7 +2455,7 @@ function renderRMPreview() {
   const room = state.rm.rooms.find(r => r.id === state.rm.activeRoomId);
   if (!room) { wrap.innerHTML = ''; empty.classList.add('visible'); return; }
   empty.classList.remove('visible');
-  wrap.innerHTML = rmRoomPageHtml(room);
+  wrap.innerHTML = rmStatusHtml(room) + rmRoomPageHtml(room);
 }
 
 function renderRMPrintControls() {
@@ -2314,10 +2466,30 @@ function renderRMPrintControls() {
   else if (state.rm.activeRoomId != null) sel.value = state.rm.activeRoomId;
 }
 
+function renderRMChangeControls() {
+  const btn = document.getElementById('rm-print-changed-btn');
+  const stale = document.getElementById('rm-stale');
+  if (!state.data.signPrintsAvailable) {
+    btn.style.display = 'none';
+    stale.innerHTML = '';
+    return;
+  }
+  const n = state.rm.rooms.filter(rmNeedsReprint).length;
+  btn.style.display = '';
+  btn.disabled = n === 0;
+  btn.textContent = n ? `Print Changed Signs (${n})` : 'All Signs Current';
+  const gone = rmStalePrints();
+  stale.innerHTML = gone.length
+    ? `Take down (no longer booked): ${escHtml(gone.map(p => p.snapshot?.roomName || p.raw_facility_label).join(', '))}`
+      + (state.profile.role === 'admin' ? ' <button class="rs-btn" id="rm-clear-stale-btn">Done</button>' : '')
+    : '';
+}
+
 function renderRoomSigns() {
   renderRMRoomTabs();
   renderRMPreview();
   renderRMPrintControls();
+  renderRMChangeControls();
 }
 
 // Richmond rooms with anything booked Mon–Sat this week, in the same
@@ -2699,6 +2871,10 @@ document.getElementById('rm-room-tabs').addEventListener('click', (e) => {
 
 document.getElementById('rm-print-one-btn').addEventListener('click', () => rmPrint(document.getElementById('rm-print-room').value));
 document.getElementById('rm-print-all-btn').addEventListener('click', () => rmPrint('all'));
+document.getElementById('rm-print-changed-btn').addEventListener('click', () => rmPrint('changed'));
+document.getElementById('rm-stale').addEventListener('click', (e) => {
+  if (e.target.closest('#rm-clear-stale-btn')) rmClearStale();
+});
 
 document.getElementById('dd-thead-row').addEventListener('click', (e) => {
   const th = e.target.closest('.dd-sortable');
