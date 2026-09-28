@@ -40,7 +40,7 @@ On-screen, a room-tabs bar previews one room's full week at a time. Printing off
 Upload the two ASAP exports (Open Slots, Master Scheduler). Each upload fully replaces the current data for that report type.
 
 ### Admin (admin role only)
-**Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / needs review. Untagged and non-physical rooms are excluded from both Room Schedule prints. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag.
+**Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / storage / needs review. Untagged and non-physical rooms are excluded from both Room Schedule prints. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag. Rooms G, H and N are currently storage, not teaching space, so they're tagged `storage` (migration 0007) rather than `physical` and no longer take up permanent columns; to bring one back into service, flip it to Physical in Admin → Rooms.
 
 ---
 
@@ -72,7 +72,7 @@ Master Scheduler's own `Day` column isn't trusted as-is — it can disagree with
 ## First-time setup
 
 1. Create a Supabase project.
-2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0006).
+2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0007).
 3. Sign up through the app's login screen (first account defaults to `viewer` role), then in the Supabase SQL editor promote yourself:
    ```sql
    update profiles set role = 'admin' where id =
@@ -225,3 +225,5 @@ Open Slots rows don't carry a room. To show where a proposed lesson would likely
 **2026-09-18 (3)** — Reverted the (2) entry's name/time layout change on Room Signs after a look at it live: the tight fixed-column grouping was a step too far, so `.rm-day-row` is back to `justify-content: space-between` (time span right-aligned against the room name's left-aligned edge, gap trimmed from the original `10px` to `14px`), while keeping the bigger fonts from (2) — and pushed them slightly further still (teacher name 16px→18px, time span 14px→16px, day title 14px→15px, notice 16px→17px). Net effect vs. before this session: same right-aligned time layout as originally shipped, just noticeably larger text throughout (still excluding the room name, already the intentionally dominant element).
 
 **2026-09-18 (4)** — Reworded Room Signs' door notice per the user's wording: `RM_NOTICE` is now "Rooms for CMC faculty and current student use ONLY. Students must check with reception before entering a room." (previously "Rooms for Faculty and Student use ONLY. Current students must check with reception before entering a room.").
+
+**2026-09-28** — Richmond's Rooms G, H and N are storage for the foreseeable future, so they no longer show as permanent, always-empty columns. Added a `storage` room type (new option in Admin → Rooms) and `supabase/migrations/0007_richmond_storage_rooms.sql`, which widens the `room_type` check constraint and retags those three rooms. Every view keys its pinned Richmond set off `room_type === 'physical'` exactly, so no display logic changed — Room Detail, Room Plan (both prints), Daily Digest, and Room Signs all drop them automatically. As a safety net, `richmondColumns()` still appends a storage room as an extra column on any day it's actually booked, so a real lesson is never hidden. Not auto-applied — run 0007 in the Supabase SQL editor. Verified by running the app's own `rsRoomsForSite()`/`richmondColumns()` against the 14-room Richmond registry with G/H/N retagged: pinned columns go from 14 to 11 (A–F, I–M), and a synthetic booking in Room H brings H back as an extra column.

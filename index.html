@@ -2412,6 +2412,7 @@ function renderAdminRooms() {
           <option value="virtual" ${r.room_type === 'virtual' ? 'selected' : ''}>Virtual</option>
           <option value="home_studio" ${r.room_type === 'home_studio' ? 'selected' : ''}>Home studio</option>
           <option value="offsite" ${r.room_type === 'offsite' ? 'selected' : ''}>Offsite</option>
+          <option value="storage" ${r.room_type === 'storage' ? 'selected' : ''}>Storage</option>
         </select>
       </td>
       <td><input type="number" data-field="display_order" value="${r.display_order ?? ''}"></td>
