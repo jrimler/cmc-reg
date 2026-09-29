@@ -42,7 +42,7 @@ On-screen, a room-tabs bar previews one room's full week at a time. Printing off
 Upload the two ASAP exports (Open Slots, Master Scheduler). Each upload fully replaces the current data for that report type.
 
 ### Admin (admin role only)
-**Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / storage / needs review. Untagged and non-physical rooms are excluded from both Room Plan prints, Daily Digest, and Room Signs. Tags persist across future uploads. Richmond's 14 physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag. Rooms G, H and N are currently storage, not teaching space, so they're tagged `storage` (migration 0007) rather than `physical` and no longer take up permanent columns; to bring one back into service, flip it to Physical in Admin → Rooms.
+**Rooms**: every room seen in a Master Scheduler upload, taggable as physical / virtual / home studio / offsite / storage / needs review. Untagged and non-physical rooms are excluded from both Room Plan prints, Daily Digest, and Room Signs. Tags persist across future uploads. Richmond's physical rooms are seeded directly (see `supabase/migrations/0004_seed_richmond_physical_rooms.sql`) since a room with nothing booked yet in any upload would otherwise never get a row to tag. Richmond now has 11 rooms (A–F, I–M): Rooms G, H and N were used as storage (migration 0007) and have since been deleted from ASAP, so migration 0009 removes them from the registry entirely.
 
 ---
 
@@ -74,7 +74,7 @@ Master Scheduler's own `Day` column isn't trusted as-is — it can disagree with
 ## First-time setup
 
 1. Create a Supabase project.
-2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0008).
+2. In its SQL editor, run the files in `supabase/migrations/` in order (0001 through 0009).
 3. Sign up through the app's login screen (first account defaults to `viewer` role), then in the Supabase SQL editor promote yourself:
    ```sql
    update profiles set role = 'admin' where id =
@@ -233,3 +233,5 @@ Open Slots rows don't carry a room. To show where a proposed lesson would likely
 **2026-09-28 (2)** — Reworded Room Signs' door notice again per the user's wording: `RM_NOTICE` now ends "…before entering an unoccupied room." (previously "…before entering a room.").
 
 **2026-09-28 (3)** — Room Signs now tracks which door signs changed since they were last printed, so a mid-term upload doesn't force a full reprint (see "Change tracking" under Room Signs above). New `supabase/migrations/0008_room_sign_prints.sql` (one row per room: last-printed snapshot, when, by whom; readable by all signed-in users, writable by admins) — not auto-applied, run it in the Supabase SQL editor. New functions `rmSnapshot()`, `rmSignStatus()`, `rmStalePrints()`, `rmRecordPrints()`, `rmClearStale()`; `rmPrint()` gained a `'changed'` filter and the post-print confirm. The load path tolerates the table not existing yet. Verified by loading the app's full script in a Node VM (stubbed DOM + Supabase) and driving the real functions through a synthetic three-room week: all rooms start **new**; Print All renders 3 pages and records 3 snapshots, after which all read **unchanged** and the button reads "All Signs Current"; a re-upload that widens one span, adds two teachers, and empties one room yields exactly the expected change lines, "Print Changed Signs (2)", and "Take down: Room D"; Print Changed renders and records only those 2; cancelling the confirm records nothing; a reworded notice flags every room; and with the table missing the button hides and admins see a "run migration 0008" hint. Not yet clicked through in a live browser.
+
+**2026-09-29** — Richmond's Rooms G, H and N have been deleted from ASAP, so the app no longer needs to account for them. New `supabase/migrations/0009_remove_richmond_rooms_g_h_n.sql` deletes their `rooms` rows (previously tagged `storage` by 0007) and any `room_sign_prints` snapshots for them. Nothing references `rooms` by foreign key, and every view already keyed off `room_type = 'physical'`, so no display logic changed: Richmond's pinned set stays at 11 rooms (A–F, I–M). Not auto-applied — run 0009 in the Supabase SQL editor. The `storage` room type stays available in Admin → Rooms.
