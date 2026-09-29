@@ -377,6 +377,9 @@ body {
      Room Schedule's dense grid, but a wash of unwanted color across Daily
      Digest's much emptier list layout. */
   body { background: #fff !important; }
+  /* The screen layout's fixed 100vh flex body made a sheet whose content
+     nearly filled the page spill an empty trailing page. */
+  body { height: auto !important; overflow: visible !important; display: block !important; }
   #app-header, #main-content { display: none !important; }
   /* Only the section actually being printed switches to display:block — an
      empty (or merely stale) sibling left at its default display:none is
@@ -484,8 +487,14 @@ body {
    deliberately never applied to .rm-roomname/.rm-notice, which must stay
    large and legible on a door regardless of how busy that room's week is. */
 .rm-roomname { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; margin-bottom: 10px; }
-.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 700; line-height: 1.4; border: 2px solid #333; border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; }
-.rm-days { --rm-scale: 1; }
+/* Red outline + red text so the access notice reads as a warning rather than
+   as more schedule text. Deep red rather than bright: on a black-and-white
+   printer it still comes out as a dark, bold box, not a washed-out gray. */
+.rm-notice { font-family: 'DM Sans', sans-serif; font-size: 22px; font-weight: 700; line-height: 1.35; color: #b3121f; border: 4px solid #b3121f; border-radius: 6px; padding: 14px 20px; margin-bottom: 20px; }
+/* Default for the on-screen copy. Must not be declared on .rm-days itself:
+   that re-set it to 1 beneath .rm-print-page, silently overriding whatever
+   rmScalePrintPages() computed, so busy rooms printed onto a second sheet. */
+#rm-preview { --rm-scale: 1; }
 .rm-day-block { margin-bottom: calc(12px * var(--rm-scale)); page-break-inside: avoid; }
 .rm-day-title { font-family: 'DM Mono', monospace; font-size: calc(15px * var(--rm-scale)); text-transform: uppercase; letter-spacing: 0.08em; color: #333; background: #f2f2f2; padding: calc(4px * var(--rm-scale)) 8px; margin-bottom: 2px; }
 .rm-day-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: calc(5px * var(--rm-scale)) 8px; border-bottom: 1px solid #ddd; page-break-inside: avoid; }
@@ -2392,6 +2401,10 @@ function rmBuildPrintPage(room) {
 // still fits on its one physical page. Only .rm-days content scales; the
 // room name and notice banner are excluded on purpose (see CSS comment).
 const RM_PRINT_USABLE_H_PX = (11 - 2 * 0.45) * 96;
+// Measured at the printable width, not the browser window's: a wide window
+// wraps the notice banner onto fewer lines than paper does, so the budget
+// left for the days came out too generous.
+const RM_PRINT_USABLE_W_PX = (8.5 - 2 * 0.45) * 96;
 const RM_FIT_SAFETY = 0.92;
 const RM_MIN_SCALE = 0.6;
 
@@ -2404,12 +2417,19 @@ function rmScalePrintPages(section) {
     const notice = pageEl.querySelector('.rm-notice');
     const days = pageEl.querySelector('.rm-days');
     if (!roomname || !notice || !days) return;
-    const fixedH = roomname.getBoundingClientRect().height + notice.getBoundingClientRect().height
-      + parseFloat(getComputedStyle(notice).marginBottom || '0');
+    pageEl.style.width = RM_PRINT_USABLE_W_PX + 'px';
+    // Everything above the days block (room name, notice, their margins).
+    const fixedH = days.getBoundingClientRect().top - pageEl.getBoundingClientRect().top;
     const budgetPx = (RM_PRINT_USABLE_H_PX - fixedH) * RM_FIT_SAFETY;
-    if (days.scrollHeight > budgetPx) {
-      pageEl.style.setProperty('--rm-scale', Math.max(RM_MIN_SCALE, budgetPx / days.scrollHeight).toFixed(3));
+    // Re-measure after each shrink: borders, gaps and line-height rounding
+    // don't scale with --rm-scale, so a single proportional step left busy
+    // rooms a few pixels over and pushed Saturday onto a second sheet.
+    let scale = 1;
+    for (let i = 0; i < 5 && days.scrollHeight > budgetPx && scale > RM_MIN_SCALE; i++) {
+      scale = Math.max(RM_MIN_SCALE, scale * budgetPx / days.scrollHeight);
+      pageEl.style.setProperty('--rm-scale', scale.toFixed(3));
     }
+    pageEl.style.width = '';
   });
   section.style.display = prevDisplay;
 }
