@@ -1942,7 +1942,8 @@ function ddTeachersForDay(day) {
 
   const teachers = [...byName.entries()].map(([name, bookings]) => {
     bookings = bookings.slice().sort((a, b) => timeToMins(a.from_time) - timeToMins(b.from_time));
-    const rooms = [...new Set(bookings.map(b => roomMap.get(b.facility_raw) || b.facility_raw))];
+    const roomLabels = [...new Set(bookings.map(b => b.facility_raw))];
+    const rooms = roomLabels.map(f => roomMap.get(f) || f);
     const start = Math.min(...bookings.map(b => timeToMins(b.from_time)));
     const end = Math.max(...bookings.map(b => timeToMins(b.to_time)));
     // Names are stored "First Last" (see normalizeInstructorName) — the part
@@ -1950,7 +1951,7 @@ function ddTeachersForDay(day) {
     // Teachers tab already relies on, since "Last" itself can be multi-word.
     const parts = name.split(' ');
     const lastName = parts.length > 1 ? parts.slice(1).join(' ') : name;
-    return { name, lastName, rooms, start, end };
+    return { name, lastName, rooms, roomLabels, start, end };
   });
 
   teachers.sort((a, b) => a.lastName.localeCompare(b.lastName) || a.name.localeCompare(b.name));
@@ -1962,7 +1963,10 @@ function ddTeachersForDay(day) {
 // (alphabetical by last name), which print always uses regardless.
 const DD_SORT_KEYS = {
   teacher: (t) => t.lastName + '|' + t.name,
-  room: (t) => t.rooms[0] || '',
+  // Raw ASAP label, not display name: every Richmond label starts "(X)", so
+  // this sorts by door letter even for named rooms ("Piano Lab" would
+  // otherwise sort ahead of "Room B").
+  room: (t) => t.roomLabels[0] || '',
   schedule: (t) => t.start,
 };
 function ddSortedTeachers(day) {
