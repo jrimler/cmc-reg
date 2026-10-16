@@ -32,19 +32,19 @@ async function fragmentFor(type) {
   return u.hash;
 }
 
-// Report where the dashboard's Site URL sends a link when redirect_to is omitted.
-{
+// Report the dashboard's Site URL (where a link lands with no redirect_to) and
+// whether production is an allowed Redirect URL — a disallowed one silently
+// falls back to the Site URL.
+for (const rt of [undefined, 'https://cmc-reg.netlify.app']) {
   const res = await fetch(`${URL_}/auth/v1/admin/generate_link`, {
     method: 'POST',
     headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'recovery', email: EMAIL }),
+    body: JSON.stringify({ type: 'recovery', email: EMAIL, ...(rt ? { redirect_to: rt } : {}) }),
   });
   const body = await res.json();
   const v = await fetch(body.action_link, { redirect: 'manual' });
   const u = new URL(v.headers.get('location'));
-  console.log(`SITE URL (no redirect_to): ${u.origin}${u.pathname}`);
-  const prod = await fetch(body.action_link.replace(/redirect_to=[^&]*/, 'redirect_to=' + encodeURIComponent('https://cmc-reg.netlify.app')), { redirect: 'manual' });
-  console.log(`redirect_to=https://cmc-reg.netlify.app honored? → ${new URL(prod.headers.get('location')).origin}`);
+  console.log(`redirect_to ${rt ?? '(none = Site URL)'} → lands on ${u.origin}${u.pathname}`);
 }
 
 const browser = await chromium.launch({ channel: 'chrome' });
