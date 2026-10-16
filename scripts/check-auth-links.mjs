@@ -12,7 +12,7 @@ const env = Object.fromEntries(fs.readFileSync(process.argv[2] || '.env', 'utf8'
 const URL_ = 'https://avleipfdmdgtzrhyioih.supabase.co';
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY, EMAIL = env.TEST_EMAIL, PASSWORD = env.TEST_PASSWORD;
 if (!KEY || !EMAIL || !PASSWORD) throw new Error('need SUPABASE_SERVICE_ROLE_KEY, TEST_EMAIL, TEST_PASSWORD');
-const BASE = 'http://localhost:3000/';
+const BASE = process.env.BASE || 'http://localhost:3000/'; // BASE=https://cmc-reg.netlify.app/ checks production
 
 async function fragmentFor(type) {
   // Admin generate_link returns the link without sending an email.
