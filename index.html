@@ -102,8 +102,8 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════════════
    CONNECT / LOGIN SCREENS
    ═══════════════════════════════════════════════════════════════════════════════ */
-#login-screen { position: absolute; inset: 0; background: var(--paper); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; overflow-y: auto; }
-#login-screen.hidden { display: none; }
+#login-screen, #setpw-screen { position: absolute; inset: 0; background: var(--paper); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; overflow-y: auto; }
+#login-screen.hidden, #setpw-screen.hidden { display: none; }
 .setup-card { background: #fff; border: 1.5px solid var(--rule); border-radius: 8px; padding: 36px 40px; max-width: 460px; width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
 .setup-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 6px; }
 .setup-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.55; }
@@ -111,14 +111,15 @@ body {
 .setup-url-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--rule); border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; background: var(--paper); color: var(--ink); outline: none; transition: border-color 0.15s; margin-bottom: 14px; }
 .setup-url-input:focus { border-color: var(--teal); }
 .setup-url-input.error { border-color: var(--red); }
-#login-error { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; }
-#login-error.visible { display: block; }
-#login-info { font-size: 12px; color: var(--green); margin-bottom: 10px; display: none; }
+#login-error, #setpw-error { font-size: 12px; color: var(--red); margin-bottom: 10px; display: none; line-height: 1.5; }
+#login-error.visible, #setpw-error.visible { display: block; }
+#login-info { font-size: 12px; color: var(--green); margin-bottom: 10px; display: none; line-height: 1.5; }
 #login-info.visible { display: block; }
 .primary-btn { width: 100%; padding: 10px; background: var(--teal); color: #fff; border: none; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .primary-btn:hover { opacity: 0.85; }
 .primary-btn:disabled { opacity: 0.4; cursor: default; }
 .link-btn { width: 100%; margin-top: 10px; padding: 8px; background: transparent; color: var(--muted); border: none; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; text-decoration: underline; }
+.link-btn.hidden { display: none; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LOADING OVERLAY
@@ -577,7 +578,26 @@ body {
       <div id="login-error"></div>
       <div id="login-info"></div>
       <button id="login-submit-btn" class="primary-btn">Sign In</button>
+      <button id="login-forgot-btn" class="link-btn">Forgot password?</button>
       <button id="login-toggle-btn" class="link-btn">Need an account? Create one</button>
+    </div>
+  </div>
+
+  <!-- ══ SET PASSWORD (after a reset or invite email link) ══ -->
+  <div id="setpw-screen" class="hidden">
+    <div class="setup-card">
+      <h2 id="setpw-title">Set a New Password</h2>
+      <p class="setup-sub" id="setpw-sub">Choose a new password for your account.</p>
+
+      <label class="setup-url-label" for="setpw-password">New password</label>
+      <input id="setpw-password" class="setup-url-input" type="password" autocomplete="new-password">
+
+      <label class="setup-url-label" for="setpw-confirm">Confirm new password</label>
+      <input id="setpw-confirm" class="setup-url-input" type="password" autocomplete="new-password">
+
+      <div id="setpw-error"></div>
+      <button id="setpw-submit-btn" class="primary-btn">Save Password</button>
+      <button id="setpw-signout-btn" class="link-btn">Cancel and sign out</button>
     </div>
   </div>
 
@@ -781,6 +801,17 @@ body {
 // actually protects the data, not keeping this secret.
 const SUPABASE_URL = 'https://avleipfdmdgtzrhyioih.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bGVpcGZkbWRndHpyaHlpb2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODY0NDEsImV4cCI6MjEwMzM2MjQ0MX0.tvGjghODMH_V4YAnOwbNGELYg1FHaY5i2U7pVnmKFyI';
+
+// Supabase password-reset and invite emails don't show a password form: they
+// sign the user in and redirect back with #access_token=…&type=recovery (or
+// type=invite) — implicit flow, the supabase-js v2 default this app uses.
+// createClient consumes that fragment and strips it from the URL during
+// start-up, so `type` has to be read here, before the client exists. Without
+// this, a reset link silently logged the user in with no password they knew.
+// Expired/reused links arrive as #error=…&error_code=otp_expired&error_description=….
+const AUTH_LINK_PARAMS = new URLSearchParams(location.hash.slice(1));
+let authLinkType = ['recovery', 'invite'].includes(AUTH_LINK_PARAMS.get('type')) ? AUTH_LINK_PARAMS.get('type') : null;
+const authLinkError = AUTH_LINK_PARAMS.get('error_description') || null;
 
 const RS_DAYS_ORDER = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 const RS_DAYS_FULL  = { Su:'Sunday', Mo:'Monday', Tu:'Tuesday', We:'Wednesday', Th:'Thursday', Fr:'Friday', Sa:'Saturday' };
@@ -1137,11 +1168,24 @@ async function connectAndLoad() {
   const { data: { session } } = await state.sb.auth.getSession();
   state.session = session;
 
-  state.sb.auth.onAuthStateChange((_event, newSession) => {
+  // supabase-js only strips a fragment it signed in from; an error fragment
+  // would otherwise linger in the address bar (and in bookmarks).
+  if (AUTH_LINK_PARAMS.has('access_token') || AUTH_LINK_PARAMS.has('error')) {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+
+  state.sb.auth.onAuthStateChange((event, newSession) => {
     state.session = newSession;
+    // Backup for the fragment check above, which stays primary: this event can
+    // fire during client start-up, before this listener is attached.
+    if (event === 'PASSWORD_RECOVERY' && !authLinkType) {
+      authLinkType = 'recovery';
+      showSetPasswordScreen();
+    }
   });
 
   if (!session) { showLoginScreen(); return; }
+  if (authLinkType) { showSetPasswordScreen(); return; }
 
   await afterLogin();
 }
@@ -2707,12 +2751,30 @@ function hideLoading() { document.getElementById('loading-overlay').classList.re
 
 function showLoginScreen() {
   hideLoading();
+  if (authLinkError) {
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = `${authLinkError}. Email links expire after a while and can only be used once — use "Forgot password?" below to get a fresh one.`;
+    errEl.classList.add('visible');
+  }
+  document.getElementById('setpw-screen').classList.add('hidden');
   document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('main-content').style.visibility = 'visible';
+}
+function showSetPasswordScreen() {
+  hideLoading();
+  const invite = authLinkType === 'invite';
+  document.getElementById('setpw-title').textContent = invite ? 'Welcome to the SFCMC Scheduler' : 'Set a New Password';
+  document.getElementById('setpw-sub').textContent = invite
+    ? `Choose a password to finish setting up your account (${state.session.user.email}).`
+    : `Choose a new password for ${state.session.user.email}.`;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('setpw-screen').classList.remove('hidden');
   document.getElementById('main-content').style.visibility = 'visible';
 }
 function showApp() {
   hideLoading();
   document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('setpw-screen').classList.add('hidden');
   document.getElementById('main-content').style.visibility = 'visible';
   setAppMode(lastAppMode());
 }
@@ -2724,6 +2786,7 @@ document.getElementById('login-toggle-btn').addEventListener('click', () => {
   document.getElementById('login-title').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
   document.getElementById('login-submit-btn').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
   document.getElementById('login-toggle-btn').textContent = loginMode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in';
+  document.getElementById('login-forgot-btn').classList.toggle('hidden', loginMode !== 'signin');
   document.getElementById('login-error').classList.remove('visible');
   document.getElementById('login-info').classList.remove('visible');
 });
@@ -2755,6 +2818,48 @@ document.getElementById('login-submit-btn').addEventListener('click', async () =
 
   state.session = data.session;
   await afterLogin();
+});
+
+document.getElementById('login-forgot-btn').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const errEl = document.getElementById('login-error');
+  const infoEl = document.getElementById('login-info');
+  errEl.classList.remove('visible');
+  infoEl.classList.remove('visible');
+  if (!email) { errEl.textContent = 'Enter your email above, then click "Forgot password?" again.'; errEl.classList.add('visible'); return; }
+
+  showLoading('Sending reset link…');
+  // Supabase answers the same way whether or not the address has an account,
+  // so a real error here is e.g. its email rate limit, not "no such user".
+  const { error } = await state.sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  hideLoading();
+  if (error) { errEl.textContent = error.message; errEl.classList.add('visible'); return; }
+  infoEl.textContent = 'If that address has an account, a link is on its way.';
+  infoEl.classList.add('visible');
+});
+
+document.getElementById('setpw-submit-btn').addEventListener('click', async () => {
+  const password = document.getElementById('setpw-password').value;
+  const confirm = document.getElementById('setpw-confirm').value;
+  const errEl = document.getElementById('setpw-error');
+  errEl.classList.remove('visible');
+  // Only the match is checked here — length/strength rules are Supabase's, and
+  // its own message is shown as-is so this form can't disagree with the server.
+  if (password !== confirm) { errEl.textContent = 'The two passwords don\'t match.'; errEl.classList.add('visible'); return; }
+
+  showLoading('Saving password…');
+  const { error } = await state.sb.auth.updateUser({ password });
+  hideLoading();
+  if (error) { errEl.textContent = error.message; errEl.classList.add('visible'); return; }
+
+  authLinkType = null;
+  toast('Password saved.');
+  await afterLogin();
+});
+
+document.getElementById('setpw-signout-btn').addEventListener('click', async () => {
+  await state.sb.auth.signOut();
+  location.reload();
 });
 
 document.getElementById('signout-btn').addEventListener('click', async () => {

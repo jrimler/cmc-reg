@@ -7,3 +7,6 @@
 # Personal/machine-specific Claude Code settings — .claude/settings.json is
 # the project-wide, committed config (hooks, etc); this one isn't.
 .claude/settings.local.json
+
+# Local secrets (service_role key, test-account credentials) — never commit
+.env
