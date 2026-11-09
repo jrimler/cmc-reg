@@ -78,6 +78,23 @@ body {
 .view-btn.active { background: #fff; color: #2060a0; }
 .view-btn.hidden { display: none; }
 
+/* Quarter switcher: every view reads whichever quarter is selected here. */
+.scope-switcher { display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 5px; padding: 3px; flex-shrink: 0; }
+.scope-switcher.hidden { display: none; }
+.scope-btn { padding: 3px 12px; border: none; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.04em; cursor: pointer; background: transparent; color: rgba(255,255,255,0.65); transition: background 0.15s, color 0.15s; white-space: nowrap; text-align: left; line-height: 1.25; }
+.scope-btn small { display: block; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.75; }
+.scope-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.scope-btn.active { background: #f5c518; color: #3a2e00; }
+#scope-banner { flex-shrink: 0; background: #fff4d6; border-bottom: 1.5px solid #e6cf8a; color: #6b5200; font-family: 'DM Mono', monospace; font-size: 11px; padding: 6px 28px; }
+#scope-banner.hidden { display: none; }
+
+/* A view that doesn't apply to the selected quarter (Lesson Finder is next
+   quarter's registration tool; Daily Digest is a today tool) hides its
+   content behind a one-line explanation instead of showing misleading data. */
+.scope-gate { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.view.gated > :not(.scope-gate) { display: none !important; }
+.view.gated > .scope-gate { display: flex; }
+
 #header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 #whoami { font-family: 'DM Mono', monospace; font-size: 11px; color: #cfe2f5; white-space: nowrap; }
 #whoami .role-badge { background: rgba(255,255,255,0.18); border-radius: 3px; padding: 1px 6px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-size: 9px; }
@@ -119,7 +136,6 @@ body {
 .primary-btn:hover { opacity: 0.85; }
 .primary-btn:disabled { opacity: 0.4; cursor: default; }
 .link-btn { width: 100%; margin-top: 10px; padding: 8px; background: transparent; color: var(--muted); border: none; font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; text-decoration: underline; }
-.link-btn.hidden { display: none; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    LOADING OVERLAY
@@ -337,6 +353,9 @@ body {
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .upload-card { border: 1.5px solid var(--rule); border-radius: 6px; padding: 16px; background: #fff; }
 .upload-card h3 { font-size: 13px; margin-bottom: 4px; }
+.upload-card .upload-scope-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 3px; background: #fff4d6; color: #6b5200; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; vertical-align: 1px; }
+.upload-card.hidden { display: none; }
+.upload-card .upload-scope-tag.hidden { display: none; }
 .upload-card .asap-link { display: inline-block; font-size: 11px; color: var(--teal); text-decoration: none; margin-bottom: 10px; }
 .upload-card .asap-link:hover { text-decoration: underline; }
 .upload-card .last-upload { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 12px; }
@@ -381,7 +400,7 @@ body {
   /* The screen layout's fixed 100vh flex body made a sheet whose content
      nearly filled the page spill an empty trailing page. */
   body { height: auto !important; overflow: visible !important; display: block !important; }
-  #app-header, #main-content { display: none !important; }
+  #app-header, #scope-banner, #main-content { display: none !important; }
   /* Only the section actually being printed switches to display:block — an
      empty (or merely stale) sibling left at its default display:none is
      harmless, but a *visible*-but-empty block sitting in front of the named
@@ -539,6 +558,8 @@ body {
   </div>
   <div id="status-stack"></div>
 
+  <div id="scope-switcher" class="scope-switcher hidden"></div>
+
   <div class="view-switcher">
     <button class="view-btn" data-view="lessonFinder">Lesson Finder</button>
     <button class="view-btn" data-view="roomDetail">Room Detail</button>
@@ -554,6 +575,8 @@ body {
     <button id="signout-btn" class="hidden">Sign Out</button>
   </div>
 </div>
+
+<div id="scope-banner" class="hidden"></div>
 
 <!-- ══ MAIN CONTENT ══════════════════════════════════════════════════════════ -->
 <div id="main-content">
@@ -579,7 +602,10 @@ body {
       <div id="login-info"></div>
       <button id="login-submit-btn" class="primary-btn">Sign In</button>
       <button id="login-forgot-btn" class="link-btn">Forgot password?</button>
-      <button id="login-toggle-btn" class="link-btn">Need an account? Create one</button>
+      <!-- No self sign-up: signups are disabled in Supabase (Authentication →
+           Sign In / Providers) because any account can read student names.
+           Staff get in via an admin's invite (Authentication → Users). -->
+      <p class="setup-sub" style="margin: 14px 0 0; text-align: center;">Need access? Ask an admin to invite you.</p>
     </div>
   </div>
 
@@ -603,6 +629,7 @@ body {
 
   <!-- ══ LESSON FINDER VIEW ════════════════════════════════════════════════ -->
   <div id="lf-view" class="view">
+    <div class="scope-gate" id="lf-scope-gate"></div>
     <div id="lf-tab-bar">
       <button class="tab-btn active" data-tab="availability">Availability</button>
       <button class="tab-btn" data-tab="teachers">Teachers</button>
@@ -701,6 +728,7 @@ body {
 
   <!-- ══ DAILY DIGEST VIEW ═════════════════════════════════════════════════ -->
   <div id="dd-view" class="view">
+    <div class="scope-gate" id="dd-scope-gate"></div>
     <div id="dd-day-tabs"></div>
     <div id="dd-action-bar">
       <div class="rs-print-group">
@@ -747,19 +775,27 @@ body {
   <div id="upload-view" class="view">
     <div class="admin-body">
       <div class="admin-section-title">Upload Reports</div>
-      <div class="admin-section-sub">Each upload fully replaces the current data for that report type. Column order/names must match the ASAP export exactly; the parser matches by header name.</div>
+      <div class="admin-section-sub" id="upload-sub">Each upload fully replaces the current data for that report type. Column order/names must match the ASAP export exactly; the parser matches by header name.</div>
       <div class="upload-grid">
-        <div class="upload-card" data-report="open_slots">
-          <h3>Open Slots Report</h3>
-          <a class="asap-link" href="https://app.asapconnected.com/reports/OpenSlotsReport.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
+        <div class="upload-card" data-report="master_schedule" data-scope="current">
+          <h3>Master Scheduler Report <span class="upload-scope-tag" data-scopetag></span></h3>
+          <a class="asap-link" href="https://app.asapconnected.com/reports/masterschedule.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
           <div class="last-upload" data-lastupload>No uploads yet</div>
           <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
           <div class="upload-status" data-status></div>
         </div>
-        <div class="upload-card" data-report="master_schedule">
-          <h3>Master Scheduler Report</h3>
+        <div class="upload-card" data-report="master_schedule" data-scope="next">
+          <h3>Master Scheduler Report <span class="upload-scope-tag" data-scopetag></span></h3>
           <a class="asap-link" href="https://app.asapconnected.com/reports/masterschedule.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
+          <div class="last-upload" data-lastupload>No uploads yet</div>
+          <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
+          <button class="upload-btn" data-uploadbtn disabled>Upload</button>
+          <div class="upload-status" data-status></div>
+        </div>
+        <div class="upload-card" data-report="open_slots" data-scope="next">
+          <h3>Open Slots Report <span class="upload-scope-tag" data-scopetag></span></h3>
+          <a class="asap-link" href="https://app.asapconnected.com/reports/OpenSlotsReport.aspx" target="_blank" rel="noopener noreferrer">Open in ASAP →</a>
           <div class="last-upload" data-lastupload>No uploads yet</div>
           <input type="file" accept=".xls,.xlsx,.html,.htm" data-fileinput>
           <button class="upload-btn" data-uploadbtn disabled>Upload</button>
@@ -851,9 +887,22 @@ const state = {
   profile: null,     // { id, role, display_name }
   appMode: 'lessonFinder',
 
+  // Which quarter every view is showing: 'current' (the quarter in session,
+  // a rolling week from today) or 'next' (the upcoming quarter, one typical
+  // week). scopesAvailable is false until migration 0011 has been run, in
+  // which case everything behaves as one dataset exactly as before.
+  scope: 'current',
+  scopesAvailable: false,
+
   data: {
+    // openSlots / events always point at the selected scope's rows (see
+    // applyScope), so no view needs to know scopes exist.
     openSlots: [],              // [{ id, department, instrument, instructor_name, day, start_time, end_time, duration_mins, ... }]
     events: [],                 // master_schedule_events
+    byScope: {                  // every loaded row, split by its scope column
+      current: { openSlots: [], events: [] },
+      next:    { openSlots: [], events: [] },
+    },
     rooms: [],                  // rooms registry
     uploads: [],                // report_uploads (most recent per type)
     signPrints: [],             // room_sign_prints: last-printed snapshot per room
@@ -1239,21 +1288,135 @@ async function fetchAllRows(table) {
 }
 
 async function fetchAllData() {
-  const [openSlotsRes, eventsRes, roomsRes, uploadsRes, signPrintsRes] = await Promise.all([
+  const [openSlotsRes, eventsRes, roomsRes, uploadsRes, signPrintsRes, scopeProbe] = await Promise.all([
     fetchAllRows('open_slots'),
     fetchAllRows('master_schedule_events'),
     fetchAllRows('rooms'),
     state.sb.from('report_uploads').select('*').order('uploaded_at', { ascending: false }),
     fetchAllRows('room_sign_prints'),
+    // Errors until migration 0011 adds the column — that just leaves the app
+    // in its single-dataset mode rather than blocking the load.
+    state.sb.from('report_uploads').select('scope').limit(1),
   ]);
-  state.data.openSlots = openSlotsRes.data || [];
-  state.data.events = eventsRes.data || [];
+  state.scopesAvailable = !scopeProbe.error;
+  if (!state.scopesAvailable) state.scope = 'current';
+  state.data.byScope = { current: { openSlots: [], events: [] }, next: { openSlots: [], events: [] } };
+  for (const r of (openSlotsRes.data || [])) state.data.byScope[r.scope === 'next' ? 'next' : 'current'].openSlots.push(r);
+  for (const r of (eventsRes.data || [])) state.data.byScope[r.scope === 'next' ? 'next' : 'current'].events.push(r);
+  applyScope();
   state.data.rooms = roomsRes.data || [];
   state.data.uploads = uploadsRes.data || [];
   // A missing table (migration 0008 not run yet) just turns Room Signs'
   // change tracking off — it must never block the rest of the app loading.
   state.data.signPrintsAvailable = !signPrintsRes.error;
   state.data.signPrints = signPrintsRes.data || [];
+}
+
+// ── QUARTER SCOPES ───────────────────────────────────────────────────────────────
+const SCOPE_STORAGE_KEY = 'sfcmc_scope';
+
+function applyScope() {
+  const b = state.data.byScope[state.scope];
+  state.data.openSlots = b.openSlots;
+  state.data.events = b.events;
+}
+
+function loadSavedScope() {
+  try { return localStorage.getItem(SCOPE_STORAGE_KEY) === 'next' ? 'next' : 'current'; } catch { return 'current'; }
+}
+
+// "2027-03-15" → "Winter 2027". Only labels the toggle, so the month cut-offs
+// don't have to match ASAP's exact term dates: Dec belongs to Fall (the
+// break before Winter has no lessons), Jan–Mar is Winter, and so on.
+function quarterLabelForDate(iso) {
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-\d{2}$/);
+  if (!m) return null;
+  const month = Number(m[2]);
+  const name = month >= 9 ? 'Fall' : month >= 7 ? 'Summer' : month >= 4 ? 'Spring' : 'Winter';
+  return `${name} ${m[1]}`;
+}
+
+function localIsoToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Named for the quarter the scope's schedule actually falls in. Falls back to
+// today's date for 'current' (so an empty week during break still reads
+// right) and to a generic name for a 'next' nothing's been uploaded to yet.
+function scopeLabel(scope) {
+  const dated = state.data.byScope[scope].events.find(e => e.event_date);
+  const label = dated ? quarterLabelForDate(dated.event_date) : null;
+  if (label) return label;
+  return scope === 'current' ? quarterLabelForDate(localIsoToday()) : 'Next quarter';
+}
+
+// "Mar 15–21, 2027" for the scope's loaded week, or null if it has no dates.
+function scopeWeekRange(scope) {
+  const dates = state.data.byScope[scope].events.map(e => e.event_date).filter(Boolean).sort();
+  if (!dates.length) return null;
+  const a = dates[0], b = dates[dates.length - 1];
+  const by = b.slice(0, 4);
+  const sameMonth = a.slice(0, 7) === b.slice(0, 7);
+  const tail = sameMonth ? String(Number(b.slice(8))) : fmtDateShort(b);
+  return `${fmtDateShort(a)}–${tail}, ${by}`;
+}
+
+// Whether the selected quarter makes sense for a view. Lesson Finder works
+// from Open Slots, which are only pulled for next quarter's registration;
+// Daily Digest is a "where's the teacher right now" sheet, so a typical week
+// of a quarter that hasn't started would only mislead.
+function scopeGateFor(mode) {
+  if (!state.scopesAvailable) return null;
+  if (mode === 'lessonFinder' && state.scope === 'current') {
+    return { text: `Lesson Finder works from open slots for ${scopeLabel('next')}, the quarter you're registering students for.`, to: 'next' };
+  }
+  if (mode === 'dailyDigest' && state.scope === 'next') {
+    return { text: `Daily Digest is for today's schedule, so it uses ${scopeLabel('current')}.`, to: 'current' };
+  }
+  return null;
+}
+
+function renderScopeChrome() {
+  const sw = document.getElementById('scope-switcher');
+  sw.classList.toggle('hidden', !state.scopesAvailable);
+  sw.innerHTML = state.scopesAvailable ? ['current', 'next'].map(sc => `
+    <button class="scope-btn${sc === state.scope ? ' active' : ''}" data-scope="${sc}">
+      <small>${sc === 'current' ? 'Now' : 'Next'}</small>${escHtml(scopeLabel(sc))}
+    </button>`).join('') : '';
+
+  // Next quarter's schedule is one typical week, not a calendar week, so say
+  // so — the dates on it (and "today") don't mean anything there.
+  const banner = document.getElementById('scope-banner');
+  const showBanner = state.scopesAvailable && state.scope === 'next' && !scopeGateFor(state.appMode)
+    && !['upload', 'admin', 'lessonFinder'].includes(state.appMode);
+  const range = scopeWeekRange('next');
+  banner.textContent = showBanner
+    ? `${scopeLabel('next')} · a typical week${range ? ` (taken from the ${range} schedule)` : ''}. Dates aren't shown; this is for planning, not today.`
+    : '';
+  banner.classList.toggle('hidden', !showBanner);
+
+  for (const [mode, viewId, gateId] of [['lessonFinder', 'lf-view', 'lf-scope-gate'], ['dailyDigest', 'dd-view', 'dd-scope-gate']]) {
+    const gate = scopeGateFor(mode);
+    document.getElementById(viewId).classList.toggle('gated', !!gate);
+    document.getElementById(gateId).innerHTML = gate
+      ? `<div>${escHtml(gate.text)}</div><button class="primary-btn" style="width:auto;padding:8px 18px" data-gotoscope="${gate.to}">Switch to ${escHtml(scopeLabel(gate.to))}</button>`
+      : '';
+  }
+}
+
+function setScope(scope) {
+  if (!state.scopesAvailable || scope === state.scope) return;
+  state.scope = scope;
+  try { localStorage.setItem(SCOPE_STORAGE_KEY, scope); } catch {}
+  applyScope();
+  // Instructor/instrument filters and selected rows come from the other
+  // quarter's data and would silently match nothing here.
+  state.lf.filters = { instructor: new Set(), instrument: new Set(), day: new Set(), duration: new Set() };
+  state.lf.filterBranches = new Set();
+  state.lf.selected = new Set();
+  updateStatusLine();
+  setAppMode(state.appMode); // also redraws the switcher/banner/gates
 }
 
 // "today 5:47 PM" if uploaded today, else "8/26 5:47 PM"
@@ -1265,9 +1428,16 @@ function formatLastUpdated(iso) {
   return `${d.toLocaleDateString([], { month: 'numeric', day: 'numeric' })} ${timeStr}`;
 }
 
+function latestUpload(type, scope) {
+  return state.data.uploads.find(u => u.report_type === type && (u.scope || 'current') === scope);
+}
+
 function updateStatusLine() {
-  const latestFor = (type) => state.data.uploads.find(u => u.report_type === type);
-  const rows = ['open_slots', 'master_schedule'].map(t => {
+  const latestFor = (type) => latestUpload(type, state.scope);
+  // Open Slots only exist for the next quarter, so under "current" there's
+  // nothing to report for them.
+  const types = state.scopesAvailable && state.scope === 'current' ? ['master_schedule'] : ['open_slots', 'master_schedule'];
+  const rows = types.map(t => {
     const u = latestFor(t);
     const when = u ? formatLastUpdated(u.uploaded_at) : 'not uploaded';
     return { label: REPORT_LABELS_SHORT[t], when, title: `${REPORT_LABELS[t]}: ${u ? 'updated ' + when : 'not uploaded'}` };
@@ -1281,12 +1451,19 @@ async function loadAllData() {
   showLoading('Loading data…');
   await fetchAllData();
   hideLoading();
-  updateStatusLine();
+  state.scope = state.scopesAvailable ? loadSavedScope() : 'current';
+  applyScope();
+  refreshChrome();
 }
 
 async function refreshDataQuiet() {
   await fetchAllData();
+  refreshChrome();
+}
+
+function refreshChrome() {
   updateStatusLine();
+  renderScopeChrome();
 }
 
 // ── ROOM-LINKING HEURISTIC ───────────────────────────────────────────────────────
@@ -1540,6 +1717,9 @@ function rsForSiteDay(site, day) {
 // The uploaded week's calendar date for this site+day, read off whichever
 // matching event happens to carry one (all events for a given day share it).
 function rsDateForSiteDay(site, day) {
+  // Next quarter's schedule is a typical week — its calendar dates are just
+  // the week it happened to be pulled from, not something to display.
+  if (state.scopesAvailable && state.scope === 'next') return null;
   const evt = state.data.events.find(e => siteToBranch(e.site) === site && e.day === day && e.event_date);
   return evt ? evt.event_date : null;
 }
@@ -2571,10 +2751,22 @@ function initRoomSignsState() {
 }
 
 // ── ADMIN: UPLOAD ────────────────────────────────────────────────────────────────
+// Before migration 0011 there's one dataset, so the single Open Slots card
+// loads it and the "next" Master Scheduler card has nothing to load into.
+function uploadCardScope(card) {
+  if (!state.scopesAvailable) return 'current';
+  return card.dataset.scope;
+}
+
 function renderAdminUpload() {
   document.querySelectorAll('.upload-card').forEach(card => {
     const type = card.dataset.report;
-    const last = state.data.uploads.find(u => u.report_type === type);
+    const scope = uploadCardScope(card);
+    card.classList.toggle('hidden', !state.scopesAvailable && card.dataset.scope === 'next' && type === 'master_schedule');
+    const tag = card.querySelector('[data-scopetag]');
+    tag.textContent = state.scopesAvailable ? `${scope === 'current' ? 'Now' : 'Next'} · ${scopeLabel(scope)}` : '';
+    tag.classList.toggle('hidden', !state.scopesAvailable);
+    const last = latestUpload(type, scope);
     card.querySelector('[data-lastupload]').textContent = last
       ? `Last upload: ${new Date(last.uploaded_at).toLocaleString()} — ${last.row_count} rows — ${last.filename || ''}`
       : 'No uploads yet';
@@ -2583,6 +2775,7 @@ function renderAdminUpload() {
 
 async function handleUpload(card) {
   const type = card.dataset.report;
+  const scope = uploadCardScope(card);
   const fileInput = card.querySelector('[data-fileinput]');
   const statusEl = card.querySelector('[data-status]');
   const btn = card.querySelector('[data-uploadbtn]');
@@ -2601,7 +2794,9 @@ async function handleUpload(card) {
 
     if (!mapped.length) throw new Error('No usable rows found — check this is the right report file.');
 
-    const prev = state.data.uploads.find(u => u.report_type === type);
+    // Compared within the scope: next quarter's typical week and this week
+    // differ by far more than 35%, and that's not a sign of a bad file.
+    const prev = latestUpload(type, scope);
     if (prev && prev.row_count > 0) {
       const delta = Math.abs(mapped.length - prev.row_count) / prev.row_count;
       if (delta > 0.35) {
@@ -2610,8 +2805,14 @@ async function handleUpload(card) {
       }
     }
 
-    statusEl.textContent = `Uploading ${mapped.length} rows…`;
-    const { error } = await state.sb.rpc(rpcName, { rows: mapped, p_filename: file.name });
+    // Two Master Scheduler cards that look alike are the easy one to mix up,
+    // so say which dates are going into which.
+    const dates = mapped.map(r => r.event_date || r.lesson_date).filter(Boolean).sort();
+    const span = dates.length ? ` (${fmtDateShort(dates[0])}–${fmtDateShort(dates[dates.length - 1])}, ${dates[dates.length - 1].slice(0, 4)})` : '';
+    statusEl.textContent = `Uploading ${mapped.length} rows${span}…`;
+    const args = { rows: mapped, p_filename: file.name };
+    if (state.scopesAvailable) args.p_scope = scope;
+    const { error } = await state.sb.rpc(rpcName, args);
     if (error) throw error;
 
     await refreshDataQuiet();
@@ -2717,6 +2918,7 @@ const APP_MODE_STORAGE_KEY = 'sfcmc_lastAppMode';
 function setAppMode(mode) {
   state.appMode = mode;
   try { localStorage.setItem(APP_MODE_STORAGE_KEY, mode); } catch {}
+  renderScopeChrome();
   document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === mode));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   if (mode === 'lessonFinder') { document.getElementById('lf-view').classList.add('active'); renderLessonFinder(); }
@@ -2780,17 +2982,6 @@ function showApp() {
 }
 
 // ── EVENT LISTENERS ──────────────────────────────────────────────────────────────
-let loginMode = 'signin';
-document.getElementById('login-toggle-btn').addEventListener('click', () => {
-  loginMode = loginMode === 'signin' ? 'signup' : 'signin';
-  document.getElementById('login-title').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
-  document.getElementById('login-submit-btn').textContent = loginMode === 'signin' ? 'Sign In' : 'Create Account';
-  document.getElementById('login-toggle-btn').textContent = loginMode === 'signin' ? 'Need an account? Create one' : 'Already have an account? Sign in';
-  document.getElementById('login-forgot-btn').classList.toggle('hidden', loginMode !== 'signin');
-  document.getElementById('login-error').classList.remove('visible');
-  document.getElementById('login-info').classList.remove('visible');
-});
-
 document.getElementById('login-submit-btn').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -2800,21 +2991,11 @@ document.getElementById('login-submit-btn').addEventListener('click', async () =
   infoEl.classList.remove('visible');
   if (!email || !password) { errEl.textContent = 'Email and password are required.'; errEl.classList.add('visible'); return; }
 
-  showLoading(loginMode === 'signin' ? 'Signing in…' : 'Creating account…');
-  const fn = loginMode === 'signin' ? 'signInWithPassword' : 'signUp';
-  const { data, error } = await state.sb.auth[fn]({ email, password });
+  showLoading('Signing in…');
+  const { data, error } = await state.sb.auth.signInWithPassword({ email, password });
   hideLoading();
 
   if (error) { errEl.textContent = error.message; errEl.classList.add('visible'); return; }
-
-  if (loginMode === 'signup' && !data.session) {
-    infoEl.textContent = 'Account created. Check your email to confirm, then sign in.';
-    infoEl.classList.add('visible');
-    loginMode = 'signin';
-    document.getElementById('login-title').textContent = 'Sign In';
-    document.getElementById('login-submit-btn').textContent = 'Sign In';
-    return;
-  }
 
   state.session = data.session;
   await afterLogin();
@@ -3047,6 +3228,15 @@ document.getElementById('rp-grid-wrap').addEventListener('mousemove', (e) => {
 });
 document.getElementById('rp-grid-wrap').addEventListener('mouseleave', () => {
   document.getElementById('rp-tooltip').style.display = 'none';
+});
+
+document.getElementById('scope-switcher').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-scope]');
+  if (btn) setScope(btn.dataset.scope);
+});
+document.getElementById('main-content').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-gotoscope]');
+  if (btn) setScope(btn.dataset.gotoscope);
 });
 
 document.querySelectorAll('.upload-card').forEach(card => {
