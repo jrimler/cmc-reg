@@ -2796,7 +2796,11 @@ async function handleUpload(card) {
 
     // Compared within the scope: next quarter's typical week and this week
     // differ by far more than 35%, and that's not a sign of a bad file.
-    const prev = latestUpload(type, scope);
+    // Not for Open Slots: its count swings with enrollment itself, falling as
+    // registration fills teachers and jumping after the drop deadline. On Nov
+    // 16, 2026 the no-deposit drops took it from 473 to 679 rows (+44%), and
+    // the automation's "Cancel" kept that correct file out of the app.
+    const prev = type === 'open_slots' ? null : latestUpload(type, scope);
     if (prev && prev.row_count > 0) {
       const delta = Math.abs(mapped.length - prev.row_count) / prev.row_count;
       if (delta > 0.35) {
